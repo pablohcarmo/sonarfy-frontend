@@ -1,0 +1,43 @@
+footer {
+    background-color: var(--footer-bg);
+    padding: 32px 5%;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto; /* Garante que o rodapé fique sempre no fundo da tela */
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: var(--accent-color); /* Usa o Azul Sonarfy no hover */
+    text-decoration: underline;
+}
+
+.separator {
+    color: var(--text-secondary);
+    opacity: 0.4;
+    user-select: none; /* Impede que o usuário selecione o ponto ao copiar texto */
+}
+
+.copyright {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+}
