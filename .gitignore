@@ -4,6 +4,7 @@
 node_modules/
 template/
 
+/js/env.js
 .env
 .env.local
 .env.development.local

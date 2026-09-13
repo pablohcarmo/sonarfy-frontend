@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta - Sonarfy</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Estilos globais e de autenticação -->
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/cadastro.css">
+</head>
+<body>
+
+<header>
+    <a href="../index.html" class="logo-container">
+        <img src="../assets/images/sonarfy_logo.png" alt="Logo do Sonarfy" class="logo-img" id="main-logo">
+        <i class="fa-solid fa-wave-square logo-icon-fallback" id="fallback-icon" style="display: none;"></i>
+        Sonarfy
+    </a>
+
+    <div>
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Alternar Tema" style="background: transparent; border: none; font-size: 1.25rem; color: var(--text-primary); cursor: pointer;">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+</header>
+
+<main class="auth-container">
+    <div class="login-card" style="max-width: 600px;">
+        <h2>Crie sua conta</h2>
+        <p>Junte-se à maior rede social de música.</p>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="error-message" style="background-color: #e8f5e9; color: #2e7d32; border-color: #c8e6c9;"></div>
+
+        <form id="registerForm" class="login-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="input-group">
+                    <label for="nameField">Nome</label>
+                    <input id="nameField" class="login-field" type="text" placeholder="Seu nome" maxlength="50" required>
+                </div>
+                <div class="input-group">
+                    <label for="surnameField">Sobrenome</label>
+                    <input id="surnameField" class="login-field" type="text" placeholder="Seu sobrenome" maxlength="50" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="handleField">Nome de Usuário</label>
+                <input id="handleField" class="login-field" type="text" placeholder="Ex: @usuario" maxlength="15" required>
+            </div>
+
+            <div class="input-group">
+                <label for="emailField">E-mail</label>
+                <input id="emailField" class="login-field" type="email" placeholder="seu@email.com" maxlength="150" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="input-group">
+                    <label for="passwordField">Senha</label>
+                    <!-- Removido o minlength nativo para que o checklist controle a validação -->
+                    <input id="passwordField" class="login-field" type="password" placeholder="Crie uma senha forte" required>
+                </div>
+                <div class="input-group">
+                    <label for="confirmPasswordField">Confirmar Senha</label>
+                    <input id="confirmPasswordField" class="login-field" type="password" placeholder="Repita a senha" required>
+                </div>
+
+                <!-- Checklist Dinâmico de Segurança -->
+                <div class="password-checklist">
+                    <ul id="passwordRequirements">
+                        <li id="req-length" class="invalid"><i class="fa-solid fa-xmark"></i> Mínimo de 6 caracteres</li>
+                        <li id="req-uppercase" class="invalid"><i class="fa-solid fa-xmark"></i> Letra maiúscula</li>
+                        <li id="req-number" class="invalid"><i class="fa-solid fa-xmark"></i> Um número</li>
+                        <li id="req-special" class="invalid"><i class="fa-solid fa-xmark"></i> Caractere especial</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="input-group">
+                    <label for="birthDateField">Data de Nascimento</label>
+                    <input id="birthDateField" class="login-field" type="date" required>
+                </div>
+                <div class="input-group">
+                    <label for="countryField">País</label>
+                    <input id="countryField" class="login-field" type="text" placeholder="Ex: Brasil" maxlength="100" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="cityField">Cidade</label>
+                <input id="cityField" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required>
+            </div>
+
+            <button class="btn-submit" type="submit">Cadastrar e Confirmar</button>
+        </form>
+
+        <div class="auth-links">
+            <p>Já tem uma conta? <a href="login.html">Fazer Login</a></p>
+        </div>
+    </div>
+</main>
+
+<script src="../js/global.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/env.js"><</script>
+<script src="../js/cadastro.js"></script>
+</body>
+</html>
