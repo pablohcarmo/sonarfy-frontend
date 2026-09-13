@@ -10,3 +10,5 @@ template/
 .env.test.local
 .env.production.local
 *.pem
+
+template/
