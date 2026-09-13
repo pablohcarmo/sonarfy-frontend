@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sonarfy</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/footer.css">
+</head>
+<body>
+
+<!-- Cabeçalho Simplificado -->
+<header>
+    <a href="../index.html" class="logo-container">
+        <i class="fa-solid fa-wave-square logo-icon-fallback" style="display: block;"></i>
+        Sonarfy
+    </a>
+
+    <div>
+        <!-- Botão de Modo Noturno -->
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Alternar Tema" style="background: transparent; border: none; font-size: 1.25rem; color: var(--text-primary); cursor: pointer;">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+</header>
+
+<!-- Área de Autenticação -->
+<main class="auth-container">
+    <div class="login-card">
+        <h2>Bem-vindo de volta</h2>
+        <p>Entre para continuar avaliando seus álbuns favoritos.</p>
+
+        <div id="errorMessage" class="error-message">
+            E-mail, usuário ou senha inválidos.
+        </div>
+
+        <form id="loginForm" class="login-form">
+            <div class="input-group">
+                <label for="loginField">E-mail ou Usuário</label>
+                <input id="loginField" class="login-field" type="text" placeholder="Digite seu e-mail ou usuário" required autocomplete="username">
+            </div>
+
+            <div class="input-group">
+                <label for="passwordField">Senha</label>
+                <input id="passwordField" class="login-field" type="password" placeholder="Digite sua senha" required autocomplete="current-password">
+            </div>
+
+            <button class="btn-submit" type="submit">Entrar no Sonarfy</button>
+        </form>
+
+        <div class="auth-links">
+            <p>Ainda não tem uma conta? <a href="cadastro.html">Criar Conta</a></p>
+            <p style="margin-top: 8px;"><a href="recuperar-senha.html">Esqueci minha senha</a></p>
+        </div>
+    </div>
+</main>
+
+<script src="../js/theme.js"></script>
+<script src="../js/login.js"></script>
+<script src="../js/footer.js"></script>
+</body>
+</html>
