@@ -6,9 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const nameField = document.getElementById('nameField');
     const surnameField = document.getElementById('surnameField');
     const passwordField = document.getElementById('passwordField');
+    const handleField = document.getElementById('handleField'); // Adicione esta linha
     const confirmPasswordField = document.getElementById('confirmPasswordField');
     const birthDateField = document.getElementById('birthDateField');
+    const cityField = document.getElementById('cityField');
     const allInputs = document.querySelectorAll('.login-field');
+
+    // Variável de memória para o banco de dados (movida para o topo)
+    let selectedCountry = '';
+    let geocodeTimeout;
 
     // Regras do Checklist de Senha
     const reqLength = document.getElementById('req-length');
@@ -24,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // REGRA 1: Bloqueia Emojis
-    const emojiRegex = /[\p{Extended_Pictographic}\p{Emoji_Presentation}]/gu;
+    const emojiRegex = /\p{Emoji}/gu;
     allInputs.forEach(input => {
         input.addEventListener('input', function() {
             if (emojiRegex.test(this.value)) {
@@ -45,7 +51,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // REGRA 3: Validação Dinâmica da Senha (Checklist)
+    // REGRA 3: Formata o Handle (Bloqueia @, espaços e caracteres especiais)
+    const handleRegex = /[^a-zA-Z0-9_.\-]/g;
+    if (handleField) {
+        handleField.addEventListener('input', function() {
+            if (handleRegex.test(this.value)) {
+                this.value = this.value.replace(handleRegex, '');
+            }
+            // Padroniza visualmente convertendo tudo para letras minúsculas
+            this.value = this.value.toLowerCase();
+        });
+    }
+
+    // REGRA 4: Validação Dinâmica da Senha (Checklist)
     let isPasswordValid = false;
 
     function updateChecklistItem(element, isValid) {
@@ -58,9 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // O evento de senha termina AQUI, apenas validando visualmente os caracteres
     passwordField.addEventListener('input', function() {
         const val = this.value;
-
         const hasLength = val.length >= 6;
         const hasUppercase = /[A-Z]/.test(val);
         const hasNumber = /[0-9]/.test(val);
@@ -71,25 +89,33 @@ document.addEventListener('DOMContentLoaded', () => {
         updateChecklistItem(reqNumber, hasNumber);
         updateChecklistItem(reqSpecial, hasSpecial);
 
-        // A senha só é válida se cumprir os 4 requisitos
         isPasswordValid = hasLength && hasUppercase && hasNumber && hasSpecial;
     });
 
+    // ENVIO DO FORMULÁRIO (Submissão para a API)
     if (registerForm) {
         registerForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             errorMessage.style.display = 'none';
             successMessage.style.display = 'none';
 
-            // Trava de segurança: Se o checklist não estiver 100% verde, bloqueia o envio
+            // Trava de segurança 1: Checklist de senha
             if (!isPasswordValid) {
                 errorMessage.innerText = "A senha não atende a todos os requisitos de segurança.";
                 errorMessage.style.display = 'block';
                 return;
             }
 
+            // Trava de segurança 2: Senhas iguais
             if (passwordField.value !== confirmPasswordField.value) {
                 errorMessage.innerText = "As senhas não coincidem.";
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // REGRA 5: Exige a seleção correta na lista suspensa (AGORA NO LUGAR CERTO)
+            if (!selectedCountry) {
+                errorMessage.innerText = "Por favor, selecione sua cidade na lista suspensa para validarmos sua região.";
                 errorMessage.style.display = 'block';
                 return;
             }
@@ -101,9 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: document.getElementById('emailField').value,
                 password: passwordField.value,
                 birthDate: birthDateField.value,
-                city: document.getElementById('cityField').value,
-                country: document.getElementById('countryField').value
+                city: cityField.value,
+                country: selectedCountry
             };
+            console.log("Payload gerado pelo Front-end:", JSON.stringify(payload, null, 2));
 
             try {
                 const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -114,15 +141,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     registerForm.reset();
-                    // Reseta visualmente o checklist
                     [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(el => updateChecklistItem(el, false));
                     isPasswordValid = false;
+                    selectedCountry = ''; // Reseta o país após sucesso
 
                     successMessage.innerText = "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail.";
                     successMessage.style.display = 'block';
                 } else {
                     const data = await response.json().catch(() => ({}));
-                    errorMessage.innerText = data.message || "Erro ao realizar o cadastro. E-mail ou handle já em uso.";
+                    errorMessage.innerText = data.message || "Erro ao realizar o cadastro. E-mail ou nome de usuário já está em uso.";
                     errorMessage.style.display = 'block';
                 }
             } catch (error) {
@@ -134,18 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Autocompletar de Cidades com GeoNames API
-    const cityField = document.getElementById('cityField');
-    const countryField = document.getElementById('countryField');
-    let geocodeTimeout;
-
     if (cityField) {
-        // Envolve o input de cidade na div relativa
         const wrapper = document.createElement('div');
         wrapper.className = 'autocomplete-wrapper';
         cityField.parentNode.insertBefore(wrapper, cityField);
         wrapper.appendChild(cityField);
 
-        // Cria a lista (ul) que receberá os resultados
         const suggestionList = document.createElement('ul');
         suggestionList.className = 'autocomplete-list';
         wrapper.appendChild(suggestionList);
@@ -153,35 +174,29 @@ document.addEventListener('DOMContentLoaded', () => {
         cityField.addEventListener('input', function() {
             clearTimeout(geocodeTimeout);
             const query = this.value.trim();
-            suggestionList.innerHTML = ''; // Limpa a lista ao digitar
+            suggestionList.innerHTML = '';
+            selectedCountry = ''; // Reseta o país oculto se o usuário voltar a digitar
 
-            // Só pesquisa se houver pelo menos 3 letras
             if (query.length < 3) return;
 
             geocodeTimeout = setTimeout(async () => {
                 try {
-                    // ATENÇÃO: Substitua 'demo' pelo seu nome de usuário criado no geonames.org
-                    const username = 'demo';
-                    // featureClass=P filtra estritamente por Cidades/Vilas
-                    // Use a constante GEONAMES_USERNAME injetada pelo env.js
-                    const url = `https://secure.geonames.org/searchJSON?name_startsWith=${query}&maxRows=5&featureClass=P&username=${GEONAMES_USERNAME}`;
-
+                    const url = `https://api.geonames.org/searchJSON?name_startsWith=${query}&maxRows=5&featureClass=P&username=${GEONAMES_USERNAME}`;
                     const response = await fetch(url);
+
                     if (response.ok) {
                         const data = await response.json();
-
                         if (data.geonames && data.geonames.length > 0) {
                             data.geonames.forEach(place => {
                                 const li = document.createElement('li');
                                 li.className = 'autocomplete-item';
-
                                 const region = place.adminName1 ? `${place.adminName1}, ` : '';
                                 li.innerText = `${place.name}, ${region}${place.countryName}`;
 
                                 li.addEventListener('click', () => {
                                     cityField.value = place.name;
-                                    if (countryField) countryField.value = place.countryName;
-                                    suggestionList.innerHTML = ''; // Fecha o menu após a seleção
+                                    selectedCountry = place.countryName; // Salva o país invisivelmente
+                                    suggestionList.innerHTML = '';
                                 });
 
                                 suggestionList.appendChild(li);
@@ -189,12 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } catch (error) {
-                    console.error("Erro ao buscar a cidade:", error);
+                    console.error("Erro na GeoNames API:", error);
                 }
             }, 500);
         });
 
-        // Oculta a lista se o usuário clicar fora do campo
         document.addEventListener('click', (e) => {
             if (e.target !== cityField) suggestionList.innerHTML = '';
         });

@@ -9,10 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
 
-    <!-- Estilos globais e de autenticação -->
     <link rel="stylesheet" href="../css/index.css">
     <link rel="stylesheet" href="../css/login.css">
     <link rel="stylesheet" href="../css/cadastro.css">
+    <link rel="stylesheet" href="../css/footer.css">
 </head>
 <body>
 
@@ -52,7 +52,10 @@
 
             <div class="input-group">
                 <label for="handleField">Nome de Usuário</label>
-                <input id="handleField" class="login-field" type="text" placeholder="Ex: @usuario" maxlength="15" required>
+                <div class="handle-wrapper">
+                    <span class="handle-prefix">@</span>
+                    <input id="handleField" class="login-field" type="text" placeholder="usuario" maxlength="15" required autocomplete="off">
+                </div>
             </div>
 
             <div class="input-group">
@@ -87,15 +90,11 @@
                     <label for="birthDateField">Data de Nascimento</label>
                     <input id="birthDateField" class="login-field" type="date" required>
                 </div>
-                <div class="input-group">
-                    <label for="countryField">País</label>
-                    <input id="countryField" class="login-field" type="text" placeholder="Ex: Brasil" maxlength="100" required>
-                </div>
-            </div>
 
-            <div class="input-group">
-                <label for="cityField">Cidade</label>
-                <input id="cityField" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required>
+                <div class="input-group">
+                    <label for="cityField">Cidade</label>
+                    <input id="cityField" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required autocomplete="off">
+                </div>
             </div>
 
             <button class="btn-submit" type="submit">Cadastrar e Confirmar</button>
@@ -109,7 +108,7 @@
 
 <script src="../js/global.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/env.js"><</script>
+<script src="../js/env.js"></script>
 <script src="../js/cadastro.js"></script>
 </body>
 </html>

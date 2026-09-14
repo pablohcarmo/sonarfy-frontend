@@ -69,3 +69,45 @@
     background-color: var(--footer-bg);
     color: var(--accent-color);
 }
+
+/* Estilização do prefixo fixo (@) no campo de handle */
+.handle-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+    height: 48px; /* Mantém a mesma altura dos outros inputs */
+}
+
+/* Destaca a borda do contêiner inteiro quando o input recebe foco */
+.handle-wrapper:focus-within {
+    border-color: var(--accent-color);
+}
+
+.handle-prefix {
+    padding: 0 16px;
+    background-color: var(--footer-bg);
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-right: 1px solid var(--border-color);
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* Remove as bordas nativas do input para que ele se funda ao wrapper */
+.handle-wrapper .login-field {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    height: 100%;
+    box-shadow: none;
+}
+
+.handle-wrapper .login-field:focus {
+    border: none;
+    box-shadow: none;
+}
