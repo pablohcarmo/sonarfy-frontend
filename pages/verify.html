@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar Conta - Sonarfy</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/footer.css">
+</head>
+<body>
+
+<header>
+    <a href="../index.html" class="logo-container">
+        <img src="../assets/images/sonarfy_logo.png" alt="Logo do Sonarfy" class="logo-img" id="main-logo">
+        <i class="fa-solid fa-wave-square logo-icon-fallback" id="fallback-icon" style="display: none;"></i>
+        Sonarfy
+    </a>
+
+    <div>
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Alternar Tema" style="background: transparent; border: none; font-size: 1.25rem; color: var(--text-primary); cursor: pointer;">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+</header>
+
+<main class="auth-container">
+    <div class="login-card">
+
+        <!-- Estado 1: Carregando (Visível por padrão) -->
+        <div id="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 20px;"></i>
+            <h2>Verificando e-mail...</h2>
+            <p>Aguarde um momento enquanto validamos sua conta de forma segura no Sonarfy.</p>
+        </div>
+
+        <!-- Estado 2: Sucesso (Oculto por padrão) -->
+        <div id="success-state" style="display: none;">
+            <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: #2e7d32; margin-bottom: 20px;"></i>
+            <h2>E-mail Confirmado!</h2>
+            <p>Sua conta foi ativada com sucesso. Você já pode acessar a plataforma.</p>
+            <a href="login.html" class="btn-submit" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 24px;">Fazer Login</a>
+        </div>
+
+        <!-- Estado 3: Erro (Oculto por padrão) -->
+        <div id="error-state" style="display: none;">
+            <i class="fa-solid fa-circle-xmark" style="font-size: 3rem; color: #e74c3c; margin-bottom: 20px;"></i>
+            <h2>Erro na Verificação</h2>
+            <p id="error-message-text">O link é inválido ou já expirou.</p>
+            <a href="login.html" class="btn-submit" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 24px; background-color: #65676b;">Voltar para o Login</a>
+        </div>
+
+    </div>
+</main>
+
+<script src="../js/global.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/verify.js"></script>
+</body>
+</html>
