@@ -1,0 +1,113 @@
+.password-checklist {
+    grid-column: span 2;
+    background-color: var(--footer-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    margin-top: -8px;
+    margin-bottom: 8px;
+}
+
+.password-checklist ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.password-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.3s ease;
+}
+
+.password-checklist li.invalid {
+    color: #e74c3c; /* Vermelho */
+}
+
+.password-checklist li.valid {
+    color: #2e7d32; /* Verde */
+}
+
+.autocomplete-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    list-style: none;
+    margin-top: -4px;
+}
+
+.autocomplete-item {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-bottom: 1px solid #f0f2f5;
+    transition: background-color 0.2s ease;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background-color: var(--footer-bg);
+    color: var(--accent-color);
+}
+
+/* Estilização do prefixo fixo (@) no campo de handle */
+.handle-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+    height: 48px; /* Mantém a mesma altura dos outros inputs */
+}
+
+/* Destaca a borda do contêiner inteiro quando o input recebe foco */
+.handle-wrapper:focus-within {
+    border-color: var(--accent-color);
+}
+
+.handle-prefix {
+    padding: 0 16px;
+    background-color: var(--footer-bg);
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-right: 1px solid var(--border-color);
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* Remove as bordas nativas do input para que ele se funda ao wrapper */
+.handle-wrapper .login-field {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    height: 100%;
+    box-shadow: none;
+}
+
+.handle-wrapper .login-field:focus {
+    border: none;
+    box-shadow: none;
+}
