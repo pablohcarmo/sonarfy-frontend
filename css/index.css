@@ -64,7 +64,7 @@ header {
 }
 
 .logo-container {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 10px;
     font-size: 24px;
@@ -74,9 +74,44 @@ header {
 }
 
 .logo-img {
-    height: 40px;
+    height: 44px;
     width: auto;
+    max-height: 48px;
+    object-fit: contain;
+    transition: opacity 0.2s ease;
+}
+
+/* Exibição condicional do logotipo conforme o tema */
+.logo-light {
+    display: block;
+}
+
+.logo-dark {
     display: none;
+}
+
+body.dark-mode .logo-light {
+    display: none;
+}
+
+body.dark-mode .logo-dark {
+    display: block;
+}
+
+.logo-img.logo-error {
+    display: none !important;
+}
+
+.logo-fallback-text {
+    display: none;
+}
+
+.logo-container.is-fallback .logo-fallback-text {
+    display: inline;
+}
+
+.logo-container.is-fallback .logo-icon-fallback {
+    display: inline-block !important;
 }
 
 .logo-icon-fallback {
