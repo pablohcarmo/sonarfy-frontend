@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Conta - Sonarfy</title>
+    <link rel="icon" type="image/png" href="../assets/images/simbolo-sonarfy.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS Globais e Rodapé -->
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/footer.css">
+    <link rel="stylesheet" href="../css/account.css">
+</head>
+<body>
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="feed.html" class="logo-container sidebar-logo" style="text-decoration: none;">
+            <img src="../assets/images/original.png" alt="Logo do Sonarfy" class="logo-img logo-light" id="main-logo-light">
+            <img src="../assets/images/negativa-preto.png" alt="Logo do Sonarfy" class="logo-img logo-dark" id="main-logo-dark">
+            <i class="fa-solid fa-wave-square logo-icon-fallback" id="fallback-icon" style="display: none;"></i>
+            <span class="logo-fallback-text" style="display: none;">Sonarfy</span>
+        </a>
+        <nav class="nav-menu">
+            <ul>
+                <li><a href="feed.html"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li><a href="#"><i class="fa-solid fa-pen-nib"></i> Minhas Avaliações</a></li>
+                <li><a href="perfil.html"><i class="fa-regular fa-user"></i> Meu Perfil</a></li>
+                <li class="active"><a href="#"><i class="fa-solid fa-gear"></i> Configurações</a></li>
+            </ul>
+        </nav>
+        <div style="margin-top: auto; padding: 20px;">
+            <button id="theme-toggle" class="theme-toggle-btn" aria-label="Alternar Tema">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-area">
+
+            <section class="account-header">
+                <h1>Configurações da Conta</h1>
+                <p>Gerencie suas informações pessoais e credenciais de acesso.</p>
+            </section>
+
+            <div id="feedbackMessage" class="feedback-message" style="display: none;"></div>
+
+            <section class="account-settings-container">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h2>Detalhes da Conta</h2>
+                        <button id="editProfileBtn" class="icon-btn-edit" title="Editar Perfil">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>
+                    </div>
+
+                    <form id="accountForm" class="settings-form">
+                        <h3 class="section-subtitle">Informações Pessoais</h3>
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label for="nameField">Nome</label>
+                                <input id="nameField" class="account-field" type="text" disabled>
+                            </div>
+                            <div class="input-group">
+                                <label for="surnameField">Sobrenome</label>
+                                <input id="surnameField" class="account-field" type="text" disabled>
+                            </div>
+
+                            <!-- Bloco de Usuário (Handle) Atualizado -->
+                            <div class="input-group">
+                                <label for="handleField">Usuário</label>
+                                <div class="handle-wrapper locked-wrapper">
+                                    <span class="handle-prefix">@</span>
+                                    <input id="handleField" class="account-field locked-field" type="text" disabled title="O usuário não pode ser alterado">
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="birthDateField">Data de Nascimento</label>
+                                <input id="birthDateField" class="account-field" type="date" disabled>
+                            </div>
+                            <div class="input-group">
+                                <label for="countryField">País</label>
+                                <input id="countryField" class="account-field locked-field" type="text" disabled title="O país é gerenciado automaticamente">
+                            </div>
+                            <div class="input-group">
+                                <label for="cityField">Cidade</label>
+                                <input id="cityField" class="account-field" type="text" disabled>
+                            </div>
+                        </div>
+                        <button id="saveProfileBtn" type="submit" class="btn-submit" style="display: none; margin-top: 20px;">Salvar Alterações</button>
+                    </form>
+
+                    <hr class="card-divider">
+
+                    <h3 class="section-subtitle">Segurança e Credenciais</h3>
+                    <div class="security-list">
+                        <div class="security-item">
+                            <div class="security-info">
+                                <label>Endereço de E-mail</label>
+                                <input id="emailField" class="account-field locked-field" type="email" disabled>
+                            </div>
+                            <div class="action-group">
+                                <span id="emailTimer" class="cooldown-timer"></span>
+                                <button id="reqChangeEmailBtn" class="btn-outline">Alterar E-mail</button>
+                            </div>
+                        </div>
+
+                        <div class="security-item">
+                            <div class="security-info">
+                                <label>Senha de Acesso</label>
+                                <input class="account-field locked-field" type="password" value="********" disabled>
+                            </div>
+                            <div class="action-group">
+                                <span id="pwdTimer" class="cooldown-timer"></span>
+                                <button id="reqChangePwdBtn" class="btn-outline">Redefinir Senha</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- Estrutura do Modal (Pop-up) -->
+<div id="actionModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <div class="modal-content">
+            <i class="fa-solid fa-circle-check modal-icon"></i>
+            <h2 id="modalTitle">Sucesso</h2>
+            <p id="modalMessage">Mensagem aqui.</p>
+        </div>
+        <div class="modal-footer">
+            <button id="closeModalBtn" class="btn-submit" style="width: 100%;">OK</button>
+        </div>
+    </div>
+</div>
+
+<script src="../js/global.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/account.js"></script>
+</body>
+</html>
