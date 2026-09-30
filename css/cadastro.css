@@ -111,3 +111,10 @@
     border: none;
     box-shadow: none;
 }
+
+.field-hint {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: var(--text-secondary);
+    margin-left: 4px;
+}
