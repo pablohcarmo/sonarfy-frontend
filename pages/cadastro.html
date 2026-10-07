@@ -34,79 +34,162 @@
 
 <main class="auth-container">
     <div class="login-card" style="max-width: 600px;">
-        <h2>Crie sua conta</h2>
-        <p>Junte-se à maior rede social de música.</p>
+        <!-- Seção de Cadastro -->
+        <div id="registerSection">
+            <h2>Crie sua conta</h2>
+            <p>Junte-se à maior rede social de música.</p>
 
-        <div id="errorMessage" class="error-message"></div>
-        <div id="successMessage" class="error-message" style="background-color: #e8f5e9; color: #2e7d32; border-color: #c8e6c9;"></div>
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="error-message" style="background-color: #e8f5e9; color: #2e7d32; border-color: #c8e6c9;"></div>
 
-        <form id="registerForm" class="login-form">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="input-group">
-                    <label for="nameField">Nome</label>
-                    <input id="nameField" class="login-field" type="text" placeholder="Seu nome" maxlength="50" required>
+            <form id="registerForm" class="login-form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="input-group">
+                        <label for="nameField">Nome</label>
+                        <input id="nameField" class="login-field" type="text" placeholder="Seu nome" maxlength="50" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="surnameField">Sobrenome</label>
+                        <input id="surnameField" class="login-field" type="text" placeholder="Seu sobrenome" maxlength="50" required>
+                    </div>
                 </div>
+
                 <div class="input-group">
-                    <label for="surnameField">Sobrenome</label>
-                    <input id="surnameField" class="login-field" type="text" placeholder="Seu sobrenome" maxlength="50" required>
+                    <label for="handleField">Nome de Usuário</label>
+                    <div class="handle-wrapper">
+                        <span class="handle-prefix">@</span>
+                        <input id="handleField" class="login-field" type="text" placeholder="usuario" maxlength="15" required autocomplete="off">
+                    </div>
                 </div>
+
+                <div class="input-group">
+                    <label for="emailField">E-mail</label>
+                    <input id="emailField" class="login-field" type="email" placeholder="seu@email.com" maxlength="150" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="input-group">
+                        <label for="passwordField">Senha</label>
+                        <!-- Removido o minlength nativo para que o checklist controle a validação -->
+                        <input id="passwordField" class="login-field" type="password" placeholder="Crie uma senha forte" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmPasswordField">Confirmar Senha</label>
+                        <input id="confirmPasswordField" class="login-field" type="password" placeholder="Repita a senha" required>
+                    </div>
+
+                    <!-- Checklist Dinâmico de Segurança -->
+                    <div class="password-checklist">
+                        <ul id="passwordRequirements">
+                            <li id="req-length" class="invalid"><i class="fa-solid fa-xmark"></i> Mínimo de 8 caracteres</li>
+                            <li id="req-uppercase" class="invalid"><i class="fa-solid fa-xmark"></i> Letra maiúscula</li>
+                            <li id="req-number" class="invalid"><i class="fa-solid fa-xmark"></i> Um número</li>
+                            <li id="req-special" class="invalid"><i class="fa-solid fa-xmark"></i> Caractere especial</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="input-group">
+                        <label for="birthDateField">Data de Nascimento <span class="field-hint"></span></label>
+                        <input id="birthDateField" class="login-field" type="date" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="cityField">Cidade</label>
+                        <input id="cityField" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required autocomplete="off">
+                    </div>
+                </div>
+
+                <button class="btn-submit" type="submit">Cadastrar e Confirmar</button>
+            </form>
+
+            <div class="auth-links">
+                <p>Já tem uma conta? <a href="login.html">Fazer Login</a></p>
+                <p style="margin-top: 10px;">Não recebeu o e-mail de confirmação? <a href="#" id="openResendModalLink">Reenviar e-mail</a></p>
+            </div>
+        </div>
+
+        <!-- Seção de Confirmação Pendente (Exibida logo após o envio) -->
+        <div id="pendingSection" style="display: none;">
+            <i class="fa-solid fa-envelope-circle-check" style="font-size: 3.5rem; color: var(--accent-color); margin-bottom: 20px;"></i>
+            <h2>Quase lá!</h2>
+            <p>Enviamos um link de confirmação para:</p>
+
+            <div class="pending-email-badge" id="pendingEmailBadge" role="button" tabindex="0" title="Clique para corrigir o e-mail" aria-label="Corrigir e-mail">
+                <span id="pendingEmailDisplay">usuario@email.com</span>
+                <button type="button" id="btnEditEmailIcon" class="btn-icon-edit" title="Corrigir e-mail" aria-label="Corrigir e-mail">
+                    <i class="fa-solid fa-pencil"></i>
+                </button>
             </div>
 
-            <div class="input-group">
-                <label for="handleField">Nome de Usuário</label>
-                <div class="handle-wrapper">
-                    <span class="handle-prefix">@</span>
-                    <input id="handleField" class="login-field" type="text" placeholder="usuario" maxlength="15" required autocomplete="off">
-                </div>
+            <div id="pendingErrorAlert" class="error-message" style="display: none;"></div>
+            <div id="pendingSuccessAlert" class="error-message feedback-success" style="display: none;"></div>
+
+            <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 24px;">
+                Por favor, clique no link de ativação enviado para sua caixa de entrada (ou pasta de spam) para liberar o acesso à sua conta.
+            </p>
+
+            <div class="pending-actions">
+                <button type="button" id="btnResendPendingEmail" class="btn-submit" style="width: 100%;">
+                    <i class="fa-solid fa-rotate-right"></i> Reenviar e-mail
+                </button>
             </div>
 
-            <div class="input-group">
-                <label for="emailField">E-mail</label>
-                <input id="emailField" class="login-field" type="email" placeholder="seu@email.com" maxlength="150" required>
+            <div class="auth-links" style="margin-top: 24px;">
+                <p><a href="login.html">Ir para o Login</a> &bull; <a href="#" id="btnBackToForm">Voltar ao formulário</a></p>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="input-group">
-                    <label for="passwordField">Senha</label>
-                    <!-- Removido o minlength nativo para que o checklist controle a validação -->
-                    <input id="passwordField" class="login-field" type="password" placeholder="Crie uma senha forte" required>
-                </div>
-                <div class="input-group">
-                    <label for="confirmPasswordField">Confirmar Senha</label>
-                    <input id="confirmPasswordField" class="login-field" type="password" placeholder="Repita a senha" required>
-                </div>
-
-                <!-- Checklist Dinâmico de Segurança -->
-                <div class="password-checklist">
-                    <ul id="passwordRequirements">
-                        <li id="req-length" class="invalid"><i class="fa-solid fa-xmark"></i> Mínimo de 8 caracteres</li>
-                        <li id="req-uppercase" class="invalid"><i class="fa-solid fa-xmark"></i> Letra maiúscula</li>
-                        <li id="req-number" class="invalid"><i class="fa-solid fa-xmark"></i> Um número</li>
-                        <li id="req-special" class="invalid"><i class="fa-solid fa-xmark"></i> Caractere especial</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="input-group">
-                    <label for="birthDateField">Data de Nascimento <span class="field-hint"></span></label>
-                    <input id="birthDateField" class="login-field" type="date" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="cityField">Cidade</label>
-                    <input id="cityField" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required autocomplete="off">
-                </div>
-            </div>
-
-            <button class="btn-submit" type="submit">Cadastrar e Confirmar</button>
-        </form>
-
-        <div class="auth-links">
-            <p>Já tem uma conta? <a href="login.html">Fazer Login</a></p>
         </div>
     </div>
 </main>
+
+<!-- Modal de Reenvio de E-mail de Confirmação -->
+<div id="resendModal" class="modal-overlay" style="display: none;" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-labelledby="resendModalTitle">
+        <div class="modal-header">
+            <h3 id="resendModalTitle"><i class="fa-solid fa-envelope-circle-check"></i> Reenviar Confirmação</h3>
+            <button type="button" id="closeResendModalBtn" class="modal-close-btn" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Informe seu e-mail cadastrado para receber um novo link de ativação da sua conta.</p>
+            
+            <div id="resendModalError" class="error-message" style="display: none;"></div>
+            <div id="resendModalSuccess" class="error-message feedback-success" style="display: none;"></div>
+
+            <form id="resendModalForm" class="login-form">
+                <div class="input-group">
+                    <label for="resendEmailField">E-mail Cadastrado</label>
+                    <input id="resendEmailField" class="login-field" type="email" placeholder="seu@email.com" maxlength="150" required autocomplete="email">
+                </div>
+                <button id="btnSubmitResend" class="btn-submit" type="submit">Reenviar Confirmação</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Correção de E-mail Pendente -->
+<div id="editEmailModal" class="modal-overlay" style="display: none;" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-labelledby="editEmailModalTitle">
+        <div class="modal-header">
+            <h3 id="editEmailModalTitle"><i class="fa-solid fa-pencil"></i> Corrigir E-mail</h3>
+            <button type="button" id="closeEditEmailModalBtn" class="modal-close-btn" aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Identificou um erro de digitação? Informe o novo e-mail abaixo para atualizarmos seu cadastro e reenviarmos a confirmação:</p>
+            
+            <div id="editEmailModalError" class="error-message" style="display: none;"></div>
+            <div id="editEmailModalSuccess" class="error-message feedback-success" style="display: none;"></div>
+
+            <form id="editEmailForm" class="login-form">
+                <div class="input-group">
+                    <label for="newPendingEmailField">Novo E-mail</label>
+                    <input id="newPendingEmailField" class="login-field" type="email" placeholder="seu-email-correto@email.com" maxlength="150" required autocomplete="email">
+                </div>
+                <button id="btnSubmitEditEmail" class="btn-submit" type="submit">Salvar e reenviar confirmação</button>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script src="../js/global.js"></script>
 <script src="../js/api.js"></script>
