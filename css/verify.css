@@ -1,0 +1,36 @@
+/* Estilos específicos para a tela de verificação de conta */
+
+.feedback-success {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    border-color: #c8e6c9 !important;
+}
+
+body.dark-mode .feedback-success {
+    background-color: #1b3820 !important;
+    color: #81c784 !important;
+    border-color: #2e7d32 !important;
+}
+
+body.dark-mode .error-message:not(.feedback-success) {
+    background-color: #3b1816;
+    color: #fca5a5;
+    border-color: #7f1d1d;
+}
+
+.resend-box {
+    margin-top: 24px;
+    padding: 24px;
+    background-color: var(--footer-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: left;
+}
+
+.resend-instruction {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-align: center;
+    line-height: 1.5;
+}
