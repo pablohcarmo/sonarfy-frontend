@@ -38,9 +38,8 @@
         <h2>Bem-vindo de volta</h2>
         <p>Entre para continuar avaliando seus álbuns favoritos.</p>
 
-        <div id="errorMessage" class="error-message">
-            E-mail, usuário ou senha inválidos.
-        </div>
+        <div id="errorMessage" class="error-message" role="alert" aria-live="polite" style="display: none;"></div>
+        <div id="successMessage" class="error-message feedback-success" role="status" aria-live="polite" style="display: none;"></div>
 
         <form id="loginForm" class="login-form">
             <div class="input-group">
@@ -50,15 +49,28 @@
 
             <div class="input-group">
                 <label for="passwordField">Senha</label>
-                <input id="passwordField" class="login-field" type="password" placeholder="Digite sua senha" required autocomplete="current-password">
+                <div class="password-input-wrapper">
+                    <input id="passwordField" class="login-field" type="password" placeholder="Digite sua senha" required autocomplete="current-password">
+                    <button type="button" id="btnTogglePassword" class="btn-toggle-password" aria-label="Mostrar senha" title="Mostrar senha">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
             </div>
 
-            <button class="btn-submit" type="submit">Entrar no Sonarfy</button>
+            <div class="login-options">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="rememberMeCheckbox">
+                    <span>Lembrar meu usuário</span>
+                </label>
+                <a href="recuperar-senha.html" class="forgot-password-link">Esqueci minha senha</a>
+            </div>
+
+            <button id="btnSubmitLogin" class="btn-submit" type="submit">Entrar no Sonarfy</button>
         </form>
 
         <div class="auth-links">
             <p>Ainda não tem uma conta? <a href="cadastro.html">Criar Conta</a></p>
-            <p style="margin-top: 8px;"><a href="recuperar-senha.html">Esqueci minha senha</a></p>
+            <p style="margin-top: 10px;">Não recebeu o link de ativação? <a href="verify.html">Reenviar confirmação</a></p>
         </div>
     </div>
 </main>

@@ -65,6 +65,70 @@
     background-color: var(--bg-color);
 }
 
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper .login-field {
+    padding-right: 44px;
+}
+
+.btn-toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.btn-toggle-password:hover {
+    color: var(--accent-color);
+}
+
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-container input[type="checkbox"] {
+    accent-color: var(--accent-color);
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.forgot-password-link {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-password-link:hover {
+    text-decoration: underline;
+}
+
 .error-message {
     color: #e74c3c;
     background-color: #fdeeea;
@@ -74,6 +138,26 @@
     margin-bottom: 16px;
     display: none;
     border: 1px solid #fad4cd;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.feedback-success {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    border-color: #c8e6c9 !important;
+}
+
+body.dark-mode .feedback-success {
+    background-color: #1b3820 !important;
+    color: #81c784 !important;
+    border-color: #2e7d32 !important;
+}
+
+body.dark-mode .error-message:not(.feedback-success) {
+    background-color: #3b1816;
+    color: #fca5a5;
+    border-color: #7f1d1d;
 }
 
 .btn-submit {
@@ -85,12 +169,21 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
     background-color: #1b8cd1;
+}
+
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .auth-links {
