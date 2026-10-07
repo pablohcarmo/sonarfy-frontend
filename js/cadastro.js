@@ -13,6 +13,188 @@ document.addEventListener('DOMContentLoaded', () => {
     const cityField = document.getElementById('cityField');
     const allInputs = document.querySelectorAll('.login-field');
 
+    // Estado da sessão de cadastro pendente
+    let currentRegistrationToken = '';
+    let currentRegisteredHandle = '';
+    let currentRegisteredEmail = '';
+    let pendingCooldownInterval = null;
+    let pendingCooldownRemaining = 0;
+    const PENDING_COOLDOWN_SECONDS = 30;
+
+    // Elementos da Seção de Confirmação Pendente
+    const registerSection = document.getElementById('registerSection');
+    const pendingSection = document.getElementById('pendingSection');
+    const pendingEmailBadge = document.getElementById('pendingEmailBadge');
+    const pendingEmailDisplay = document.getElementById('pendingEmailDisplay');
+    const btnEditEmailIcon = document.getElementById('btnEditEmailIcon');
+    const btnResendPendingEmail = document.getElementById('btnResendPendingEmail');
+    const btnBackToForm = document.getElementById('btnBackToForm');
+    const pendingErrorAlert = document.getElementById('pendingErrorAlert');
+    const pendingSuccessAlert = document.getElementById('pendingSuccessAlert');
+
+    // Elementos do Modal de Edição de E-mail Pendente
+    const editEmailModal = document.getElementById('editEmailModal');
+    const closeEditEmailModalBtn = document.getElementById('closeEditEmailModalBtn');
+    const editEmailForm = document.getElementById('editEmailForm');
+    const newPendingEmailField = document.getElementById('newPendingEmailField');
+    const btnSubmitEditEmail = document.getElementById('btnSubmitEditEmail');
+    const editEmailModalError = document.getElementById('editEmailModalError');
+    const editEmailModalSuccess = document.getElementById('editEmailModalSuccess');
+
+    // Funções utilitárias da Tela de Confirmação Pendente
+    function showPendingError(msg) {
+        if (pendingErrorAlert) {
+            pendingErrorAlert.innerText = msg;
+            pendingErrorAlert.style.display = 'block';
+        }
+        if (pendingSuccessAlert) {
+            pendingSuccessAlert.style.display = 'none';
+        }
+    }
+
+    function showPendingSuccess(htmlOrText) {
+        if (pendingSuccessAlert) {
+            pendingSuccessAlert.innerHTML = htmlOrText;
+            pendingSuccessAlert.style.display = 'block';
+        }
+        if (pendingErrorAlert) {
+            pendingErrorAlert.style.display = 'none';
+        }
+    }
+
+    function clearPendingAlerts() {
+        if (pendingErrorAlert) {
+            pendingErrorAlert.style.display = 'none';
+            pendingErrorAlert.innerText = '';
+        }
+        if (pendingSuccessAlert) {
+            pendingSuccessAlert.style.display = 'none';
+            pendingSuccessAlert.innerHTML = '';
+        }
+    }
+
+    function updateEmailEditLockState() {
+        const isLocked = pendingCooldownRemaining > 0;
+
+        if (pendingEmailBadge) {
+            if (isLocked) {
+                pendingEmailBadge.classList.add('is-disabled');
+                pendingEmailBadge.setAttribute('aria-disabled', 'true');
+                pendingEmailBadge.title = `Aguarde (${pendingCooldownRemaining}s) para alterar o e-mail`;
+            } else {
+                pendingEmailBadge.classList.remove('is-disabled');
+                pendingEmailBadge.removeAttribute('aria-disabled');
+                pendingEmailBadge.title = "Clique para corrigir o e-mail";
+            }
+        }
+
+        if (btnEditEmailIcon) {
+            btnEditEmailIcon.disabled = isLocked;
+            if (isLocked) {
+                btnEditEmailIcon.title = `Aguarde (${pendingCooldownRemaining}s) para alterar o e-mail`;
+            } else {
+                btnEditEmailIcon.title = "Corrigir e-mail";
+            }
+        }
+
+        if (newPendingEmailField) {
+            newPendingEmailField.disabled = isLocked;
+        }
+
+        if (btnSubmitEditEmail && isLocked) {
+            btnSubmitEditEmail.disabled = isLocked;
+        }
+    }
+
+    function startPendingCooldown(button) {
+        clearInterval(pendingCooldownInterval);
+        pendingCooldownRemaining = PENDING_COOLDOWN_SECONDS;
+
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = `<i class="fa-solid fa-clock"></i> Reenviar em (${pendingCooldownRemaining}s)`;
+        }
+
+        updateEmailEditLockState();
+
+        pendingCooldownInterval = setInterval(() => {
+            pendingCooldownRemaining--;
+            if (pendingCooldownRemaining > 0) {
+                if (button) {
+                    button.innerHTML = `<i class="fa-solid fa-clock"></i> Reenviar em (${pendingCooldownRemaining}s)`;
+                }
+                updateEmailEditLockState();
+            } else {
+                clearInterval(pendingCooldownInterval);
+                pendingCooldownRemaining = 0;
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Reenviar e-mail';
+                }
+                updateEmailEditLockState();
+            }
+        }, 1000);
+    }
+
+    function showEditEmailError(msg) {
+        if (editEmailModalError) {
+            editEmailModalError.innerText = msg;
+            editEmailModalError.style.display = 'block';
+        }
+        if (editEmailModalSuccess) {
+            editEmailModalSuccess.style.display = 'none';
+        }
+    }
+
+    function showEditEmailSuccess(htmlOrText) {
+        if (editEmailModalSuccess) {
+            editEmailModalSuccess.innerHTML = htmlOrText;
+            editEmailModalSuccess.style.display = 'block';
+        }
+        if (editEmailModalError) {
+            editEmailModalError.style.display = 'none';
+        }
+    }
+
+    function clearEditEmailAlerts() {
+        if (editEmailModalError) {
+            editEmailModalError.style.display = 'none';
+            editEmailModalError.innerText = '';
+        }
+        if (editEmailModalSuccess) {
+            editEmailModalSuccess.style.display = 'none';
+            editEmailModalSuccess.innerHTML = '';
+        }
+    }
+
+    function openEditEmailModal() {
+        if (!editEmailModal) return;
+        if (pendingCooldownRemaining > 0) {
+            showPendingError(`Aguarde mais ${pendingCooldownRemaining}s para alterar o e-mail.`);
+            return;
+        }
+        clearEditEmailAlerts();
+        if (newPendingEmailField) {
+            newPendingEmailField.value = currentRegisteredEmail || '';
+            newPendingEmailField.disabled = false;
+        }
+        if (btnSubmitEditEmail) {
+            btnSubmitEditEmail.disabled = false;
+        }
+        editEmailModal.style.display = 'flex';
+        editEmailModal.setAttribute('aria-hidden', 'false');
+        if (newPendingEmailField) {
+            setTimeout(() => newPendingEmailField.focus(), 50);
+        }
+    }
+
+    function closeEditEmailModal() {
+        if (!editEmailModal) return;
+        editEmailModal.style.display = 'none';
+        editEmailModal.setAttribute('aria-hidden', 'true');
+        clearEditEmailAlerts();
+    }
+
     // Variável de memória para o banco de dados
     let selectedCountry = '';
     let geocodeTimeout;
@@ -323,14 +505,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    currentRegistrationToken = data.registrationToken || '';
+                    currentRegisteredHandle = handleVal.replace(/^@/, '');
+                    currentRegisteredEmail = data.email || emailVal;
+
                     registerForm.reset();
                     [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(el => updateChecklistItem(el, false));
                     isPasswordValid = false;
                     selectedCountry = ''; // Reseta o país após sucesso
                     hideError();
 
-                    successMessage.innerText = "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail.";
-                    successMessage.style.display = 'block';
+                    if (registerSection && pendingSection) {
+                        registerSection.style.display = 'none';
+                        pendingSection.style.display = 'block';
+                        if (pendingEmailDisplay) {
+                            pendingEmailDisplay.innerText = currentRegisteredEmail;
+                        }
+                        clearPendingAlerts();
+                        startPendingCooldown(btnResendPendingEmail);
+                    }
                 } else {
                     const data = await response.json().catch(() => ({}));
                     let msg = "Erro ao realizar o cadastro. E-mail ou nome de usuário já está em uso.";
@@ -428,6 +622,422 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('click', (e) => {
             if (e.target !== cityField) suggestionList.innerHTML = '';
+        });
+    }
+
+    // ==========================================
+    // MODAL DE REENVIO DE E-MAIL DE CONFIRMAÇÃO
+    // ==========================================
+    const resendModal = document.getElementById('resendModal');
+    const openResendModalLink = document.getElementById('openResendModalLink');
+    const closeResendModalBtn = document.getElementById('closeResendModalBtn');
+    const resendModalForm = document.getElementById('resendModalForm');
+    const resendEmailField = document.getElementById('resendEmailField');
+    const btnSubmitResend = document.getElementById('btnSubmitResend');
+    const resendModalError = document.getElementById('resendModalError');
+    const resendModalSuccess = document.getElementById('resendModalSuccess');
+
+    let resendCooldownInterval = null;
+
+    function showResendModalError(msg) {
+        if (resendModalError) {
+            resendModalError.innerText = msg;
+            resendModalError.style.display = 'block';
+        }
+        if (resendModalSuccess) {
+            resendModalSuccess.style.display = 'none';
+        }
+    }
+
+    function showResendModalSuccess(htmlOrText) {
+        if (resendModalSuccess) {
+            resendModalSuccess.innerHTML = htmlOrText;
+            resendModalSuccess.style.display = 'block';
+        }
+        if (resendModalError) {
+            resendModalError.style.display = 'none';
+        }
+    }
+
+    function clearResendModalMessages() {
+        if (resendModalError) {
+            resendModalError.style.display = 'none';
+            resendModalError.innerText = '';
+        }
+        if (resendModalSuccess) {
+            resendModalSuccess.style.display = 'none';
+            resendModalSuccess.innerHTML = '';
+        }
+    }
+
+    function openResendModal(prefillEmail = '') {
+        if (!resendModal) return;
+        clearResendModalMessages();
+        if (resendEmailField) {
+            const emailToSet = prefillEmail || (emailField ? emailField.value.trim() : '');
+            if (emailToSet) {
+                resendEmailField.value = emailToSet;
+            }
+        }
+        resendModal.style.display = 'flex';
+        resendModal.setAttribute('aria-hidden', 'false');
+        if (resendEmailField) {
+            setTimeout(() => resendEmailField.focus(), 50);
+        }
+    }
+
+    function closeResendModal() {
+        if (!resendModal) return;
+        resendModal.style.display = 'none';
+        resendModal.setAttribute('aria-hidden', 'true');
+        clearResendModalMessages();
+    }
+
+    if (openResendModalLink) {
+        openResendModalLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openResendModal();
+        });
+    }
+
+    if (closeResendModalBtn) {
+        closeResendModalBtn.addEventListener('click', () => {
+            closeResendModal();
+        });
+    }
+
+    if (resendModal) {
+        resendModal.addEventListener('click', (e) => {
+            if (e.target === resendModal) {
+                closeResendModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && resendModal && resendModal.style.display === 'flex') {
+            closeResendModal();
+        }
+    });
+
+    function startResendCooldown(button) {
+        if (!button) return;
+        let seconds = 60;
+        button.disabled = true;
+        const originalText = 'Reenviar Confirmação';
+        button.innerHTML = `<i class="fa-solid fa-clock"></i> Aguarde (${seconds}s)`;
+
+        clearInterval(resendCooldownInterval);
+        resendCooldownInterval = setInterval(() => {
+            seconds--;
+            if (seconds > 0) {
+                button.innerHTML = `<i class="fa-solid fa-clock"></i> Aguarde (${seconds}s)`;
+            } else {
+                clearInterval(resendCooldownInterval);
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }, 1000);
+    }
+
+    if (resendModalForm) {
+        resendModalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearResendModalMessages();
+
+            const email = resendEmailField ? resendEmailField.value.trim() : '';
+            if (!email) {
+                showResendModalError("O e-mail é obrigatório.");
+                return;
+            }
+            if (!EMAIL_REGEX.test(email)) {
+                showResendModalError("Por favor, insira um e-mail válido.");
+                return;
+            }
+
+            const originalBtnHtml = btnSubmitResend.innerHTML;
+            btnSubmitResend.disabled = true;
+            btnSubmitResend.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/resend-activation-email?email=${encodeURIComponent(email)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                let responseText = '';
+                try {
+                    const text = await response.text();
+                    try {
+                        const json = JSON.parse(text);
+                        responseText = json.message || json.error || text;
+                    } catch {
+                        responseText = text;
+                    }
+                } catch {
+                    responseText = '';
+                }
+
+                if (response.ok) {
+                    if (responseText.toLowerCase().includes('already verified')) {
+                        showResendModalSuccess('Esta conta já está ativada! <a href="login.html" style="font-weight:600; text-decoration:underline; color:#2e7d32;">Clique aqui para fazer login</a>.');
+                        btnSubmitResend.disabled = false;
+                        btnSubmitResend.innerHTML = originalBtnHtml;
+                    } else if (responseText.toLowerCase().includes('invalid e-mail')) {
+                        showResendModalError("E-mail inválido informado para reenvio.");
+                        btnSubmitResend.disabled = false;
+                        btnSubmitResend.innerHTML = originalBtnHtml;
+                    } else {
+                        showResendModalSuccess('E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada e a pasta de spam.');
+                        startResendCooldown(btnSubmitResend);
+                    }
+                } else {
+                    btnSubmitResend.disabled = false;
+                    btnSubmitResend.innerHTML = originalBtnHtml;
+
+                    if (response.status === 404 || responseText.toLowerCase().includes('not found')) {
+                        showResendModalError("Não encontramos nenhuma conta cadastrada com esse e-mail.");
+                    } else {
+                        showResendModalError("Não foi possível reenviar a confirmação no momento. Tente novamente mais tarde.");
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao reenviar e-mail:", err);
+                btnSubmitResend.disabled = false;
+                btnSubmitResend.innerHTML = originalBtnHtml;
+                showResendModalError("Erro de conexão com o servidor. Tente novamente mais tarde.");
+            }
+        });
+    }
+
+    // ==========================================
+    // EVENTOS DA TELA DE CONFIRMAÇÃO PENDENTE E EDIÇÃO DE E-MAIL
+    // ==========================================
+    if (btnResendPendingEmail) {
+        btnResendPendingEmail.addEventListener('click', async () => {
+            if (!currentRegisteredEmail) return;
+            clearPendingAlerts();
+
+            const originalBtnHtml = btnResendPendingEmail.innerHTML;
+            btnResendPendingEmail.disabled = true;
+            btnResendPendingEmail.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Reenviando...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/resend-activation-email?email=${encodeURIComponent(currentRegisteredEmail)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                let responseText = '';
+                try {
+                    const text = await response.text();
+                    try {
+                        const json = JSON.parse(text);
+                        responseText = json.message || json.error || text;
+                    } catch {
+                        responseText = text;
+                    }
+                } catch {
+                    responseText = '';
+                }
+
+                if (response.ok) {
+                    if (responseText.toLowerCase().includes('already verified')) {
+                        showPendingSuccess('Esta conta já foi ativada! <a href="login.html" style="font-weight:600; text-decoration:underline; color:#2e7d32;">Clique aqui para fazer login</a>.');
+                        btnResendPendingEmail.disabled = false;
+                        btnResendPendingEmail.innerHTML = originalBtnHtml;
+                    } else {
+                        showPendingSuccess(`Novo link de confirmação reenviado para <strong>${currentRegisteredEmail}</strong>! Verifique sua caixa de entrada.`);
+                        startPendingCooldown(btnResendPendingEmail);
+                    }
+                } else {
+                    btnResendPendingEmail.disabled = false;
+                    btnResendPendingEmail.innerHTML = originalBtnHtml;
+
+                    if (response.status === 404 || responseText.toLowerCase().includes('not found')) {
+                        showPendingError("Não encontramos nenhuma conta cadastrada com esse e-mail.");
+                    } else {
+                        showPendingError("Não foi possível reenviar o link no momento. Tente novamente mais tarde.");
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao reenviar confirmação pendente:", err);
+                btnResendPendingEmail.disabled = false;
+                btnResendPendingEmail.innerHTML = originalBtnHtml;
+                showPendingError("Erro de conexão com o servidor. Tente novamente mais tarde.");
+            }
+        });
+    }
+
+    if (pendingEmailBadge) {
+        pendingEmailBadge.addEventListener('click', (e) => {
+            if (pendingCooldownRemaining > 0) {
+                e.preventDefault();
+                showPendingError(`Aguarde mais ${pendingCooldownRemaining}s para alterar o e-mail.`);
+                return;
+            }
+            openEditEmailModal();
+        });
+        pendingEmailBadge.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (pendingCooldownRemaining > 0) {
+                    showPendingError(`Aguarde mais ${pendingCooldownRemaining}s para alterar o e-mail.`);
+                    return;
+                }
+                openEditEmailModal();
+            }
+        });
+    }
+
+    if (btnEditEmailIcon) {
+        btnEditEmailIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (pendingCooldownRemaining > 0) {
+                e.preventDefault();
+                showPendingError(`Aguarde mais ${pendingCooldownRemaining}s para alterar o e-mail.`);
+                return;
+            }
+            openEditEmailModal();
+        });
+    }
+
+    if (closeEditEmailModalBtn) {
+        closeEditEmailModalBtn.addEventListener('click', () => {
+            closeEditEmailModal();
+        });
+    }
+
+    if (editEmailModal) {
+        editEmailModal.addEventListener('click', (e) => {
+            if (e.target === editEmailModal) {
+                closeEditEmailModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && editEmailModal && editEmailModal.style.display === 'flex') {
+            closeEditEmailModal();
+        }
+    });
+
+    if (editEmailForm) {
+        editEmailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearEditEmailAlerts();
+
+            if (pendingCooldownRemaining > 0) {
+                showEditEmailError(`Aguarde mais ${pendingCooldownRemaining}s para alterar o e-mail.`);
+                return;
+            }
+
+            const newEmail = newPendingEmailField ? newPendingEmailField.value.trim() : '';
+            if (!newEmail) {
+                showEditEmailError("O novo e-mail é obrigatório.");
+                return;
+            }
+            if (!EMAIL_REGEX.test(newEmail)) {
+                showEditEmailError("Por favor, insira um e-mail válido.");
+                return;
+            }
+            if (newEmail.toLowerCase() === currentRegisteredEmail.toLowerCase()) {
+                showEditEmailError("O novo e-mail informado é idêntico ao e-mail atual.");
+                return;
+            }
+            if (!currentRegisteredHandle) {
+                showEditEmailError("Não foi possível identificar o usuário para atualização. Por favor, realize o cadastro novamente.");
+                return;
+            }
+
+            const originalBtnHtml = btnSubmitEditEmail.innerHTML;
+            btnSubmitEditEmail.disabled = true;
+            btnSubmitEditEmail.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Atualizando e reenviando...';
+
+            try {
+                const requestHeaders = {
+                    'Content-Type': 'application/json'
+                };
+                if (currentRegistrationToken) {
+                    requestHeaders['Authorization'] = `Bearer ${currentRegistrationToken}`;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/auth/update-pending-email`, {
+                    method: 'PATCH',
+                    headers: requestHeaders,
+                    body: JSON.stringify({
+                        handle: currentRegisteredHandle,
+                        newEmail: newEmail
+                    })
+                });
+
+                let responseText = '';
+                try {
+                    responseText = await response.text();
+                } catch {
+                    responseText = '';
+                }
+
+                let responseData = null;
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch {
+                    responseData = null;
+                }
+
+                if (response.ok) {
+                    currentRegisteredEmail = newEmail;
+                    if (pendingEmailDisplay) {
+                        pendingEmailDisplay.innerText = currentRegisteredEmail;
+                    }
+
+                    btnSubmitEditEmail.disabled = false;
+                    btnSubmitEditEmail.innerHTML = originalBtnHtml;
+                    closeEditEmailModal();
+
+                    showPendingSuccess(`E-mail atualizado! Um novo link foi enviado para <strong>${currentRegisteredEmail}</strong>.`);
+                    startPendingCooldown(btnResendPendingEmail);
+                } else {
+                    btnSubmitEditEmail.disabled = false;
+                    btnSubmitEditEmail.innerHTML = originalBtnHtml;
+
+                    let msg = "Não foi possível atualizar o e-mail no momento.";
+                    const rawMsg = (responseData && (responseData.message || responseData.error)) || responseText || '';
+                    const lowerMsg = rawMsg.toLowerCase();
+
+                    if (response.status === 429 || lowerMsg.includes('wait') || lowerMsg.includes('seconds before')) {
+                        msg = "Aguarde o tempo de espera de 30 segundos antes de solicitar um novo e-mail.";
+                    } else if (response.status === 401 || lowerMsg.includes('unauthorized') || lowerMsg.includes('invalid authorization')) {
+                        msg = "Sua sessão temporária de cadastro expirou. Por favor, realize o cadastro novamente.";
+                    } else if (response.status === 409 || lowerMsg.includes('already in use') || lowerMsg.includes('em uso')) {
+                        msg = "Este e-mail já está em uso por outro usuário.";
+                    } else if (response.status === 400 && (lowerMsg.includes('already verified') || lowerMsg.includes('já foi ativada') || lowerMsg.includes('já verificada'))) {
+                        msg = "Esta conta já foi ativada. Você já pode fazer login.";
+                    } else if (response.status === 400 && lowerMsg.includes('email')) {
+                        msg = "Por favor, insira um e-mail válido.";
+                    } else if (response.status === 404 || lowerMsg.includes('not found') || lowerMsg.includes('não encontrado')) {
+                        msg = "Usuário não encontrado. Por favor, realize o cadastro novamente.";
+                    } else if (rawMsg && !lowerMsg.includes('timestamp') && !lowerMsg.includes('trace') && rawMsg.length < 150) {
+                        msg = rawMsg;
+                    }
+                    showEditEmailError(msg);
+                }
+            } catch (err) {
+                console.error("Erro ao atualizar e-mail pendente:", err);
+                btnSubmitEditEmail.disabled = false;
+                btnSubmitEditEmail.innerHTML = originalBtnHtml;
+                showEditEmailError("Erro de conexão com o servidor. Tente novamente mais tarde.");
+            }
+        });
+    }
+
+    if (btnBackToForm) {
+        btnBackToForm.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (pendingSection && registerSection) {
+                pendingSection.style.display = 'none';
+                registerSection.style.display = 'block';
+            }
         });
     }
 });

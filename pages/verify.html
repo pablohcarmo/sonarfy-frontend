@@ -12,6 +12,7 @@
 
     <link rel="stylesheet" href="../css/index.css">
     <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/verify.css">
     <link rel="stylesheet" href="../css/footer.css">
 </head>
 <body>
@@ -49,12 +50,30 @@
             <a href="login.html" class="btn-submit" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 24px;">Fazer Login</a>
         </div>
 
-        <!-- Estado 3: Erro (Oculto por padrão) -->
+        <!-- Estado 3: Erro / Expirado (Oculto por padrão) -->
         <div id="error-state" style="display: none;">
-            <i class="fa-solid fa-circle-xmark" style="font-size: 3rem; color: #e74c3c; margin-bottom: 20px;"></i>
-            <h2>Erro na Verificação</h2>
-            <p id="error-message-text">O link é inválido ou já expirou.</p>
-            <a href="login.html" class="btn-submit" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 24px; background-color: #65676b;">Voltar para o Login</a>
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #e74c3c; margin-bottom: 20px;"></i>
+            <h2 id="error-title">Link Expirado ou Inválido</h2>
+            <p id="error-message-text">O link de confirmação é inválido ou já expirou.</p>
+
+            <div class="resend-box" id="verifyResendBox">
+                <p class="resend-instruction">Não se preocupe! Informe seu e-mail cadastrado abaixo para enviarmos um novo link de confirmação:</p>
+                
+                <div id="verifyResendError" class="error-message" style="display: none;"></div>
+                <div id="verifyResendSuccess" class="error-message feedback-success" style="display: none;"></div>
+
+                <form id="verifyResendForm" class="login-form">
+                    <div class="input-group">
+                        <label for="verifyEmailInput">E-mail Cadastrado</label>
+                        <input id="verifyEmailInput" class="login-field" type="email" placeholder="seu@email.com" maxlength="150" required autocomplete="email">
+                    </div>
+                    <button type="submit" id="btnVerifyResend" class="btn-submit" style="width: 100%;">Reenviar Link de Confirmação</button>
+                </form>
+            </div>
+
+            <div class="auth-links" style="margin-top: 24px;">
+                <p><a href="login.html">Voltar para o Login</a> &bull; <a href="cadastro.html">Criar nova conta</a></p>
+            </div>
         </div>
 
     </div>
