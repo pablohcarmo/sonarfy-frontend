@@ -8,14 +8,15 @@ Foram recuperados o contexto de design e as capturas dos quatro frames:
 
 | Frame | Nó | Referência |
 | --- | --- | --- |
-| Home – Tema Claro / Desktop | 70:559 | 1440 × 904 |
-| Home – Tema Claro / Mobile | 70:602 | 390 × 896 |
-| Home – Tema Escuro / Desktop | 70:645 | 1440 × 904 |
-| Home – Tema Escuro / Mobile | 70:688 | 390 × 896 |
+| Home – Tema Claro / Desktop | 70:559 | 1440 × 1778 |
+| Home – Tema Claro / Mobile | 70:602 | 390 × 2414 |
+| Home – Tema Escuro / Desktop | 70:645 | 1440 × 1778 |
+| Home – Tema Escuro / Mobile | 70:688 | 390 × 2414 |
 
-Os frames contêm Header / Global (187:548), hero e Footer / Global
-(175:216). Não contêm cards, showcases, H3 ou menu expansível. O cabeçalho
-desktop contém marca e controle de tema; o mobile também contém “Início”.
+Os frames atualizados contêm Header / Global (187:548), hero, a seção
+“Sobre o Sonarfy / Como Funciona” e Footer / Global (175:216).
+O cabeçalho contém marca, controle de tema e “Entrar” nos dois tamanhos,
+com destino à página local pages/login.html. Não há menu expansível.
 
 O MCP não retornou variáveis vinculadas para a seção (70:771). Os tokens CSS
 foram extraídos dos valores efetivos dos frames: branco/#1a1a1a para fundo;
@@ -30,7 +31,9 @@ Espaçamento principal: 8/16/24/32/48px; botões com raio 8px e mínimo
 preservam as dimensões de conteúdo do Auto Layout. Os mínimos verticais
 de hero e footer seguem os frames, mas podem crescer com o conteúdo.
 
-Cinco SVGs oficiais foram baixados para assets/icons/home-*.svg.
+Os SVGs oficiais foram baixados para assets/icons/home-*.svg, incluindo
+três ícones de recursos (24 × 24px) e o chevron claro/escuro (16 × 16px).
+Os antigos SVGs de retorno foram preservados, mas não são usados na Home.
 A marca “S” e as barras sonoras são elementos de texto/layout no Figma,
 reproduzidos como tais. Não foram usadas capturas como assets de página.
 
@@ -41,10 +44,34 @@ restauração antes da pintura e tratamento de armazenamento indisponível.
 Não carrega global.js nem footer.css para evitar injeção duplicada e
 estilos globais conflitantes. Outras páginas não foram alteradas.
 
-“Comece Agora” abre o cadastro existente. “Saiba Mais” abre um diálogo
-nativo acessível com explicação e acesso ao cadastro: o Figma não especifica
-esse destino e a implementação anterior apontava para #about inexistente.
-Esse diálogo é uma decisão funcional adicional, sem referência visual no Figma.
+“Comece Agora” e “Começar Agora” abrem o cadastro existente. “Saiba Mais”
+usa href="#saiba-mais" e scroll-behavior: smooth, com suporte nativo
+ao histórico, acesso direto pelo fragmento e funcionamento sem JavaScript.
+A preferência prefers-reduced-motion desativa o movimento suave.
+O diálogo anterior e js/index.js foram removidos.
+
+## Nova seção explicativa
+
+Contextos e screenshots dos quatro frames foram recuperados novamente via
+Figma MCP. Nós das seções: 224:253, 224:293, 224:333, 224:373.
+
+- Introdução com chamada “CONHEÇA A PLATAFORMA” em 12px/16px/600,
+  H2 em 36px/40px/700 desktop e 28px/32px/700 mobile, descrição em
+  16px/24px/400. Largura máxima 800px, gap interno 16px.
+- Seção com padding 96px vertical e 64px horizontal no desktop;
+  64px vertical e 24px horizontal no mobile. Gap 48px/32px.
+- Grid com largura máxima 1200px, três colunas iguais no desktop,
+  uma coluna abaixo de 1024px, gap 24px.
+- Cards com padding 24px, gap 24px, raio 8px e borda 1px
+  #8c8d90 no claro/#65676b no escuro. Mínimo 280px desktop/256px
+  mobile, crescimento natural pelo conteúdo. Títulos H3 18px/24px/600,
+  descrição 16px/24px/400 e gap de 8px.
+- Ícones oficiais em contêineres de 48px com borda e raio 8px.
+- Convite final com padding 32px, gap 24px, borda 1px, raio 8px,
+  título 24px/32px/700 e CTA de 48px, largura total no mobile.
+- Tokens anteriores preservados; adicionados --feature-border,
+  --space-8 (64px) e --space-12 (96px).
+- Rodapé preservado e último elemento do body, no fluxo normal.
 
 Os destinos institucionais anteriores foram preservados. As páginas
 termos.html, privacidade.html, regulamentos.html e apoio.html não existem
@@ -60,10 +87,13 @@ neste repositório e continuam pendentes; o Figma não define destinos.
   Windows browser”.
 - Microsoft Edge: não validado; o Computer Use encerrou o acesso nessa
   sessão e o conector alternativo não listou navegadores disponíveis.
+- Na nova tentativa de inspeção o Computer Use retornou novamente o
+  bloqueio de política de URLs do navegador Windows. Não houve interação
+  posterior com navegadores nesta atualização.
 - Nenhuma comparação visual de renderização local foi concluída.
   Permanecem pendentes desktop 1440px e mobile 390px nos temas claro e
   escuro, nos dois navegadores, incluindo overflow, geometria dos SVGs,
-  carregamento da fonte, teclado, foco e abertura/fechamento do diálogo.
+  carregamento da fonte, teclado, foco e navegação pela âncora.
 - A fonte Inter segue o padrão do login existente, via Google Fonts;
   a fidelidade tipográfica depende do carregamento dessa fonte.
 
