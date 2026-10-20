@@ -57,21 +57,20 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
 
         const passwordField = document.getElementById('passwordField');
         const btnTogglePassword = document.getElementById('btnTogglePassword');
-        const icon = btnTogglePassword.querySelector('i');
 
         expect(passwordField.type).toBe('password');
-        expect(icon.className).toContain('fa-eye');
+        expect(btnTogglePassword.getAttribute('aria-pressed')).toBe('false');
 
         // Primeiro clique: revela a senha
         btnTogglePassword.click();
         expect(passwordField.type).toBe('text');
-        expect(icon.className).toContain('fa-eye-slash');
+        expect(btnTogglePassword.getAttribute('aria-pressed')).toBe('true');
         expect(btnTogglePassword.getAttribute('aria-label')).toBe('Ocultar senha');
 
         // Segundo clique: oculta a senha
         btnTogglePassword.click();
         expect(passwordField.type).toBe('password');
-        expect(icon.className).toContain('fa-eye');
+        expect(btnTogglePassword.getAttribute('aria-pressed')).toBe('false');
         expect(btnTogglePassword.getAttribute('aria-label')).toBe('Mostrar senha');
     });
 
@@ -267,5 +266,41 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
 
         loginField.dispatchEvent(new Event('input'));
         expect(errorMessage.style.display).toBe('none');
+    });
+
+    it('deve bloquear campos vazios, indicar o erro e focar o primeiro campo inválido', () => {
+        loadScript();
+        document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        const login = document.getElementById('loginField');
+        expect(fetch).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(login);
+        expect(login.getAttribute('aria-invalid')).toBe('true');
+        expect(document.getElementById('passwordField').getAttribute('aria-invalid')).toBe('true');
+        expect(document.getElementById('loginField-error').hidden).toBe(false);
+        login.value = '@usuario';
+        login.dispatchEvent(new Event('input'));
+        expect(login.hasAttribute('aria-invalid')).toBe(false);
+        expect(document.getElementById('loginField-error').hidden).toBe(true);
+    });
+
+    it('deve exibir mensagens do servidor como texto, sem interpretar HTML', async () => {
+        loadScript();
+        document.getElementById('loginField').value = '@usuario';
+        document.getElementById('passwordField').value = 'senha';
+        backendHandler = () => ({ ok: false, status: 500, text: async () => JSON.stringify({ message: '<img src=x onerror=alert(1)>' }) });
+        document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        await vi.waitFor(() => {
+            expect(document.getElementById('errorMessage').textContent).toBe('<img src=x onerror=alert(1)>');
+            expect(document.getElementById('errorMessage').querySelector('img')).toBeNull();
+        });
+    });
+
+    it.each(['javascript:alert(1)', '//example.com', 'https://example.com'])('deve rejeitar redirecionamento externo ou executável: %s', async (redirect) => {
+        window.happyDOM.setURL(`http://localhost:3000/pages/login.html?redirect=${encodeURIComponent(redirect)}`);
+        loadScript();
+        document.getElementById('loginField').value = 'usuario';
+        document.getElementById('passwordField').value = 'senha';
+        document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/pages/feed.html'));
     });
 });

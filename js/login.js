@@ -11,9 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const REMEMBER_KEY = 'sonarfy_remember_login';
 
     // 1. Mensagens visuais com acessibilidade
-    const showError = (htmlOrText) => {
+    const showError = (htmlOrText, trustedMarkup = false) => {
         if (!errorMessage) return;
-        errorMessage.innerHTML = htmlOrText;
+        if (trustedMarkup) errorMessage.innerHTML = htmlOrText;
+        else errorMessage.textContent = htmlOrText;
         errorMessage.style.display = 'block';
         if (successMessage) successMessage.style.display = 'none';
     };
@@ -40,11 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('verified') === 'true') {
-            showSuccess('<i class="fa-solid fa-circle-check"></i> E-mail confirmado com sucesso! Faça login para acessar o Sonarfy.');
+            showSuccess('E-mail confirmado com sucesso! Faça login para acessar o Sonarfy.');
         } else if (urlParams.get('registered') === 'true') {
-            showSuccess('<i class="fa-solid fa-envelope-circle-check"></i> Cadastro realizado com sucesso! Enviamos um link de confirmação para seu e-mail.');
+            showSuccess('Cadastro realizado com sucesso! Enviamos um link de confirmação para seu e-mail.');
         } else if (urlParams.get('reset') === 'true') {
-            showSuccess('<i class="fa-solid fa-circle-check"></i> Senha redefinida com sucesso! Faça login com a sua nova senha.');
+            showSuccess('Senha redefinida com sucesso! Faça login com a sua nova senha.');
         }
     } catch {}
 
@@ -54,9 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedLogin && loginField) {
             loginField.value = savedLogin;
             if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
-            if (passwordField) passwordField.focus();
-        } else if (loginField) {
-            loginField.focus();
         }
     } catch {}
 
@@ -66,14 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPassword = passwordField.type === 'password';
             passwordField.type = isPassword ? 'text' : 'password';
 
-            const icon = btnTogglePassword.querySelector('i');
-            if (icon) {
-                icon.className = isPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
-            }
-
             const label = isPassword ? 'Ocultar senha' : 'Mostrar senha';
             btnTogglePassword.setAttribute('aria-label', label);
             btnTogglePassword.setAttribute('title', label);
+            btnTogglePassword.setAttribute('aria-pressed', String(isPassword));
         });
     }
 
@@ -81,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     [loginField, passwordField].forEach(field => {
         if (field) {
             field.addEventListener('input', () => {
+                field.removeAttribute('aria-invalid');
+                const feedback = document.getElementById(`${field.id}-error`);
+                if (feedback) feedback.hidden = true;
                 if (errorMessage && errorMessage.style.display !== 'none') {
                     errorMessage.style.display = 'none';
                 }
@@ -92,12 +89,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
+            if (btnSubmitLogin?.disabled) return;
 
             const login = (loginField?.value || '').trim();
             const password = passwordField?.value || '';
 
             if (!login || !password) {
+                [[loginField, login, 'Informe seu e-mail ou nome de usuário.'],
+                    [passwordField, password, 'Informe sua senha.']].forEach(([field, value, message]) => {
+                    field.setAttribute('aria-invalid', String(!value));
+                    const feedback = document.getElementById(`${field.id}-error`);
+                    if (feedback) {
+                        feedback.textContent = value ? '' : message;
+                        feedback.hidden = Boolean(value);
+                    }
+                });
                 showError('Por favor, informe seu e-mail/usuário e senha.');
+                (!login ? loginField : passwordField).focus();
                 return;
             }
 
@@ -111,11 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch {}
 
             // Estado de carregamento
-            const originalBtnHtml = btnSubmitLogin ? btnSubmitLogin.innerHTML : 'Entrar no Sonarfy';
+            const originalBtnHtml = btnSubmitLogin ? btnSubmitLogin.innerHTML : 'Entrar';
             if (btnSubmitLogin) {
                 btnSubmitLogin.disabled = true;
-                btnSubmitLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Entrando...';
+                btnSubmitLogin.textContent = 'Entrando...';
             }
+            loginForm.setAttribute('aria-busy', 'true');
             clearMessages();
 
             try {
@@ -146,8 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const urlParams = new URLSearchParams(window.location.search);
                         const redirectParam = urlParams.get('redirect');
-                        if (redirectParam && !redirectParam.startsWith('http://') && !redirectParam.startsWith('https://') && !redirectParam.startsWith('//')) {
-                            targetUrl = redirectParam;
+                        if (redirectParam) {
+                            const destination = new URL(redirectParam, window.location.href);
+                            if (destination.origin === window.location.origin && ['http:', 'https:'].includes(destination.protocol)) {
+                                targetUrl = destination.href;
+                            }
                         }
                     } catch {}
 
@@ -169,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         rawLower.includes('inativa') ||
                         rawLower.includes('ativação pendente')
                     ) {
-                        showError('Sua conta ainda não foi ativada. <a href="verify.html" style="font-weight:600; text-decoration:underline;">Clique aqui para reenviar o link de confirmação</a>.');
+                        showError('Sua conta ainda não foi ativada. <a href="verify.html">Clique aqui para reenviar o link de confirmação</a>.', true);
                     }
                     // Caso 2: Excesso de requisições / Rate Limit
                     else if (response.status === 429) {
@@ -192,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnSubmitLogin.innerHTML = originalBtnHtml;
                 }
                 showError('Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.');
+            } finally {
+                loginForm.removeAttribute('aria-busy');
             }
         });
     }
