@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/index.css">
     <script src="js/login-theme.js"></script>
-    <script src="js/index.js" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -25,10 +24,7 @@
                 <img class="theme-light-only" src="assets/icons/home-theme-moon.svg" alt="">
                 <img class="theme-dark-only" src="assets/icons/home-theme-sun.svg" alt="">
             </button>
-            <a class="mobile-home button button-ghost" href="index.html" aria-current="page">
-                <img class="theme-light-only" src="assets/icons/home-back-light.svg" alt="">
-                <img class="theme-dark-only" src="assets/icons/home-back-dark.svg" alt="">Início
-            </a>
+            <a class="header-login button button-secondary" href="pages/login.html">Entrar</a>
         </nav>
     </header>
     <main id="conteudo" tabindex="-1">
@@ -41,9 +37,43 @@
                 </div>
                 <div class="hero-actions">
                     <a href="pages/cadastro.html" class="button button-primary">Comece Agora<img src="assets/icons/home-arrow-right.svg" alt=""></a>
-                    <button type="button" id="about-open" class="button button-secondary" aria-haspopup="dialog" aria-controls="about-dialog">Saiba Mais</button>
+                    <a href="#saiba-mais" class="button button-secondary">Saiba Mais<img class="theme-light-only" src="assets/icons/home-chevron-light.svg" alt=""><img class="theme-dark-only" src="assets/icons/home-chevron-dark.svg" alt=""></a>
                 </div>
             </div>
+        </section>
+        <section id="saiba-mais" class="about" aria-labelledby="about-title" tabindex="-1">
+            <div class="about-introduction">
+                <p class="about-eyebrow">CONHEÇA A PLATAFORMA</p>
+                <h2 id="about-title">Sua jornada musical em um só lugar</h2>
+                <p>O Sonarfy conecta sua paixão por música a uma comunidade que compartilha avaliações de álbuns e resenhas escritas pelos próprios usuários.</p>
+            </div>
+            <div class="feature-grid">
+                <article class="feature-card" aria-labelledby="spotify-title">
+                    <span class="feature-icon" aria-hidden="true"><img src="assets/icons/home-feature-music.svg" alt=""></span>
+                    <div class="feature-content">
+                        <h3 id="spotify-title">Conecte seu Spotify</h3>
+                        <p>Importe automaticamente seus artistas favoritos, histórico de reprodução e playlists sem esforço.</p>
+                    </div>
+                </article>
+                <article class="feature-card" aria-labelledby="reviews-title">
+                    <span class="feature-icon" aria-hidden="true"><img src="assets/icons/home-feature-star.svg" alt=""></span>
+                    <div class="feature-content">
+                        <h3 id="reviews-title">Avalie Álbuns</h3>
+                        <p>Transforme o que você ouve em opinião. Dê suas estrelas, conte o que cada álbum despertou em você e compartilhe sua experiência com quem também vive a música.</p>
+                    </div>
+                </article>
+                <article class="feature-card" aria-labelledby="community-title">
+                    <span class="feature-icon" aria-hidden="true"><img src="assets/icons/home-feature-community.svg" alt=""></span>
+                    <div class="feature-content">
+                        <h3 id="community-title">Compartilhe e Descubra</h3>
+                        <p>Seu próximo álbum favorito pode estar na experiência de outro ouvinte. Explore as avaliações e resenhas da comunidade e descubra novas formas de ouvir.</p>
+                    </div>
+                </article>
+            </div>
+            <aside class="journey-banner" aria-labelledby="journey-title">
+                <h2 id="journey-title">Pronto para transformar a forma como você ouve música?</h2>
+                <a class="button button-primary" href="pages/cadastro.html">Começar Agora<img src="assets/icons/home-arrow-right.svg" alt=""></a>
+            </aside>
         </section>
     </main>
     <footer class="site-footer">
@@ -55,13 +85,5 @@
         </nav>
         <p>© 2026 Sonarfy</p>
     </footer>
-    <dialog id="about-dialog" aria-labelledby="about-title" aria-describedby="about-description">
-        <h2 id="about-title">A música conecta a gente</h2>
-        <p id="about-description">No Sonarfy, você pode avaliar álbuns, descobrir novos artistas sincronizando com seu Spotify e conhecer pessoas que compartilham o seu gosto musical.</p>
-        <div class="dialog-actions">
-            <a class="button button-primary" href="pages/cadastro.html">Criar conta</a>
-            <form method="dialog"><button class="button button-secondary" type="submit">Fechar</button></form>
-        </div>
-    </dialog>
 </body>
 </html>
