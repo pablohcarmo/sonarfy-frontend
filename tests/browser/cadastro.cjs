@@ -16,7 +16,10 @@ const fs = require('node:fs');
     {name:'Guarulhos',adminName1:'São Paulo',countryName:'Brasil'},
     {name:'Campinas',adminName1:'São Paulo',countryName:'Brasil'}
    ]}}));
-   await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:4173'}/pages/cadastro.html`);
+   const baseURL=process.env.BASE_URL || 'http://127.0.0.1:4173';
+   await page.goto(`${baseURL}/pages/cadastro.html?source=legacy#registerForm`);
+   await page.waitForURL('**/pages/register.html?source=legacy#registerForm');
+   await page.goto(`${baseURL}/pages/register.html`);
    await page.evaluate(()=>document.fonts.ready);
    if((await page.locator('label[for="handleField"]').textContent()).trim()!=='Usuário')throw Error('Username label differs from Figma');
    const home=page.locator('.site-header a.back-link');

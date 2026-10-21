@@ -1,7 +1,7 @@
 // This preview imports the current card markup, without loading registration/API scripts.
 (async () => {
     try {
-        const sourceURL = new URL('../pages/cadastro.html', location.href);
+        const sourceURL = new URL('../pages/register.html', location.href);
         const response = await fetch(sourceURL);
         if (!response.ok) throw new Error('Não foi possível carregar o cadastro.');
         const source = new DOMParser().parseFromString(await response.text(), 'text/html');

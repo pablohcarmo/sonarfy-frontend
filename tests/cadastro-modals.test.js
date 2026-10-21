@@ -10,7 +10,7 @@ describe('Modais de Reenvio e Retificação de E-mail (cadastro.js)', () => {
     beforeEach(() => {
         vi.useFakeTimers();
 
-        const htmlPath = path.resolve(__dirname, '../pages/cadastro.html');
+        const htmlPath = path.resolve(__dirname, '../pages/register.html');
         htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
         const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);

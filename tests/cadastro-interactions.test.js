@@ -11,7 +11,7 @@ describe('Interações acessíveis do cadastro', () => {
             if (type === 'DOMContentLoaded') readyListeners.push(listener);
             addListener(type, listener, options);
         });
-        const html = fs.readFileSync('pages/cadastro.html', 'utf8');
+        const html = fs.readFileSync('pages/register.html', 'utf8');
         document.body.innerHTML = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)[1].replace(/<script[\s\S]*?<\/script>/gi, '');
         window.sonarfyCitySearch = vi.fn(async () => [
             { name: 'São Paulo', adminName1: 'São Paulo', countryName: 'Brasil' },

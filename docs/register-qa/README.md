@@ -1,5 +1,7 @@
 # Verificação do cadastro
 
+A página atual é `pages/register.html`. Os links internos, a prévia e os testes foram migrados para esse endereço. `pages/cadastro.html` mantém um redirecionamento de compatibilidade; a matriz de navegador verifica o redirecionamento com query string e fragmento nos dois temas e tamanhos. As rotas futuras por idioma estão documentadas no README principal e ainda não foram implementadas.
+
 Implementação baseada na página **Register Page** do arquivo [Sonarfy](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=66-3), inspecionada pelo Figma MCP em 20/10/2026.
 
 | Tema | Desktop 1440px | Mobile 390px | Desktop / Cidade ativa | Mobile / Cidade ativa |

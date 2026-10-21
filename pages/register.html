@@ -1,0 +1,397 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light dark">
+        <title>
+            Cadastro – Sonarfy
+        </title>
+        <link rel="icon" type="image/png" href="../assets/images/simbolo-sonarfy.png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="../css/login.css">
+        <script src="../js/login-theme.js">
+        </script>
+        <script src="../js/api.js" defer>
+        </script>
+        <link rel="stylesheet" href="../css/cadastro.css">
+        <link rel="stylesheet" href="../css/confirmation.css">
+        <script src="../js/env.js" defer>
+        </script>
+        <script src="../js/cadastro.js" defer>
+        </script>
+    </head>
+    <body class="register-page">
+        <header class="site-header">
+            <a href="../index.html" class="brand" aria-label="Sonarfy — página inicial">
+                <span class="brand-symbol" aria-hidden="true">
+                    S
+                </span>
+                <span>
+                    Sonarfy
+                </span>
+            </a>
+            <nav class="header-actions" aria-label="Navegação principal">
+                <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
+                    <img class="theme-light-only" src="../assets/icons/register/6c233.svg" alt="">
+                    <img class="theme-dark-only" src="../assets/icons/register/68183.svg" alt="">
+                </button>
+                <a class="back-link" href="../index.html">
+                    <span class="back-icon" aria-hidden="true">
+                        <img class="theme-light-only" src="../assets/icons/register/e3f13.svg" alt="">
+                        <img class="theme-dark-only" src="../assets/icons/register/a5f2d.svg" alt="">
+                    </span>
+                    Início
+                </a>
+            </nav>
+        </header>
+        <main class="register-layout">
+            <aside class="register-showcase" aria-label="Conheça o Sonarfy">
+                <a class="brand" href="../index.html">
+                    <span class="brand-symbol" aria-hidden="true">
+                        S
+                    </span>
+                    Sonarfy
+                </a>
+                <div class="showcase-content">
+                    <div class="sound-wave" aria-hidden="true">
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                    </div>
+                    <h2>
+                        Boa música.
+                        <br>
+                        Melhor companhia.
+                    </h2>
+                    <p>
+                        Uma rede social para quem ama música. Descubra o que te move e quem sente o mesmo.
+                    </p>
+                    <ul class="benefits">
+                        <li>
+                            <span class="benefit-icon">
+                                <img src="../assets/icons/register/0f436.svg" alt="" class="theme-light-only">
+                                <img src="../assets/icons/register/f673c.svg" alt="" class="theme-dark-only">
+                            </span>
+                            <div>
+                                <h3>
+                                    Avalie os álbuns que você ama
+                                </h3>
+                                <p>
+                                    Expresse seu gosto musical.
+                                </p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="benefit-icon">
+                                <img src="../assets/icons/register/4ed2a.svg" alt="" class="theme-light-only">
+                                <img src="../assets/icons/register/d7578.svg" alt="" class="theme-dark-only">
+                            </span>
+                            <div>
+                                <h3>
+                                    Descubra seu próximo favorito
+                                </h3>
+                                <p>
+                                    Sincronize o Spotify e descubra artistas.
+                                </p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="benefit-icon">
+                                <img src="../assets/icons/register/c943f.svg" alt="" class="theme-light-only">
+                                <img src="../assets/icons/register/f8dd4.svg" alt="" class="theme-dark-only">
+                            </span>
+                            <div>
+                                <h3>
+                                    Encontre pessoas na sua sintonia
+                                </h3>
+                                <p>
+                                    Conecte-se pela música que vocês curtem.
+                                </p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+            <section class="register-content" aria-label="Cadastro">
+                <a class="back-link desktop-home" href="../index.html">
+                    <span class="back-icon" aria-hidden="true">
+                        <img class="theme-light-only" src="../assets/icons/register/abd75.svg" alt="">
+                        <img class="theme-dark-only" src="../assets/icons/register/41f36.svg" alt="">
+                    </span>
+                    Voltar ao início
+                </a>
+                <div class="register-card">
+                    <section id="registerSection" aria-labelledby="register-title">
+                        <div class="form-introduction">
+                            <h1 id="register-title">
+                                Crie sua conta
+                            </h1>
+                            <p>
+                                Sua música. Sua galera. Tudo começa aqui.
+                            </p>
+                        </div>
+                        <p id="errorMessage" class="feedback feedback-error error-message" role="alert">
+                        </p>
+                        <p id="successMessage" class="feedback feedback-success error-message" role="status">
+                        </p>
+                        <form id="registerForm" class="login-form" method="post" aria-labelledby="register-title">
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="nameField">
+                                        Nome
+                                    </label>
+                                    <input id="nameField" name="nameField" class="login-field" type="text" placeholder="Seu nome" required maxlength="50" autocomplete="given-name">
+                                </div>
+                                <div class="input-group">
+                                    <label for="surnameField">
+                                        Sobrenome
+                                    </label>
+                                    <input id="surnameField" name="surnameField" class="login-field" type="text" placeholder="Seu sobrenome" required maxlength="50" autocomplete="family-name">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="handleField">
+                                    Usuário
+                                </label>
+                                <div class="handle-wrapper">
+                                    <span class="handle-prefix" aria-hidden="true">
+                                        @
+                                    </span>
+                                    <input id="handleField" name="handle" class="login-field" type="text" placeholder="usuario" maxlength="15" required autocomplete="username" autocapitalize="none" spellcheck="false">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="emailField">
+                                    E-mail
+                                </label>
+                                <input id="emailField" name="emailField" class="login-field" type="email" placeholder="seu@email.com" required maxlength="150" autocomplete="email">
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="passwordField">
+                                        Senha
+                                    </label>
+                                    <div class="password-input-wrapper">
+                                        <input id="passwordField" name="passwordField" class="login-field" type="password" placeholder="Crie uma senha forte" required autocomplete="new-password" aria-describedby="passwordRequirements">
+                                        <button type="button" class="icon-button btn-toggle-password" aria-label="Mostrar senha" aria-controls="passwordField" aria-pressed="false">
+                                            <img src="../assets/icons/register/1e2c9.svg" alt="" class="theme-light-only">
+                                            <img src="../assets/icons/register/14645.svg" alt="" class="theme-dark-only">
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="confirmPasswordField">
+                                        Confirmar Senha
+                                    </label>
+                                    <div class="password-input-wrapper">
+                                        <input id="confirmPasswordField" name="confirmPasswordField" class="login-field" type="password" placeholder="Repita a senha" required autocomplete="new-password" aria-describedby="confirmPasswordError">
+                                        <button type="button" class="icon-button btn-toggle-password" aria-label="Mostrar senha" aria-controls="confirmPasswordField" aria-pressed="false">
+                                            <img src="../assets/icons/register/af46c.svg" alt="" class="">
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p id="confirmPasswordError" class="field-error" role="status" hidden>
+                            </p>
+                            <section class="password-checklist" aria-labelledby="requirements-title">
+                                <h2 id="requirements-title">
+                                    Requisitos da senha
+                                </h2>
+                                <ul id="passwordRequirements">
+                                    <li id="req-length" class="invalid">
+                                        <span class="requirement-indicator" aria-hidden="true"></span>
+                                        <span class="requirement-text">
+                                            Mínimo de 8 caracteres
+                                        </span>
+                                    </li>
+                                    <li id="req-uppercase" class="invalid">
+                                        <span class="requirement-indicator" aria-hidden="true"></span>
+                                        <span class="requirement-text">
+                                            Letra maiúscula
+                                        </span>
+                                    </li>
+                                    <li id="req-number" class="invalid">
+                                        <span class="requirement-indicator" aria-hidden="true"></span>
+                                        <span class="requirement-text">
+                                            Um número
+                                        </span>
+                                    </li>
+                                    <li id="req-special" class="invalid">
+                                        <span class="requirement-indicator" aria-hidden="true"></span>
+                                        <span class="requirement-text">
+                                            Caractere especial
+                                        </span>
+                                    </li>
+                                </ul>
+                            </section>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="birthDateField">
+                                        Data de Nascimento
+                                    </label>
+                                    <div class="date-wrapper">
+                                        <span class="date-placeholder" aria-hidden="true">
+                                            dd / mm / aaaa
+                                        </span>
+                                        <input id="birthDateField" name="birthDate" class="login-field" type="date" placeholder="dd / mm / aaaa" autocomplete="bday" required>
+                                        <button type="button" id="openBirthDatePicker" class="icon-button" aria-label="Abrir calendário" aria-controls="birthDateField">
+                                            <picture>
+                                                <source media="(max-width: 600px)" srcset="../assets/icons/register/ca095.svg">
+                                                <img src="../assets/icons/register/8997e.svg" alt="" class="">
+                                            </picture>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="input-group autocomplete-wrapper">
+                                    <label for="cityField">
+                                        Cidade
+                                    </label>
+                                    <div class="city-input-wrapper">
+                                        <input id="cityField" name="city" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="citySuggestions">
+                                        <picture class="city-icon-default">
+                                            <source media="(max-width: 600px)" srcset="../assets/icons/register/2b940.svg">
+                                            <img src="../assets/icons/register/3f61c.svg" alt="" class="">
+                                        </picture>
+                                        <picture class="city-icon-active">
+                                            <source media="(max-width: 600px)" srcset="../assets/icons/register/e5044.svg">
+                                            <img src="../assets/icons/register/c86b7.svg" alt="">
+                                        </picture>
+                                    </div>
+                                    <ul id="citySuggestions" class="autocomplete-list" role="listbox" aria-label="Sugestões de cidades" hidden>
+                                    </ul>
+                                    <span id="cityStatus" class="visually-hidden" role="status">
+                                    </span>
+                                </div>
+                            </div>
+                            <label class="legal-agreement checkbox-container" for="termsAccepted">
+                                <input id="termsAccepted" name="terms" type="checkbox" required>
+                                <span>
+                                    Concordo com os
+                                    <a href="termos.html">
+                                        Termos de Serviço
+                                    </a>
+                                    e a
+                                    <a href="privacidade.html">
+                                        Política de Privacidade
+                                    </a>
+                                    .
+                                </span>
+                            </label>
+                            <button class="btn-submit" type="submit">
+                                Cadastrar e Confirmar
+                            </button>
+                            <p class="auth-links">
+                                Já tem uma conta?
+                                <a href="login.html">
+                                    Fazer Login
+                                </a>
+                            </p>
+                        </form>
+                    </section>
+
+                </div>
+            </section>
+            <section id="pendingSection" class="confirmation-section" style="display: none;" aria-labelledby="pendingTitle">
+                <div class="confirmation-card">
+                    <header class="confirmation-introduction">
+                        <span class="confirmation-badge" aria-hidden="true"><img src="../assets/icons/confirmation/d2916.svg" alt=""></span>
+                        <div class="confirmation-heading">
+                            <h1 id="pendingTitle" tabindex="-1">Quase lá!</h1>
+                            <p>Enviamos um link de confirmação para:</p>
+                        </div>
+                    </header>
+                    <div class="confirmation-email">
+                        <button id="pendingEmailBadge" class="pending-address" type="button" title="Clique para corrigir o e-mail" aria-label="Corrigir e-mail">
+                            <span id="pendingEmailDisplay">usuario@exemplo.com</span>
+                        </button>
+                        <button type="button" id="btnEditEmailIcon" class="confirmation-edit" title="Corrigir e-mail" aria-label="Corrigir e-mail"><span aria-hidden="true">✎</span> Editar</button>
+                    </div>
+                    <p id="pendingErrorAlert" class="confirmation-feedback feedback-error" role="alert" style="display: none;"></p>
+                    <p id="pendingSuccessAlert" class="confirmation-feedback feedback-success" role="status" style="display: none;"></p>
+                    <p class="confirmation-instructions">Por favor, clique no link de ativação enviado para sua caixa de entrada (ou pasta de spam) para liberar o acesso à sua conta.</p>
+                    <button type="button" id="btnResendPendingEmail" class="btn-submit confirmation-resend"><span class="confirmation-resend-symbol" aria-hidden="true">↻</span><span>Reenviar e-mail</span></button>
+                    <p id="pendingCooldownStatus" class="visually-hidden" role="status"></p>
+                    <nav class="confirmation-actions" aria-label="Acesso e retorno">
+                        <a href="login.html">Ir para o Login</a>
+                        <button type="button" id="btnBackToForm" class="confirmation-back"><span>Voltar ao formulário</span><span class="confirmation-mobile-chevron" aria-hidden="true"><img class="theme-light-only" src="../assets/icons/confirmation/2430a.svg" alt=""><img class="theme-dark-only" src="../assets/icons/confirmation/8f42c.svg" alt=""></span></button>
+                    </nav>
+                </div>
+            </section>
+        </main>
+        <footer class="site-footer">
+            <nav class="footer-links" aria-label="Links institucionais">
+                <a href="termos.html">
+                    Termos de Uso
+                </a>
+                <span aria-hidden="true">
+                    •
+                </span>
+                <a href="privacidade.html">
+                    Privacidade
+                </a>
+                <span aria-hidden="true">
+                    •
+                </span>
+                <a href="regulamentos.html">
+                    Diretrizes
+                </a>
+                <span aria-hidden="true">
+                    •
+                </span>
+                <a href="apoio.html">
+                    Apoie o Sonarfy
+                </a>
+            </nav>
+            <p>
+                © 2026 Sonarfy
+            </p>
+        </footer>
+        <!-- Modal de Correção de E-mail Pendente -->
+        <div id="editEmailModal" class="modal-overlay" style="display: none;" aria-hidden="true">
+            <div class="modal-box" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="editEmailModalTitle">
+                <div class="modal-header">
+                    <h3 id="editEmailModalTitle">
+                        <span aria-hidden="true">
+                            ✎
+                        </span>
+                        Corrigir E-mail
+                    </h3>
+                    <button type="button" id="closeEditEmailModalBtn" class="modal-close-btn" aria-label="Fechar">
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">
+                        Identificou um erro de digitação? Informe o novo e-mail abaixo para atualizarmos seu cadastro e reenviarmos a confirmação:
+                    </p>
+                    <div id="editEmailModalError" class="error-message" role="alert" style="display: none;">
+                    </div>
+                    <div id="editEmailModalSuccess" class="error-message feedback-success" role="status" style="display: none;">
+                    </div>
+                    <form id="editEmailForm" class="login-form">
+                        <div class="input-group">
+                            <label for="newPendingEmailField">
+                                Novo E-mail
+                            </label>
+                            <input id="newPendingEmailField" class="login-field" type="email" placeholder="seu-email-correto@email.com" maxlength="150" required autocomplete="email">
+                        </div>
+                        <button id="btnSubmitEditEmail" class="btn-submit" type="submit">
+                            Salvar e reenviar confirmação
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

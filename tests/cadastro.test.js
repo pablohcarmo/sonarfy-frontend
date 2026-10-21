@@ -11,7 +11,7 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (cadastro.js)', (
         vi.useFakeTimers();
 
         // Carrega o HTML da página de cadastro
-        const htmlPath = path.resolve(__dirname, '../pages/cadastro.html');
+        const htmlPath = path.resolve(__dirname, '../pages/register.html');
         htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
         // Extrai o conteúdo do body e remove scripts para evitar erros do HappyDOM

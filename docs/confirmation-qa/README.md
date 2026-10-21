@@ -9,7 +9,7 @@ A seção **Email Confirmation**, dentro da Register Page do [Sonarfy no Figma](
 
 ## Implementação
 
-Essa seção representa a confirmação **pendente após cadastrar**, “Quase lá!”, não o resultado da ativação pelo link. O estado existente em `pages/cadastro.html` foi refatorado e retirado do card do formulário: agora ocupa o main inteiro, com Header / Global e Footer / Global. `pages/verify.html`, que consome o token do link, não foi alterado.
+Essa seção representa a confirmação **pendente após cadastrar**, “Quase lá!”, não o resultado da ativação pelo link. O estado existente em `pages/register.html` foi refatorado e retirado do card do formulário: agora ocupa o main inteiro, com Header / Global e Footer / Global. O layout e o processamento de token de `pages/verify.html` permanecem fora do escopo; seu link de cadastro foi atualizado para `register.html`.
 
 Não há OTP no Figma. O card contém badge de envelope, título/subtítulo, endereço editável, instruções, CTA “Reenviar e-mail”, link de login e retorno ao formulário. O badge e as duas setas mobile foram baixados para `assets/icons/confirmation/`. Ícones do header reutilizam os mesmos SVGs já presentes no cadastro. Nenhum URL temporário do Figma é usado em runtime.
 
@@ -48,6 +48,6 @@ Limitações: mobile por viewport, sem dispositivo físico. Endpoints do backend
 
 Sirva a raiz do projeto (`python -m http.server 4173 --bind 127.0.0.1`) e execute `node tests/browser/confirmation.cjs` com Playwright disponível. `PLAYWRIGHT_MODULE` aceita uma instalação externa do módulo; `BASE_URL` permite outro endereço local. O teste usa Edge instalado e Firefox do Playwright. Não há dependência de Playwright no frontend em produção.
 
-Para testar manualmente, abra `pages/cadastro.html` e conclua um cadastro em seu ambiente de desenvolvimento. A confirmação usa o e-mail retornado pela API; após 30 segundos, reenvio e edição são liberados.
+Para testar manualmente, abra `pages/register.html` e conclua um cadastro em seu ambiente de desenvolvimento. A confirmação usa o e-mail retornado pela API; após 30 segundos, reenvio e edição são liberados.
 
 Também é possível abrir `preview/confirmation.html` sem cadastro. A prévia importa o markup atual do card, header, footer e diálogo a partir do HTML do cadastro; não carrega os scripts de cadastro nem de API. Edição e reenvio são simulados e identificados como tal, sem envio de e-mails. O aviso pode ser ocultado para conferir o layout. A prévia foi testada em Edge e Firefox, 1440px/390px, claro/escuro, incluindo a ausência de chamadas à API (`node tests/browser/confirmation-preview.cjs`).

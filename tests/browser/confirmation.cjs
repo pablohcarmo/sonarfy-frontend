@@ -28,7 +28,7 @@ const assert = require('node:assert/strict');
                     return route.fulfill({ status: 200, body: 'E-mail atualizado.' });
                 });
                 await page.route('**/auth/resend-activation-email?*', route => route.fulfill({ status: resendFails ? 500 : 200, body: resendFails ? 'unavailable' : 'Enviado.' }));
-                await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:4173'}/pages/cadastro.html`);
+                await page.goto(`${process.env.BASE_URL || 'http://127.0.0.1:4173'}/pages/register.html`);
                 await page.evaluate(() => document.fonts.ready);
                 for (const [id, value] of Object.entries({ nameField: 'Pablo', surnameField: 'Carmo', handleField: 'pablo', emailField: 'usuario@exemplo.com', passwordField: 'Senha@123', confirmPasswordField: 'Senha@123', birthDateField: '2000-01-01', cityField: 'São Paulo' })) {
                     await page.locator(`#${id}`).fill(value);
