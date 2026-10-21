@@ -1,186 +1,166 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Referências aos blocos visuais da tela
-    const loadingState = document.getElementById('loading-state');
-    const successState = document.getElementById('success-state');
-    const errorState = document.getElementById('error-state');
+    const states = ['loading', 'success', 'error'];
+    const main = document.getElementById('main-content');
+    const form = document.getElementById('verifyResendForm');
+    const input = document.getElementById('verifyEmailInput');
+    const button = document.getElementById('btnVerifyResend');
+    const errorFeedback = document.getElementById('verifyResendError');
+    const successFeedback = document.getElementById('verifyResendSuccess');
     const errorTitle = document.getElementById('error-title');
-    const errorMessageText = document.getElementById('error-message-text');
+    const errorDescription = document.getElementById('error-message-text');
+    const resendLabel = 'Reenviar Link de Confirmação';
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token')?.trim();
+    let sending = false;
+    let cooldownUntil = 0;
+    let cooldownInterval;
 
-    // Referências da seção de reenvio
-    const verifyResendForm = document.getElementById('verifyResendForm');
-    const verifyEmailInput = document.getElementById('verifyEmailInput');
-    const btnVerifyResend = document.getElementById('btnVerifyResend');
-    const verifyResendError = document.getElementById('verifyResendError');
-    const verifyResendSuccess = document.getElementById('verifyResendSuccess');
+    input.value = (params.get('email') || '').trim().slice(0, input.maxLength);
 
-    const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    let verifyCooldownInterval = null;
-
-    // Extrai parâmetros da URL atual (ex: verify.html?token=123e4567...&email=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const emailParam = urlParams.get('email');
-
-    if (emailParam && verifyEmailInput) {
-        verifyEmailInput.value = emailParam.trim();
-    }
-
-    function showResendError(msg) {
-        if (verifyResendError) {
-            verifyResendError.innerText = msg;
-            verifyResendError.style.display = 'block';
-        }
-        if (verifyResendSuccess) {
-            verifyResendSuccess.style.display = 'none';
-        }
-    }
-
-    function showResendSuccess(htmlOrText) {
-        if (verifyResendSuccess) {
-            verifyResendSuccess.innerHTML = htmlOrText;
-            verifyResendSuccess.style.display = 'block';
-        }
-        if (verifyResendError) {
-            verifyResendError.style.display = 'none';
-        }
-    }
-
-    function clearResendMessages() {
-        if (verifyResendError) {
-            verifyResendError.style.display = 'none';
-            verifyResendError.innerText = '';
-        }
-        if (verifyResendSuccess) {
-            verifyResendSuccess.style.display = 'none';
-            verifyResendSuccess.innerHTML = '';
-        }
-    }
-
-    function startCooldown(button) {
-        if (!button) return;
-        let seconds = 60;
-        button.disabled = true;
-        const originalText = 'Reenviar Link de Confirmação';
-        button.innerHTML = `<i class="fa-solid fa-clock"></i> Aguarde (${seconds}s)`;
-
-        clearInterval(verifyCooldownInterval);
-        verifyCooldownInterval = setInterval(() => {
-            seconds--;
-            if (seconds > 0) {
-                button.innerHTML = `<i class="fa-solid fa-clock"></i> Aguarde (${seconds}s)`;
-            } else {
-                clearInterval(verifyCooldownInterval);
-                button.disabled = false;
-                button.innerHTML = originalText;
-            }
-        }, 1000);
-    }
-
-    // Formulário de Reenvio dentro da página de link expirado/erro
-    if (verifyResendForm) {
-        verifyResendForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearResendMessages();
-
-            const email = verifyEmailInput ? verifyEmailInput.value.trim() : '';
-            if (!email) {
-                showResendError("O e-mail é obrigatório.");
-                return;
-            }
-            if (!EMAIL_REGEX.test(email)) {
-                showResendError("Por favor, insira um e-mail válido.");
-                return;
-            }
-
-            const originalBtnHtml = btnVerifyResend.innerHTML;
-            btnVerifyResend.disabled = true;
-            btnVerifyResend.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Reenviando...';
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/resend-activation-email?email=${encodeURIComponent(email)}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                let responseText = '';
-                try {
-                    const text = await response.text();
-                    try {
-                        const json = JSON.parse(text);
-                        responseText = json.message || json.error || text;
-                    } catch {
-                        responseText = text;
-                    }
-                } catch {
-                    responseText = '';
-                }
-
-                if (response.ok) {
-                    if (responseText.toLowerCase().includes('already verified')) {
-                        showResendSuccess('Esta conta já foi ativada! <a href="login.html" style="font-weight:600; text-decoration:underline; color:#2e7d32;">Clique aqui para fazer login</a>.');
-                        btnVerifyResend.disabled = false;
-                        btnVerifyResend.innerHTML = originalBtnHtml;
-                    } else if (responseText.toLowerCase().includes('invalid e-mail')) {
-                        showResendError("E-mail inválido informado para reenvio.");
-                        btnVerifyResend.disabled = false;
-                        btnVerifyResend.innerHTML = originalBtnHtml;
-                    } else {
-                        showResendSuccess('Novo link de confirmação reenviado com sucesso! Verifique sua caixa de entrada e a pasta de spam.');
-                        startCooldown(btnVerifyResend);
-                    }
-                } else {
-                    btnVerifyResend.disabled = false;
-                    btnVerifyResend.innerHTML = originalBtnHtml;
-
-                    if (response.status === 404 || responseText.toLowerCase().includes('not found')) {
-                        showResendError("Não encontramos nenhuma conta cadastrada com esse e-mail.");
-                    } else {
-                        showResendError("Não foi possível reenviar a confirmação no momento. Tente novamente mais tarde.");
-                    }
-                }
-            } catch (err) {
-                console.error("Erro ao reenviar e-mail:", err);
-                btnVerifyResend.disabled = false;
-                btnVerifyResend.innerHTML = originalBtnHtml;
-                showResendError("Erro de conexão com o servidor. Tente novamente mais tarde.");
-            }
+    function showState(state, title, description) {
+        if (title) errorTitle.textContent = title;
+        if (description) errorDescription.textContent = description;
+        states.forEach(name => {
+            document.getElementById(name + '-state').hidden = name !== state;
         });
+        document.body.dataset.state = state;
+        main.setAttribute('aria-busy', String(state === 'loading'));
     }
 
-    // Se o usuário acessar a página direto sem um token na URL
+    function clearFeedback() {
+        [errorFeedback, successFeedback].forEach(element => {
+            element.hidden = true;
+            element.replaceChildren();
+        });
+        input.removeAttribute('aria-invalid');
+    }
+
+    function showFeedback(element, message) {
+        clearFeedback();
+        element.textContent = message;
+        element.hidden = false;
+    }
+
+    function invalidEmail(message) {
+        showFeedback(errorFeedback, message);
+        input.setAttribute('aria-invalid', 'true');
+        input.focus();
+    }
+
+    function updateCooldown() {
+        const seconds = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+        button.disabled = sending || seconds > 0;
+        button.textContent = seconds ? 'Aguarde (' + seconds + 's)' : resendLabel;
+        if (!seconds) clearInterval(cooldownInterval);
+    }
+
+    // Use an elapsed-time deadline so background-tab throttling does not extend it.
+    function startCooldown() {
+        cooldownUntil = Date.now() + 60000;
+        clearInterval(cooldownInterval);
+        updateCooldown();
+        cooldownInterval = setInterval(updateCooldown, 1000);
+    }
+
+    async function request(url, method) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal
+            });
+            const text = await response.text();
+            let message = text;
+            try {
+                const data = JSON.parse(text);
+                message = typeof data.message === 'string' ? data.message
+                    : typeof data.error === 'string' ? data.error : '';
+            } catch { /* Some API endpoints return plain text or an empty body. */ }
+            return { response, message: message.toLowerCase() };
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    input.addEventListener('input', () => {
+        input.removeAttribute('aria-invalid');
+        errorFeedback.hidden = true;
+    });
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (sending || Date.now() < cooldownUntil) return;
+        clearFeedback();
+        const email = input.value.trim();
+        input.value = email;
+        if (!email) {
+            invalidEmail('O e-mail é obrigatório.');
+            return;
+        }
+        if (email.length > 150 || !emailPattern.test(email) || !input.validity.valid) {
+            invalidEmail('Por favor, insira um e-mail válido.');
+            return;
+        }
+
+        sending = true;
+        button.disabled = true;
+        button.textContent = 'Reenviando...';
+        form.setAttribute('aria-busy', 'true');
+        try {
+            const { response, message } = await request(
+                API_BASE_URL + '/auth/resend-activation-email?email=' + encodeURIComponent(email), 'POST'
+            );
+            if (response.ok && message.includes('already verified')) {
+                showFeedback(successFeedback, 'Esta conta já foi ativada! ');
+                const login = document.createElement('a');
+                login.href = 'login.html';
+                login.textContent = 'Clique aqui para fazer login.';
+                successFeedback.append(login);
+            } else if (message.includes('invalid e-mail') || message.includes('invalid email')) {
+                invalidEmail('E-mail inválido informado para reenvio.');
+            } else if (response.ok) {
+                showFeedback(successFeedback, 'Novo link de confirmação reenviado com sucesso! Verifique sua caixa de entrada e a pasta de spam.');
+                startCooldown();
+            } else if (response.status === 404 || message.includes('not found')) {
+                showFeedback(errorFeedback, 'Não encontramos nenhuma conta cadastrada com esse e-mail.');
+            } else if (response.status === 429) {
+                showFeedback(errorFeedback, 'Muitas tentativas de reenvio. Aguarde um minuto antes de tentar novamente.');
+                startCooldown();
+            } else {
+                showFeedback(errorFeedback, 'Não foi possível reenviar a confirmação no momento. Tente novamente mais tarde.');
+            }
+        } catch {
+            showFeedback(errorFeedback, 'Erro de conexão com o servidor. Tente novamente mais tarde.');
+        } finally {
+            sending = false;
+            form.setAttribute('aria-busy', 'false');
+            updateCooldown();
+        }
+    });
+
     if (!token) {
-        loadingState.style.display = 'none';
-        errorState.style.display = 'block';
-        if (errorTitle) errorTitle.innerText = "Link de Confirmação Ausente";
-        errorMessageText.innerText = "Nenhum token de verificação foi encontrado na URL. Caso precise, solicite um novo link abaixo.";
+        showState('error', 'Link de Confirmação Ausente',
+            'Nenhum token de verificação foi encontrado na URL. Caso precise, solicite um novo link abaixo.');
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/verify?token=${token}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        loadingState.style.display = 'none';
-
+        const { response } = await request(
+            API_BASE_URL + '/auth/verify?token=' + encodeURIComponent(token), 'GET'
+        );
         if (response.ok) {
-            // HTTP 200: Token válido e usuário ativado com sucesso!
-            successState.style.display = 'block';
+            showState('success');
+        } else if (response.status >= 500 || response.status === 429) {
+            showState('error', 'Verificação indisponível',
+                'Não foi possível verificar sua conta no momento. Tente novamente mais tarde ou solicite um novo link abaixo.');
         } else {
-            // HTTP 400 ou 404: Token expirado ou inválido
-            const data = await response.json().catch(() => ({}));
-            errorState.style.display = 'block';
-            if (errorTitle) errorTitle.innerText = "Link Expirado ou Inválido";
-            errorMessageText.innerText = data.message || "O link de confirmação é inválido ou já expirou. Você pode solicitar um novo envio abaixo:";
+            showState('error');
         }
-    } catch (error) {
-        console.error("Erro de conexão com a API:", error);
-        loadingState.style.display = 'none';
-        errorState.style.display = 'block';
-        if (errorTitle) errorTitle.innerText = "Erro na Verificação";
-        errorMessageText.innerText = "Erro ao conectar com o servidor. Tente novamente mais tarde ou solicite um novo link abaixo:";
+    } catch {
+        showState('error', 'Erro na Verificação',
+            'Erro ao conectar com o servidor. Tente novamente mais tarde ou solicite um novo link abaixo:');
     }
-});
+}, { once: true });

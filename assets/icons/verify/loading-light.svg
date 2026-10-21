@@ -1,0 +1,6 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Status Indicator">
+<rect width="64" height="64" rx="16" fill="#F7F8FA"/>
+<path id="Verifica&#195;&#167;&#195;&#163;o em andamento" d="M32.0178 16C35.8415 16.0043 39.5371 17.3777 42.4355 19.8716C45.334 22.3654 47.2434 25.8148 47.8182 29.595C48.3929 33.3752 47.5949 37.2362 45.5687 40.4788C43.5424 43.7214 40.422 46.1312 36.7724 47.2717C33.1228 48.4122 29.1855 48.208 25.6735 46.6961C22.1614 45.1842 19.307 42.4646 17.627 39.0297C15.9471 35.5949 15.5528 31.6721 16.5154 27.9716C17.4781 24.2712 19.7342 21.0378 22.875 18.8571" stroke-width="3" stroke-linecap="round" stroke="#27A9F5"/>
+</g>
+</svg>

@@ -2,141 +2,164 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-describe('Fluxo de Verificação de E-mail e Reenvio (verify.js)', () => {
-    let htmlContent;
-    let jsContent;
+describe('Verify: confirmação e reenvio', () => {
+    const html = fs.readFileSync(path.resolve(__dirname, '../pages/verify.html'), 'utf8');
+    const script = fs.readFileSync(path.resolve(__dirname, '../js/verify.js'), 'utf8');
+    const element = id => document.getElementById(id);
+    const response = (status = 200, text = '') => ({
+        ok: status >= 200 && status < 300, status, text: async () => text
+    });
+    const start = (query = '') => {
+        delete window.location;
+        window.location = new URL('http://localhost/pages/verify.html' + query);
+        eval(script);
+        document.dispatchEvent(new Event('DOMContentLoaded'));
+    };
+    const submit = (email = 'pessoa@example.com') => {
+        element('verifyEmailInput').value = email;
+        element('verifyResendForm').dispatchEvent(new Event('submit', { cancelable: true }));
+    };
+    const settled = async () => {
+        await vi.waitFor(() => expect(element('verifyResendForm').getAttribute('aria-busy')).toBe('false'));
+    };
 
     beforeEach(() => {
         vi.useFakeTimers();
-
-        const htmlPath = path.resolve(__dirname, '../pages/verify.html');
-        htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-
-        const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        const cleanBody = (bodyMatch ? bodyMatch[1] : htmlContent).replace(/<script[\s\S]*?<\/script>/gi, '');
-        document.body.innerHTML = cleanBody;
-
+        document.body.innerHTML = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)[1]
+            .replace(/<script[\s\S]*?<\/script>/gi, '');
         globalThis.API_BASE_URL = 'http://localhost:8081/api';
         globalThis.fetch = vi.fn();
-
-        const jsPath = path.resolve(__dirname, '../js/verify.js');
-        jsContent = fs.readFileSync(jsPath, 'utf-8');
     });
-
     afterEach(() => {
+        vi.clearAllTimers();
         vi.restoreAllMocks();
         vi.useRealTimers();
     });
 
-    it('deve exibir tela de sucesso quando o token de ativação for válido', async () => {
-        delete window.location;
-        window.location = new URL('http://localhost:3000/pages/verify.html?token=token-valido');
-
-        globalThis.fetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: async () => 'E-mail verified successfully! You can now log in.'
-        });
-
-        eval(jsContent);
-        document.dispatchEvent(new Event('DOMContentLoaded'));
-
-        await vi.waitFor(() => {
-            expect(document.getElementById('loading-state').style.display).toBe('none');
-            expect(document.getElementById('success-state').style.display).toBe('block');
-            expect(document.getElementById('error-state').style.display).toBe('none');
-        });
-
-        expect(globalThis.fetch).toHaveBeenCalledWith(
-            'http://localhost:8081/api/auth/verify?token=token-valido',
+    it('confirma a conta e codifica tokens sem permitir parâmetros extras', async () => {
+        fetch.mockResolvedValue(response());
+        start('?token=a%26email%3Db%2B%23');
+        await vi.waitFor(() => expect(element('success-state').hidden).toBe(false));
+        expect(element('loading-state').hidden).toBe(true);
+        expect(element('error-state').hidden).toBe(true);
+        expect(element('main-content').getAttribute('aria-busy')).toBe('false');
+        expect(fetch).toHaveBeenCalledWith(
+            API_BASE_URL + '/auth/verify?token=a%26email%3Db%2B%23',
             expect.objectContaining({ method: 'GET' })
         );
     });
 
-    it('deve exibir tela de erro com caixa de reenvio quando token for expirado ou inválido', async () => {
-        delete window.location;
-        window.location = new URL('http://localhost:3000/pages/verify.html?token=token-expirado&email=pablo@sonarfy.com');
-
-        globalThis.fetch.mockResolvedValueOnce({
-            ok: false,
-            status: 400,
-            text: async () => 'Invalid or expired token. Please, request a new confirmation email.'
-        });
-
-        eval(jsContent);
-        document.dispatchEvent(new Event('DOMContentLoaded'));
-
-        await vi.waitFor(() => {
-            expect(document.getElementById('loading-state').style.display).toBe('none');
-            expect(document.getElementById('success-state').style.display).toBe('none');
-            expect(document.getElementById('error-state').style.display).toBe('block');
-        });
-
-        const verifyEmailInput = document.getElementById('verifyEmailInput');
-        expect(verifyEmailInput.value).toBe('pablo@sonarfy.com');
+    it('mostra link ausente sem chamar a API e preenche o e-mail', () => {
+        start('?email=pessoa%40example.com&token=%20');
+        expect(fetch).not.toHaveBeenCalled();
+        expect(element('error-state').hidden).toBe(false);
+        expect(element('error-title').textContent).toBe('Link de Confirmação Ausente');
+        expect(element('verifyEmailInput').value).toBe('pessoa@example.com');
     });
 
-    it('deve reenviar link de ativação com sucesso e iniciar cooldown regressivo', async () => {
-        delete window.location;
-        window.location = new URL('http://localhost:3000/pages/verify.html');
-
-        eval(jsContent);
-        document.dispatchEvent(new Event('DOMContentLoaded'));
-
-        globalThis.fetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: async () => 'Confirmation email resent successfully!'
-        });
-
-        const verifyEmailInput = document.getElementById('verifyEmailInput');
-        verifyEmailInput.value = 'novo@sonarfy.com';
-
-        const btnVerifyResend = document.getElementById('btnVerifyResend');
-        const verifyResendForm = document.getElementById('verifyResendForm');
-
-        verifyResendForm.dispatchEvent(new Event('submit', { cancelable: true }));
-
-        await vi.waitFor(() => {
-            expect(globalThis.fetch).toHaveBeenCalledWith(
-                'http://localhost:8081/api/auth/resend-activation-email?email=novo%40sonarfy.com',
-                expect.objectContaining({ method: 'POST' })
-            );
-        });
-
-        const successAlert = document.getElementById('verifyResendSuccess');
-        await vi.waitFor(() => {
-            expect(successAlert.style.display).toBe('block');
-        });
-        expect(successAlert.innerText).toContain('reenviado com sucesso');
-
-        // Botão entra em cooldown de espera
-        expect(btnVerifyResend.disabled).toBe(true);
-        expect(btnVerifyResend.innerHTML).toContain('Aguarde');
+    it('mostra link expirado em PT-BR sem inserir texto/HTML recebido da API', async () => {
+        fetch.mockResolvedValue(response(400, '{"message":"<img src=x onerror=alert(1)> Expired"}'));
+        start('?token=expirado');
+        await vi.waitFor(() => expect(element('error-state').hidden).toBe(false));
+        expect(element('error-title').textContent).toBe('Link Expirado ou Inválido');
+        expect(element('error-message-text').textContent).toContain('já expirou');
+        expect(element('error-message-text').querySelector('img')).toBeNull();
     });
 
-    it('deve informar quando o e-mail solicitado já tiver sido verificado', async () => {
-        delete window.location;
-        window.location = new URL('http://localhost:3000/pages/verify.html');
+    it('distingue indisponibilidade do servidor de token inválido', async () => {
+        fetch.mockResolvedValue(response(503));
+        start('?token=valido');
+        await vi.waitFor(() => expect(element('error-title').textContent).toBe('Verificação indisponível'));
+    });
 
-        eval(jsContent);
-        document.dispatchEvent(new Event('DOMContentLoaded'));
+    it('permite solicitar outro link após falha de conexão', async () => {
+        fetch.mockRejectedValueOnce(new Error('offline'));
+        start('?token=valido');
+        await vi.waitFor(() => expect(element('error-title').textContent).toBe('Erro na Verificação'));
+        expect(element('btnVerifyResend').disabled).toBe(false);
+    });
 
-        globalThis.fetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: async () => 'User already verified. You can log in.'
-        });
+    it.each(['', 'invalido', 'a@b', 'a'.repeat(145) + '@example.com'])('rejeita e-mail inválido: %s', email => {
+        start();
+        submit(email);
+        expect(fetch).not.toHaveBeenCalled();
+        expect(element('verifyResendError').hidden).toBe(false);
+        expect(element('verifyEmailInput').getAttribute('aria-invalid')).toBe('true');
+        expect(document.activeElement).toBe(element('verifyEmailInput'));
+    });
 
-        const verifyEmailInput = document.getElementById('verifyEmailInput');
-        verifyEmailInput.value = 'ativado@sonarfy.com';
+    it('normaliza e-mail, impede envios concorrentes e libera após 60 segundos', async () => {
+        start();
+        let finish;
+        fetch.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+        submit('  pessoa+teste@example.com  ');
+        submit('pessoa+teste@example.com');
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch.mock.calls[0][0]).toContain('email=pessoa%2Bteste%40example.com');
+        finish(response());
+        await settled();
+        expect(element('verifyResendSuccess').textContent).toContain('reenviado com sucesso');
+        expect(element('btnVerifyResend').textContent).toContain('Aguarde (60s)');
+        submit();
+        expect(fetch).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(element('btnVerifyResend').disabled).toBe(false);
+        expect(element('btnVerifyResend').textContent).toBe('Reenviar Link de Confirmação');
+    });
 
-        document.getElementById('verifyResendForm').dispatchEvent(new Event('submit', { cancelable: true }));
+    it('oferece login para conta já ativada sem iniciar espera', async () => {
+        start();
+        fetch.mockResolvedValue(response(200, '{"message":"User already verified"}'));
+        submit();
+        await settled();
+        expect(element('verifyResendSuccess').textContent).toContain('já foi ativada');
+        expect(element('verifyResendSuccess').querySelector('a').getAttribute('href')).toBe('login.html');
+        expect(element('btnVerifyResend').disabled).toBe(false);
+    });
 
-        const successAlert = document.getElementById('verifyResendSuccess');
-        await vi.waitFor(() => {
-            expect(successAlert.style.display).toBe('block');
-            expect(successAlert.innerHTML).toContain('já foi ativada');
-        });
+    it.each([
+        [404, 'not found', 'Não encontramos'],
+        [200, 'invalid e-mail', 'E-mail inválido'],
+        [500, 'Internal server error', 'Não foi possível']
+    ])('trata resposta de reenvio %s e permite tentar novamente', async (status, message, expected) => {
+        start();
+        fetch.mockResolvedValue(response(status, message));
+        submit();
+        await settled();
+        expect(element('verifyResendError').textContent).toContain(expected);
+        expect(element('btnVerifyResend').disabled).toBe(false);
+    });
+
+    it('respeita bloqueio por excesso de tentativas', async () => {
+        start();
+        fetch.mockResolvedValue(response(429));
+        submit();
+        await settled();
+        expect(element('verifyResendError').textContent).toContain('Muitas tentativas');
+        expect(element('btnVerifyResend').disabled).toBe(true);
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(element('btnVerifyResend').disabled).toBe(false);
+    });
+
+    it('restaura reenvio após erro de rede', async () => {
+        start();
+        fetch.mockRejectedValueOnce(new Error('offline'));
+        submit();
+        await settled();
+        expect(element('verifyResendError').textContent).toContain('Erro de conexão');
+        expect(element('btnVerifyResend').disabled).toBe(false);
+    });
+
+    it('interrompe requisição sem resposta e restaura reenvio', async () => {
+        start();
+        fetch.mockImplementation((url, { signal }) => new Promise((resolve, reject) => {
+            signal.addEventListener('abort', () => reject(new Error('timeout')), { once: true });
+        }));
+        submit();
+        await vi.advanceTimersByTimeAsync(15000);
+        await settled();
+        expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+        expect(element('btnVerifyResend').disabled).toBe(false);
+        expect(element('verifyResendError').hidden).toBe(false);
     });
 });
