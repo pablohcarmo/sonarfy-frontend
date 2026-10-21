@@ -1,0 +1,586 @@
+[
+  {
+    "browser": "edge",
+    "version": "155.0.4283.45",
+    "width": 1440,
+    "theme": "light",
+    "geometry": {
+      "viewport": 1440,
+      "scrollWidth": 1440,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 736,
+        "y": 192,
+        "width": 608,
+        "height": 957.390625,
+        "top": 192,
+        "right": 1344,
+        "bottom": 1149.390625,
+        "left": 736
+      },
+      "assets": [
+        {
+          "src": "6c233.svg",
+          "loaded": true,
+          "width": 14.96875,
+          "height": 19.96875
+        },
+        {
+          "src": "e3f13.svg",
+          "loaded": true,
+          "width": 11.484375,
+          "height": 15.96875
+        },
+        {
+          "src": "0f436.svg",
+          "loaded": true,
+          "width": 21.78125,
+          "height": 23.984375
+        },
+        {
+          "src": "4ed2a.svg",
+          "loaded": true,
+          "width": 21.78125,
+          "height": 23.984375
+        },
+        {
+          "src": "c943f.svg",
+          "loaded": true,
+          "width": 21.78125,
+          "height": 23.984375
+        },
+        {
+          "src": "abd75.svg",
+          "loaded": true,
+          "width": 9.3125,
+          "height": 15.953125
+        },
+        {
+          "src": "1e2c9.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "8997e.svg",
+          "loaded": true,
+          "width": 15.5,
+          "height": 18
+        },
+        {
+          "src": "c86b7.svg",
+          "loaded": true,
+          "width": 16.984375,
+          "height": 17.984375
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "edge",
+    "version": "155.0.4283.45",
+    "width": 1440,
+    "theme": "dark",
+    "geometry": {
+      "viewport": 1440,
+      "scrollWidth": 1440,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 736,
+        "y": 192,
+        "width": 608,
+        "height": 957.390625,
+        "top": 192,
+        "right": 1344,
+        "bottom": 1149.390625,
+        "left": 736
+      },
+      "assets": [
+        {
+          "src": "68183.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.96875
+        },
+        {
+          "src": "a5f2d.svg",
+          "loaded": true,
+          "width": 11.484375,
+          "height": 15.96875
+        },
+        {
+          "src": "f673c.svg",
+          "loaded": true,
+          "width": 21.78125,
+          "height": 23.984375
+        },
+        {
+          "src": "d7578.svg",
+          "loaded": true,
+          "width": 21.78125,
+          "height": 23.984375
+        },
+        {
+          "src": "f8dd4.svg",
+          "loaded": true,
+          "width": 21.78125,
+          "height": 23.984375
+        },
+        {
+          "src": "41f36.svg",
+          "loaded": true,
+          "width": 11.484375,
+          "height": 15.953125
+        },
+        {
+          "src": "14645.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "8997e.svg",
+          "loaded": true,
+          "width": 15.5,
+          "height": 18
+        },
+        {
+          "src": "c86b7.svg",
+          "loaded": true,
+          "width": 16.984375,
+          "height": 17.984375
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "edge",
+    "version": "155.0.4283.45",
+    "width": 390,
+    "theme": "light",
+    "geometry": {
+      "viewport": 390,
+      "scrollWidth": 390,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 24,
+        "y": -194,
+        "width": 342,
+        "height": 1160.59375,
+        "top": -194,
+        "right": 366,
+        "bottom": 966.59375,
+        "left": 24
+      },
+      "assets": [
+        {
+          "src": "6c233.svg",
+          "loaded": true,
+          "width": 14.96875,
+          "height": 19.96875
+        },
+        {
+          "src": "e3f13.svg",
+          "loaded": true,
+          "width": 11.484375,
+          "height": 15.96875
+        },
+        {
+          "src": "1e2c9.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "ca095.svg",
+          "loaded": true,
+          "width": 14,
+          "height": 16
+        },
+        {
+          "src": "e5044.svg",
+          "loaded": true,
+          "width": 15.3125,
+          "height": 15.984375
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "edge",
+    "version": "155.0.4283.45",
+    "width": 390,
+    "theme": "dark",
+    "geometry": {
+      "viewport": 390,
+      "scrollWidth": 390,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 24,
+        "y": -194,
+        "width": 342,
+        "height": 1160.59375,
+        "top": -194,
+        "right": 366,
+        "bottom": 966.59375,
+        "left": 24
+      },
+      "assets": [
+        {
+          "src": "68183.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.96875
+        },
+        {
+          "src": "a5f2d.svg",
+          "loaded": true,
+          "width": 11.484375,
+          "height": 15.96875
+        },
+        {
+          "src": "14645.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.453125,
+          "height": 19.984375
+        },
+        {
+          "src": "ca095.svg",
+          "loaded": true,
+          "width": 14,
+          "height": 16
+        },
+        {
+          "src": "e5044.svg",
+          "loaded": true,
+          "width": 15.3125,
+          "height": 15.984375
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "firefox",
+    "version": "153.0",
+    "width": 1440,
+    "theme": "light",
+    "geometry": {
+      "viewport": 1440,
+      "scrollWidth": 1440,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 736,
+        "y": 192,
+        "width": 608,
+        "height": 957.4000244140625,
+        "top": 192,
+        "right": 1344,
+        "bottom": 1149.4000244140625,
+        "left": 736
+      },
+      "assets": [
+        {
+          "src": "6c233.svg",
+          "loaded": true,
+          "width": 14.98333740234375,
+          "height": 19.98333740234375
+        },
+        {
+          "src": "e3f13.svg",
+          "loaded": true,
+          "width": 11.5,
+          "height": 15.98333740234375
+        },
+        {
+          "src": "0f436.svg",
+          "loaded": true,
+          "width": 21.79998779296875,
+          "height": 24
+        },
+        {
+          "src": "4ed2a.svg",
+          "loaded": true,
+          "width": 21.79998779296875,
+          "height": 24
+        },
+        {
+          "src": "c943f.svg",
+          "loaded": true,
+          "width": 21.79998779296875,
+          "height": 24
+        },
+        {
+          "src": "abd75.svg",
+          "loaded": true,
+          "width": 9.333328247070312,
+          "height": 16
+        },
+        {
+          "src": "1e2c9.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "8997e.svg",
+          "loaded": true,
+          "width": 15.5,
+          "height": 18
+        },
+        {
+          "src": "c86b7.svg",
+          "loaded": true,
+          "width": 17,
+          "height": 18
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "firefox",
+    "version": "153.0",
+    "width": 1440,
+    "theme": "dark",
+    "geometry": {
+      "viewport": 1440,
+      "scrollWidth": 1440,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 736,
+        "y": 192,
+        "width": 608,
+        "height": 957.4000244140625,
+        "top": 192,
+        "right": 1344,
+        "bottom": 1149.4000244140625,
+        "left": 736
+      },
+      "assets": [
+        {
+          "src": "68183.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "a5f2d.svg",
+          "loaded": true,
+          "width": 11.5,
+          "height": 15.98333740234375
+        },
+        {
+          "src": "f673c.svg",
+          "loaded": true,
+          "width": 21.79998779296875,
+          "height": 24
+        },
+        {
+          "src": "d7578.svg",
+          "loaded": true,
+          "width": 21.79998779296875,
+          "height": 24
+        },
+        {
+          "src": "f8dd4.svg",
+          "loaded": true,
+          "width": 21.79998779296875,
+          "height": 24
+        },
+        {
+          "src": "41f36.svg",
+          "loaded": true,
+          "width": 11.5,
+          "height": 15.98333740234375
+        },
+        {
+          "src": "14645.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "8997e.svg",
+          "loaded": true,
+          "width": 15.5,
+          "height": 18
+        },
+        {
+          "src": "c86b7.svg",
+          "loaded": true,
+          "width": 17,
+          "height": 18
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "firefox",
+    "version": "153.0",
+    "width": 390,
+    "theme": "light",
+    "geometry": {
+      "viewport": 390,
+      "scrollWidth": 390,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 24,
+        "y": -194,
+        "width": 342,
+        "height": 1160.5999755859375,
+        "top": -194,
+        "right": 366,
+        "bottom": 966.5999755859375,
+        "left": 24
+      },
+      "assets": [
+        {
+          "src": "6c233.svg",
+          "loaded": true,
+          "width": 14.98333740234375,
+          "height": 19.98333740234375
+        },
+        {
+          "src": "e3f13.svg",
+          "loaded": true,
+          "width": 11.5,
+          "height": 15.98333740234375
+        },
+        {
+          "src": "1e2c9.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "ca095.svg",
+          "loaded": true,
+          "width": 14,
+          "height": 16
+        },
+        {
+          "src": "e5044.svg",
+          "loaded": true,
+          "width": 15.333328247070312,
+          "height": 16
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "browser": "firefox",
+    "version": "153.0",
+    "width": 390,
+    "theme": "dark",
+    "geometry": {
+      "viewport": 390,
+      "scrollWidth": 390,
+      "font": "Inter, sans-serif",
+      "fontLoaded": true,
+      "card": {
+        "x": 24,
+        "y": -194,
+        "width": 342,
+        "height": 1160.5999755859375,
+        "top": -194,
+        "right": 366,
+        "bottom": 966.5999755859375,
+        "left": 24
+      },
+      "assets": [
+        {
+          "src": "68183.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "a5f2d.svg",
+          "loaded": true,
+          "width": 11.5,
+          "height": 15.98333740234375
+        },
+        {
+          "src": "14645.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "af46c.svg",
+          "loaded": true,
+          "width": 18.4666748046875,
+          "height": 20
+        },
+        {
+          "src": "ca095.svg",
+          "loaded": true,
+          "width": 14,
+          "height": 16
+        },
+        {
+          "src": "e5044.svg",
+          "loaded": true,
+          "width": 15.333328247070312,
+          "height": 16
+        }
+      ]
+    },
+    "errors": []
+  }
+]
