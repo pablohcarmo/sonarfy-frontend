@@ -1,36 +1,105 @@
-/* Estilos específicos para a tela de verificação de conta */
-
-.feedback-success {
-    background-color: #e8f5e9 !important;
-    color: #2e7d32 !important;
-    border-color: #c8e6c9 !important;
+/* Verify Account Page, Figma 93:25. Shared header, controls, typography and
+   light/dark tokens come from login.css; these rules affect Verify only. */
+:root { --verify-surface: #f7f8fa; }
+[data-theme="dark"] { --verify-surface: #2a2a2a; }
+.verify-page { padding-bottom: 40px; }
+.verify-page[data-state="error"] { padding-bottom: 0; }
+.verify-layout {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    min-height: 648px;
+    padding: 64px;
 }
-
-body.dark-mode .feedback-success {
-    background-color: #1b3820 !important;
-    color: #81c784 !important;
-    border-color: #2e7d32 !important;
+.verify-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 560px;
+    min-width: 0;
+    padding: var(--space-4);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+    box-shadow: inset 0 0 0 1px var(--border-color);
+    overflow-wrap: break-word;
 }
-
-body.dark-mode .error-message:not(.feedback-success) {
-    background-color: #3b1816;
-    color: #fca5a5;
-    border-color: #7f1d1d;
+.status-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
 }
-
-.resend-box {
-    margin-top: 24px;
-    padding: 24px;
-    background-color: var(--footer-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    text-align: left;
+.status-message .form-introduction { width: 100%; }
+.status-indicator {
+    display: grid;
+    place-items: center;
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-card);
+    background: var(--verify-surface);
 }
-
-.resend-instruction {
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
+.status-indicator img { display: block; }
+.verify-card .btn-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    line-height: 1.5;
+    line-height: 20px;
+    text-decoration: none;
+}
+.resend-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.resend-box {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    border-radius: var(--radius-control);
+    background: var(--verify-surface);
+    box-shadow: inset 0 0 0 1px var(--border-color);
+}
+.resend-instruction {
+    text-align: center;
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--text-secondary);
+}
+.verify-card .feedback:not([hidden]) { display: block; }
+.verify-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 48px;
+    padding: 8px 24px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+.verify-links a { white-space: nowrap; }
+.mobile-chevron { display: none; }
+.verify-page .site-footer { min-height: 124px; }
+.no-script { padding: 24px; text-align: center; }
+@media (max-width: 600px) {
+    .verify-layout {
+        min-height: 656px;
+        padding: var(--space-4) var(--space-3);
+    }
+    .verify-page[data-state="error"] { padding-bottom: 8px; }
+    .verify-page[data-state="error"] .verify-layout { align-items: start; }
+    .verify-card { padding: var(--space-2); }
+    .verify-card .login-field { font-size: 15px; }
+    .verify-card .btn-submit { padding-inline: var(--space-2); }
+    .verify-links { padding-inline: 16px; font-size: 13px; }
+    .mobile-chevron { display: block; margin-left: 4px; }
+}
+@media (forced-colors: active) {
+    .verify-card, .resend-box { border: 1px solid CanvasText; }
 }
