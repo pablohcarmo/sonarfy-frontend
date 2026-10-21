@@ -31,6 +31,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnBackToForm = document.getElementById('btnBackToForm');
     const pendingErrorAlert = document.getElementById('pendingErrorAlert');
     const pendingSuccessAlert = document.getElementById('pendingSuccessAlert');
+    const pendingCooldownStatus = document.getElementById('pendingCooldownStatus');
+    const registrationTitle = document.title;
+
+    function showRegistrationStep(confirmation) {
+        if (!registerSection || !pendingSection) return;
+        registerSection.style.display = confirmation ? 'none' : 'block';
+        pendingSection.style.display = confirmation ? 'block' : 'none';
+        if (confirmation) document.body.dataset.registrationStep = 'confirmation';
+        else delete document.body.dataset.registrationStep;
+        document.title = confirmation ? 'Confirmação de e-mail – Sonarfy' : registrationTitle;
+        const target = confirmation ? document.getElementById('pendingTitle') : nameField;
+        target?.focus({ preventScroll: true });
+        window.scrollTo?.({ top: 0, behavior: 'instant' });
+    }
+
+    function resetPendingResendButton() {
+        if (!btnResendPendingEmail) return;
+        const icon = document.createElement('span');
+        icon.className = 'confirmation-resend-symbol';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = '↻';
+        const label = document.createElement('span');
+        label.textContent = 'Reenviar e-mail';
+        btnResendPendingEmail.replaceChildren(icon, label);
+    }
 
     // Elementos do Modal de Edição de E-mail Pendente
     const editEmailModal = document.getElementById('editEmailModal');
@@ -52,9 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function showPendingSuccess(htmlOrText) {
+    function showPendingSuccess(message) {
         if (pendingSuccessAlert) {
-            pendingSuccessAlert.innerHTML = htmlOrText;
+            pendingSuccessAlert.textContent = message;
             pendingSuccessAlert.style.display = 'block';
         }
         if (pendingErrorAlert) {
@@ -77,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLocked = pendingCooldownRemaining > 0;
 
         if (pendingEmailBadge) {
+            pendingEmailBadge.disabled = isLocked;
             if (isLocked) {
                 pendingEmailBadge.classList.add('is-disabled');
                 pendingEmailBadge.setAttribute('aria-disabled', 'true');
@@ -109,19 +135,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function startPendingCooldown(button) {
         clearInterval(pendingCooldownInterval);
         pendingCooldownRemaining = PENDING_COOLDOWN_SECONDS;
+        const deadline = Date.now() + PENDING_COOLDOWN_SECONDS * 1000;
 
         if (button) {
             button.disabled = true;
-            button.innerHTML = `<i class="fa-solid fa-clock"></i> Reenviar em (${pendingCooldownRemaining}s)`;
+            button.textContent = `Reenviar em (${pendingCooldownRemaining}s)`;
         }
+        if (pendingCooldownStatus) pendingCooldownStatus.textContent = 'Aguarde 30 segundos para reenviar ou corrigir o e-mail.';
 
         updateEmailEditLockState();
 
         pendingCooldownInterval = setInterval(() => {
-            pendingCooldownRemaining--;
+            pendingCooldownRemaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
             if (pendingCooldownRemaining > 0) {
                 if (button) {
-                    button.innerHTML = `<i class="fa-solid fa-clock"></i> Reenviar em (${pendingCooldownRemaining}s)`;
+                    button.textContent = `Reenviar em (${pendingCooldownRemaining}s)`;
                 }
                 updateEmailEditLockState();
             } else {
@@ -129,8 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 pendingCooldownRemaining = 0;
                 if (button) {
                     button.disabled = false;
-                    button.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Reenviar e-mail';
+                    resetPendingResendButton();
                 }
+                if (pendingCooldownStatus) pendingCooldownStatus.textContent = 'Você já pode reenviar ou corrigir o e-mail.';
                 updateEmailEditLockState();
             }
         }, 1000);
@@ -193,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editEmailModal.style.display = 'none';
         editEmailModal.setAttribute('aria-hidden', 'true');
         clearEditEmailAlerts();
-        pendingEmailBadge?.focus();
+        btnEditEmailIcon?.focus();
     }
 
     // Variável de memória para o banco de dados
@@ -390,186 +419,196 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registerForm) {
         registerForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-            hideError();
-            successMessage.style.display = 'none';
-
-            // 1. Validação do Nome
-            const nameVal = nameField ? nameField.value.trim() : '';
-            if (!nameVal) {
-                showError("O nome é obrigatório.");
-                if (nameField) nameField.focus();
-                return;
-            }
-            if (!NAME_REGEX.test(nameVal)) {
-                showError("O nome deve conter apenas letras e espaços.");
-                if (nameField) nameField.focus();
-                return;
-            }
-
-            // 2. Validação do Sobrenome
-            const surnameVal = surnameField ? surnameField.value.trim() : '';
-            if (!surnameVal) {
-                showError("O sobrenome é obrigatório.");
-                if (surnameField) surnameField.focus();
-                return;
-            }
-            if (!NAME_REGEX.test(surnameVal)) {
-                showError("O sobrenome deve conter apenas letras e espaços.");
-                if (surnameField) surnameField.focus();
-                return;
-            }
-
-            // 3. Validação do Handle
-            const handleVal = handleField ? handleField.value.trim() : '';
-            if (!handleVal) {
-                showError("O nome de usuário é obrigatório.");
-                if (handleField) handleField.focus();
-                return;
-            }
-            if (!HANDLE_REGEX.test(handleVal)) {
-                showError("O nome de usuário deve conter apenas letras, números, sublinhados (_), hífens (-) e pontos (.).");
-                if (handleField) handleField.focus();
-                return;
-            }
-
-            // 4. Validação do E-mail
-            const emailVal = emailField ? emailField.value.trim() : '';
-            if (!emailVal) {
-                showError("O e-mail é obrigatório.");
-                if (emailField) emailField.focus();
-                return;
-            }
-            if (!EMAIL_REGEX.test(emailVal)) {
-                showError("O e-mail deve ser um endereço de e-mail válido.");
-                if (emailField) emailField.focus();
-                return;
-            }
-
-            // 5. Validação de Senha (tamanho mínimo 8 caracteres + requisitos do checklist)
-            const passwordVal = passwordField ? passwordField.value : '';
-            if (!passwordVal) {
-                showError("A senha é obrigatória.");
-                if (passwordField) passwordField.focus();
-                return;
-            }
-            if (passwordVal.length < 8) {
-                showError("A senha deve ter no mínimo 8 caracteres.");
-                if (passwordField) passwordField.focus();
-                return;
-            }
-            if (!isPasswordValid) {
-                showError("A senha não atende a todos os requisitos de segurança.");
-                if (passwordField) passwordField.focus();
-                return;
-            }
-            if (passwordVal !== confirmPasswordField.value) {
-                showError("As senhas não coincidem.");
-                if (confirmPasswordField) confirmPasswordField.focus();
-                return;
-            }
-
-            // 6. Validação da Data de Nascimento
-            const birthValidation = validateBirthDate(birthDateField ? birthDateField.value : '');
-            if (!birthValidation.valid) {
-                showError(birthValidation.message);
-                if (birthDateField) birthDateField.focus();
-                return;
-            }
-
-            // 7. Validação da Cidade
-            const cityVal = cityField ? cityField.value.trim() : '';
-            if (!cityVal) {
-                showError("A cidade é obrigatória.");
-                if (cityField) cityField.focus();
-                return;
-            }
-            if (!CITY_REGEX.test(cityVal)) {
-                showError("A cidade deve conter apenas letras, espaços, hífens e pontos.");
-                if (cityField) cityField.focus();
-                return;
-            }
-
-            // 8. Validação do País (seleção na lista suspensa do GeoNames ou auto-resolução)
-            if (!selectedCountry) {
-                try {
-                    const encodedQuery = encodeURIComponent(cityVal);
-                    const autoUrl = `https://secure.geonames.org/searchJSON?name_startsWith=${encodedQuery}&maxRows=1&featureClass=P&orderby=population&username=${GEONAMES_USERNAME}`;
-                    const autoResp = await fetch(autoUrl);
-                    if (autoResp.ok) {
-                        const autoData = await autoResp.json();
-                        if (autoData.geonames && autoData.geonames.length > 0) {
-                            selectedCountry = autoData.geonames[0].countryName;
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Falha no auto-resolve de país:", e);
-                }
-
-                if (!selectedCountry) {
-                    selectedCountry = 'Brazil';
-                }
-            }
-
-            if (!COUNTRY_REGEX.test(selectedCountry)) {
-                showError("O país selecionado é inválido.");
-                return;
-            }
-
-            const payload = {
-                name: nameVal,
-                surname: surnameVal,
-                handle: handleVal,
-                email: emailVal,
-                password: passwordVal,
-                birthDate: birthDateField.value,
-                city: cityVal,
-                country: selectedCountry
-            };
-            console.log("Payload gerado pelo Front-end:", JSON.stringify(payload, null, 2));
-
+            if (registerForm.getAttribute('aria-busy') === 'true') return;
+            const submitButton = registerForm.querySelector('button[type="submit"]');
+            const submitLabel = submitButton.textContent;
+            registerForm.setAttribute('aria-busy', 'true');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Cadastrando…';
             try {
-                const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                hideError();
+                successMessage.style.display = 'none';
 
-                if (response.ok) {
-                    const data = await response.json().catch(() => ({}));
-                    currentRegistrationToken = data.registrationToken || '';
-                    currentRegisteredHandle = handleVal.replace(/^@/, '');
-                    currentRegisteredEmail = data.email || emailVal;
-
-                    registerForm.reset();
-                    [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(el => updateChecklistItem(el, false));
-                    isPasswordValid = false;
-                    selectedCountry = ''; // Reseta o país após sucesso
-                    hideError();
-
-                    if (registerSection && pendingSection) {
-                        registerSection.style.display = 'none';
-                        pendingSection.style.display = 'block';
-                        if (pendingEmailDisplay) {
-                            pendingEmailDisplay.innerText = currentRegisteredEmail;
-                        }
-                        clearPendingAlerts();
-                        startPendingCooldown(btnResendPendingEmail);
-                    }
-                } else {
-                    const data = await response.json().catch(() => ({}));
-                    let msg = "Erro ao realizar o cadastro. E-mail ou nome de usuário já está em uso.";
-                    if (data.message) {
-                        msg = data.message;
-                    } else if (Array.isArray(data.errors) && data.errors.length > 0) {
-                        msg = data.errors.map(err => err.defaultMessage || err.message || err).join('; ');
-                    } else if (data.error) {
-                        msg = data.error;
-                    }
-                    showError(msg);
+                // 1. Validação do Nome
+                const nameVal = nameField ? nameField.value.trim() : '';
+                if (!nameVal) {
+                    showError("O nome é obrigatório.");
+                    if (nameField) nameField.focus();
+                    return;
                 }
-            } catch (error) {
-                console.error("Erro de conexão", error);
-                showError("Erro de conexão com o servidor.");
+                if (!NAME_REGEX.test(nameVal)) {
+                    showError("O nome deve conter apenas letras e espaços.");
+                    if (nameField) nameField.focus();
+                    return;
+                }
+
+                // 2. Validação do Sobrenome
+                const surnameVal = surnameField ? surnameField.value.trim() : '';
+                if (!surnameVal) {
+                    showError("O sobrenome é obrigatório.");
+                    if (surnameField) surnameField.focus();
+                    return;
+                }
+                if (!NAME_REGEX.test(surnameVal)) {
+                    showError("O sobrenome deve conter apenas letras e espaços.");
+                    if (surnameField) surnameField.focus();
+                    return;
+                }
+
+                // 3. Validação do Handle
+                const handleVal = handleField ? handleField.value.trim() : '';
+                if (!handleVal) {
+                    showError("O nome de usuário é obrigatório.");
+                    if (handleField) handleField.focus();
+                    return;
+                }
+                if (!HANDLE_REGEX.test(handleVal)) {
+                    showError("O nome de usuário deve conter apenas letras, números, sublinhados (_), hífens (-) e pontos (.).");
+                    if (handleField) handleField.focus();
+                    return;
+                }
+
+                // 4. Validação do E-mail
+                const emailVal = emailField ? emailField.value.trim() : '';
+                if (!emailVal) {
+                    showError("O e-mail é obrigatório.");
+                    if (emailField) emailField.focus();
+                    return;
+                }
+                if (!EMAIL_REGEX.test(emailVal)) {
+                    showError("O e-mail deve ser um endereço de e-mail válido.");
+                    if (emailField) emailField.focus();
+                    return;
+                }
+
+                // 5. Validação de Senha (tamanho mínimo 8 caracteres + requisitos do checklist)
+                const passwordVal = passwordField ? passwordField.value : '';
+                if (!passwordVal) {
+                    showError("A senha é obrigatória.");
+                    if (passwordField) passwordField.focus();
+                    return;
+                }
+                if (passwordVal.length < 8) {
+                    showError("A senha deve ter no mínimo 8 caracteres.");
+                    if (passwordField) passwordField.focus();
+                    return;
+                }
+                if (!isPasswordValid) {
+                    showError("A senha não atende a todos os requisitos de segurança.");
+                    if (passwordField) passwordField.focus();
+                    return;
+                }
+                if (passwordVal !== confirmPasswordField.value) {
+                    showError("As senhas não coincidem.");
+                    if (confirmPasswordField) confirmPasswordField.focus();
+                    return;
+                }
+
+                // 6. Validação da Data de Nascimento
+                const birthValidation = validateBirthDate(birthDateField ? birthDateField.value : '');
+                if (!birthValidation.valid) {
+                    showError(birthValidation.message);
+                    if (birthDateField) birthDateField.focus();
+                    return;
+                }
+
+                // 7. Validação da Cidade
+                const cityVal = cityField ? cityField.value.trim() : '';
+                if (!cityVal) {
+                    showError("A cidade é obrigatória.");
+                    if (cityField) cityField.focus();
+                    return;
+                }
+                if (!CITY_REGEX.test(cityVal)) {
+                    showError("A cidade deve conter apenas letras, espaços, hífens e pontos.");
+                    if (cityField) cityField.focus();
+                    return;
+                }
+
+                // 8. Validação do País (seleção na lista suspensa do GeoNames ou auto-resolução)
+                if (!selectedCountry) {
+                    try {
+                        const encodedQuery = encodeURIComponent(cityVal);
+                        const autoUrl = `https://secure.geonames.org/searchJSON?name_startsWith=${encodedQuery}&maxRows=1&featureClass=P&orderby=population&username=${GEONAMES_USERNAME}`;
+                        const autoResp = await fetch(autoUrl);
+                        if (autoResp.ok) {
+                            const autoData = await autoResp.json();
+                            if (autoData.geonames && autoData.geonames.length > 0) {
+                                selectedCountry = autoData.geonames[0].countryName;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Falha no auto-resolve de país:", e);
+                    }
+
+                    if (!selectedCountry) {
+                        selectedCountry = 'Brazil';
+                    }
+                }
+
+                if (!COUNTRY_REGEX.test(selectedCountry)) {
+                    showError("O país selecionado é inválido.");
+                    return;
+                }
+
+                const payload = {
+                    name: nameVal,
+                    surname: surnameVal,
+                    handle: handleVal,
+                    email: emailVal,
+                    password: passwordVal,
+                    birthDate: birthDateField.value,
+                    city: cityVal,
+                    country: selectedCountry
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json().catch(() => ({}));
+                        currentRegistrationToken = data.registrationToken || '';
+                        currentRegisteredHandle = handleVal.replace(/^@/, '');
+                        currentRegisteredEmail = data.email || emailVal;
+
+                        registerForm.reset();
+                        [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(el => updateChecklistItem(el, false));
+                        isPasswordValid = false;
+                        selectedCountry = ''; // Reseta o país após sucesso
+                        hideError();
+
+                        if (registerSection && pendingSection) {
+                            showRegistrationStep(true);
+                            if (pendingEmailDisplay) {
+                                pendingEmailDisplay.innerText = currentRegisteredEmail;
+                            }
+                            clearPendingAlerts();
+                            startPendingCooldown(btnResendPendingEmail);
+                        }
+                    } else {
+                        const data = await response.json().catch(() => ({}));
+                        let msg = "Erro ao realizar o cadastro. E-mail ou nome de usuário já está em uso.";
+                        if (data.message) {
+                            msg = data.message;
+                        } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+                            msg = data.errors.map(err => err.defaultMessage || err.message || err).join('; ');
+                        } else if (data.error) {
+                            msg = data.error;
+                        }
+                        showError(msg);
+                    }
+                } catch (error) {
+                    console.error("Erro de conexão", error);
+                    showError("Erro de conexão com o servidor.");
+                }
+            } finally {
+                registerForm.removeAttribute('aria-busy');
+                submitButton.disabled = false;
+                submitButton.textContent = submitLabel;
             }
         });
     }
@@ -720,202 +759,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // MODAL DE REENVIO DE E-MAIL DE CONFIRMAÇÃO
-    // ==========================================
-    const resendModal = document.getElementById('resendModal');
-    const openResendModalLink = document.getElementById('openResendModalLink');
-    const closeResendModalBtn = document.getElementById('closeResendModalBtn');
-    const resendModalForm = document.getElementById('resendModalForm');
-    const resendEmailField = document.getElementById('resendEmailField');
-    const btnSubmitResend = document.getElementById('btnSubmitResend');
-    const resendModalError = document.getElementById('resendModalError');
-    const resendModalSuccess = document.getElementById('resendModalSuccess');
-
-    let resendCooldownInterval = null;
-
-    function showResendModalError(msg) {
-        if (resendModalError) {
-            resendModalError.innerText = msg;
-            resendModalError.style.display = 'block';
-        }
-        if (resendModalSuccess) {
-            resendModalSuccess.style.display = 'none';
-        }
-    }
-
-    function showResendModalSuccess(htmlOrText) {
-        if (resendModalSuccess) {
-            resendModalSuccess.innerHTML = htmlOrText;
-            resendModalSuccess.style.display = 'block';
-        }
-        if (resendModalError) {
-            resendModalError.style.display = 'none';
-        }
-    }
-
-    function clearResendModalMessages() {
-        if (resendModalError) {
-            resendModalError.style.display = 'none';
-            resendModalError.innerText = '';
-        }
-        if (resendModalSuccess) {
-            resendModalSuccess.style.display = 'none';
-            resendModalSuccess.innerHTML = '';
-        }
-    }
-
-    function openResendModal(prefillEmail = '') {
-        if (!resendModal) return;
-        clearResendModalMessages();
-        if (resendEmailField) {
-            const emailToSet = prefillEmail || (emailField ? emailField.value.trim() : '');
-            if (emailToSet) {
-                resendEmailField.value = emailToSet;
-            }
-        }
-        resendModal.style.display = 'flex';
-        resendModal.setAttribute('aria-hidden', 'false');
-        if (resendEmailField) {
-            setTimeout(() => resendEmailField.focus(), 50);
-        }
-    }
-
-    function closeResendModal() {
-        if (!resendModal) return;
-        resendModal.style.display = 'none';
-        resendModal.setAttribute('aria-hidden', 'true');
-        clearResendModalMessages();
-        openResendModalLink?.focus();
-    }
-
-    if (openResendModalLink) {
-        openResendModalLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            openResendModal();
-        });
-    }
-
-    if (closeResendModalBtn) {
-        closeResendModalBtn.addEventListener('click', () => {
-            closeResendModal();
-        });
-    }
-
-    if (resendModal) {
-        resendModal.addEventListener('click', (e) => {
-            if (e.target === resendModal) {
-                closeResendModal();
-            }
-        });
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && resendModal && resendModal.style.display === 'flex') {
-            closeResendModal();
-        }
-    });
-
-    function startResendCooldown(button) {
-        if (!button) return;
-        let seconds = 60;
-        button.disabled = true;
-        const originalText = 'Reenviar Confirmação';
-        button.innerHTML = `<i class="fa-solid fa-clock"></i> Aguarde (${seconds}s)`;
-
-        clearInterval(resendCooldownInterval);
-        resendCooldownInterval = setInterval(() => {
-            seconds--;
-            if (seconds > 0) {
-                button.innerHTML = `<i class="fa-solid fa-clock"></i> Aguarde (${seconds}s)`;
-            } else {
-                clearInterval(resendCooldownInterval);
-                button.disabled = false;
-                button.innerHTML = originalText;
-            }
-        }, 1000);
-    }
-
-    if (resendModalForm) {
-        resendModalForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearResendModalMessages();
-
-            const email = resendEmailField ? resendEmailField.value.trim() : '';
-            if (!email) {
-                showResendModalError("O e-mail é obrigatório.");
-                return;
-            }
-            if (!EMAIL_REGEX.test(email)) {
-                showResendModalError("Por favor, insira um e-mail válido.");
-                return;
-            }
-
-            const originalBtnHtml = btnSubmitResend.innerHTML;
-            btnSubmitResend.disabled = true;
-            btnSubmitResend.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/resend-activation-email?email=${encodeURIComponent(email)}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                let responseText = '';
-                try {
-                    const text = await response.text();
-                    try {
-                        const json = JSON.parse(text);
-                        responseText = json.message || json.error || text;
-                    } catch {
-                        responseText = text;
-                    }
-                } catch {
-                    responseText = '';
-                }
-
-                if (response.ok) {
-                    if (responseText.toLowerCase().includes('already verified')) {
-                        showResendModalSuccess('Esta conta já está ativada! <a href="login.html" style="font-weight:600; text-decoration:underline; color:#2e7d32;">Clique aqui para fazer login</a>.');
-                        btnSubmitResend.disabled = false;
-                        btnSubmitResend.innerHTML = originalBtnHtml;
-                    } else if (responseText.toLowerCase().includes('invalid e-mail')) {
-                        showResendModalError("E-mail inválido informado para reenvio.");
-                        btnSubmitResend.disabled = false;
-                        btnSubmitResend.innerHTML = originalBtnHtml;
-                    } else {
-                        showResendModalSuccess('E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada e a pasta de spam.');
-                        startResendCooldown(btnSubmitResend);
-                    }
-                } else {
-                    btnSubmitResend.disabled = false;
-                    btnSubmitResend.innerHTML = originalBtnHtml;
-
-                    if (response.status === 404 || responseText.toLowerCase().includes('not found')) {
-                        showResendModalError("Não encontramos nenhuma conta cadastrada com esse e-mail.");
-                    } else {
-                        showResendModalError("Não foi possível reenviar a confirmação no momento. Tente novamente mais tarde.");
-                    }
-                }
-            } catch (err) {
-                console.error("Erro ao reenviar e-mail:", err);
-                btnSubmitResend.disabled = false;
-                btnSubmitResend.innerHTML = originalBtnHtml;
-                showResendModalError("Erro de conexão com o servidor. Tente novamente mais tarde.");
-            }
-        });
-    }
-
-    // ==========================================
     // EVENTOS DA TELA DE CONFIRMAÇÃO PENDENTE E EDIÇÃO DE E-MAIL
     // ==========================================
     if (btnResendPendingEmail) {
         btnResendPendingEmail.addEventListener('click', async () => {
-            if (!currentRegisteredEmail) return;
+            if (!currentRegisteredEmail || btnResendPendingEmail.disabled) return;
             clearPendingAlerts();
 
             const originalBtnHtml = btnResendPendingEmail.innerHTML;
             btnResendPendingEmail.disabled = true;
-            btnResendPendingEmail.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Reenviando...';
+            btnResendPendingEmail.textContent = 'Reenviando…';
+            btnResendPendingEmail.setAttribute('aria-busy', 'true');
 
             try {
                 const response = await fetch(`${API_BASE_URL}/auth/resend-activation-email?email=${encodeURIComponent(currentRegisteredEmail)}`, {
@@ -938,11 +792,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     if (responseText.toLowerCase().includes('already verified')) {
-                        showPendingSuccess('Esta conta já foi ativada! <a href="login.html" style="font-weight:600; text-decoration:underline; color:#2e7d32;">Clique aqui para fazer login</a>.');
+                        showPendingSuccess('Esta conta já foi ativada! Você já pode fazer login.');
                         btnResendPendingEmail.disabled = false;
                         btnResendPendingEmail.innerHTML = originalBtnHtml;
                     } else {
-                        showPendingSuccess(`Novo link de confirmação reenviado para <strong>${currentRegisteredEmail}</strong>! Verifique sua caixa de entrada.`);
+                        showPendingSuccess(`Novo link de confirmação reenviado para ${currentRegisteredEmail}! Verifique sua caixa de entrada.`);
                         startPendingCooldown(btnResendPendingEmail);
                     }
                 } else {
@@ -960,6 +814,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnResendPendingEmail.disabled = false;
                 btnResendPendingEmail.innerHTML = originalBtnHtml;
                 showPendingError("Erro de conexão com o servidor. Tente novamente mais tarde.");
+            } finally {
+                btnResendPendingEmail.removeAttribute('aria-busy');
             }
         });
     }
@@ -972,16 +828,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             openEditEmailModal();
-        });
-        pendingEmailBadge.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (pendingCooldownRemaining > 0) {
-                    showPendingError(`Aguarde mais ${pendingCooldownRemaining}s para alterar o e-mail.`);
-                    return;
-                }
-                openEditEmailModal();
-            }
         });
     }
 
@@ -1044,10 +890,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 showEditEmailError("Não foi possível identificar o usuário para atualização. Por favor, realize o cadastro novamente.");
                 return;
             }
+            if (btnSubmitEditEmail.disabled) return;
 
             const originalBtnHtml = btnSubmitEditEmail.innerHTML;
             btnSubmitEditEmail.disabled = true;
-            btnSubmitEditEmail.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Atualizando e reenviando...';
+            btnSubmitEditEmail.textContent = 'Atualizando e reenviando…';
+            btnSubmitEditEmail.setAttribute('aria-busy', 'true');
 
             try {
                 const requestHeaders = {
@@ -1090,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnSubmitEditEmail.innerHTML = originalBtnHtml;
                     closeEditEmailModal();
 
-                    showPendingSuccess(`E-mail atualizado! Um novo link foi enviado para <strong>${currentRegisteredEmail}</strong>.`);
+                    showPendingSuccess(`E-mail atualizado! Um novo link foi enviado para ${currentRegisteredEmail}.`);
                     startPendingCooldown(btnResendPendingEmail);
                 } else {
                     btnSubmitEditEmail.disabled = false;
@@ -1112,8 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         msg = "Por favor, insira um e-mail válido.";
                     } else if (response.status === 404 || lowerMsg.includes('not found') || lowerMsg.includes('não encontrado')) {
                         msg = "Usuário não encontrado. Por favor, realize o cadastro novamente.";
-                    } else if (rawMsg && !lowerMsg.includes('timestamp') && !lowerMsg.includes('trace') && rawMsg.length < 150) {
-                        msg = rawMsg;
                     }
                     showEditEmailError(msg);
                 }
@@ -1122,6 +968,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnSubmitEditEmail.disabled = false;
                 btnSubmitEditEmail.innerHTML = originalBtnHtml;
                 showEditEmailError("Erro de conexão com o servidor. Tente novamente mais tarde.");
+            } finally {
+                btnSubmitEditEmail.removeAttribute('aria-busy');
             }
         });
     }
@@ -1130,8 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnBackToForm.addEventListener('click', (e) => {
             e.preventDefault();
             if (pendingSection && registerSection) {
-                pendingSection.style.display = 'none';
-                registerSection.style.display = 'block';
+                showRegistrationStep(false);
             }
         });
     }
@@ -1139,7 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keep keyboard focus inside the existing confirmation dialogs.
     document.addEventListener('keydown', event => {
         if (event.key !== 'Tab') return;
-        const modal = [resendModal, editEmailModal].find(element => element?.getAttribute('aria-hidden') === 'false');
+        const modal = [editEmailModal].find(element => element?.getAttribute('aria-hidden') === 'false');
         if (!modal) return;
         const focusable = Array.from(modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex="0"]'));
         const first = focusable[0];

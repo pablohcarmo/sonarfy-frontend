@@ -346,20 +346,6 @@
 .register-page .feedback {
     margin-bottom: 24px;
 }
-.pending-symbol {
-    display: block;
-    color: var(--accent-color);
-    font-size: 56px;
-    margin-bottom: 20px;
-}
-#pendingSection {
-    text-align: center;
-    line-height: 1.5;
-}
-.pending-actions {
-    display: grid;
-    gap: 16px;
-}
 .error-message {
     display: none;
     padding: 12px;
@@ -459,7 +445,8 @@
     width: 90%;
     max-width: 440px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
     animation: fadeIn 0.3s ease;
 }
 
@@ -472,6 +459,7 @@
 }
 
 .modal-header h3 {
+    margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-primary);
@@ -503,6 +491,11 @@
     padding: 24px;
     text-align: left;
 }
+.modal-body .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
 
 .modal-description {
     color: var(--text-secondary);
@@ -527,83 +520,6 @@
     opacity: 1;
     transform: translateY(0);
 }
-}
-
-/* ==========================================
-   Tela de Confirmação Pendente e Correção
-   ========================================== */
-.pending-email-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background-color: var(--footer-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 30px;
-    padding: 10px 20px;
-    margin: 12px 0 20px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--accent-color);
-    max-width: 100%;
-    word-break: break-all;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-}
-
-.pending-email-badge:hover,
-.pending-email-badge:focus-visible {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(39, 169, 245, 0.15);
-    background-color: rgba(39, 169, 245, 0.05);
-}
-
-.pending-email-badge:hover .btn-icon-edit {
-    color: var(--accent-color);
-    transform: scale(1.15);
-}
-
-.pending-email-badge.is-disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    border-color: var(--border-color) !important;
-    box-shadow: none !important;
-    background-color: var(--footer-bg) !important;
-}
-
-.pending-email-badge.is-disabled:hover,
-.pending-email-badge.is-disabled:focus-visible {
-    border-color: var(--border-color) !important;
-    box-shadow: none !important;
-    background-color: var(--footer-bg) !important;
-}
-
-.pending-email-badge.is-disabled .btn-icon-edit {
-    cursor: not-allowed;
-    pointer-events: none;
-    color: var(--text-secondary) !important;
-    transform: none !important;
-}
-
-.btn-icon-edit {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px;
-    border-radius: 50%;
-    transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
-}
-
-.btn-icon-edit:hover {
-    color: var(--accent-color);
-    background-color: rgba(39, 169, 245, 0.1);
-    transform: scale(1.15);
 }
 
 .btn-outline-action {
