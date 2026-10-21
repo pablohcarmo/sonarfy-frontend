@@ -11,7 +11,7 @@ describe('Sanitização em Tempo Real e Entradas (cadastro.js)', () => {
     beforeEach(() => {
         vi.useFakeTimers();
 
-        const htmlPath = path.resolve(__dirname, '../pages/cadastro.html');
+        const htmlPath = path.resolve(__dirname, '../pages/register.html');
         htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
         const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
@@ -47,8 +47,16 @@ describe('Sanitização em Tempo Real e Entradas (cadastro.js)', () => {
         const jsPath = path.resolve(__dirname, '../js/cadastro.js');
         jsContent = fs.readFileSync(jsPath, 'utf-8');
 
+        // Initialize this script once per fixture; do not retain ready listeners across tests.
+        document.body.removeAttribute('data-registration-step');
+        const addListener = document.addEventListener.bind(document);
+        let ready;
+        vi.spyOn(document, 'addEventListener').mockImplementation((type, listener, options) => {
+            if (type === 'DOMContentLoaded') ready = listener;
+            else addListener(type, listener, options);
+        });
         eval(jsContent);
-        document.dispatchEvent(new Event('DOMContentLoaded'));
+        ready();
     });
 
     afterEach(() => {

@@ -1,0 +1,197 @@
+/* Figma Email Confirmation: 96:316, 96:348, 96:384, 96:416.
+   Global chrome, Inter typography and control tokens are shared with login.css. */
+:root {
+    --confirmation-surface: #f7f8fa;
+    --confirmation-link: #1a1a1a;
+    --confirmation-button-border: #1a1a1a;
+    --confirmation-card-shadow: none;
+}
+[data-theme="dark"] {
+    --confirmation-surface: #2a2a2a;
+    --confirmation-link: #27a9f5;
+}
+[data-registration-step="confirmation"] .register-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 744px;
+    padding: 64px;
+}
+[data-registration-step="confirmation"] .register-showcase,
+[data-registration-step="confirmation"] .register-content {
+    display: none;
+}
+.confirmation-section {
+    width: 100%;
+    max-width: 560px;
+    min-width: 0;
+}
+.confirmation-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+    outline: 1px solid var(--border-color);
+    outline-offset: -1px;
+    box-shadow: var(--confirmation-card-shadow);
+    text-align: center;
+}
+.confirmation-introduction {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+.confirmation-badge {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-card);
+    background: var(--confirmation-surface);
+}
+.confirmation-heading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 100%;
+}
+.confirmation-heading p,
+.confirmation-instructions {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 24px;
+}
+.confirmation-email {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: 8px 16px;
+    border-radius: var(--radius-control);
+    background: var(--confirmation-surface);
+}
+.pending-address,
+.confirmation-edit,
+.confirmation-back {
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.pending-address {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    font-size: 15px;
+    line-height: 24px;
+    overflow-wrap: anywhere;
+}
+.confirmation-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 86px;
+    min-height: 48px;
+    padding: 8px 16px;
+    border-radius: var(--radius-control);
+    font-size: 13px;
+    line-height: normal;
+    text-decoration: underline;
+    text-underline-position: under;
+}
+.confirmation-edit:hover,
+.confirmation-back:hover {
+    background: var(--confirmation-surface);
+}
+.confirmation-edit:disabled,
+.pending-address:disabled {
+    cursor: not-allowed;
+    opacity: .65;
+}
+.confirmation-resend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-color: var(--confirmation-button-border);
+}
+.confirmation-resend-symbol {
+    font-size: 20px;
+    line-height: 24px;
+}
+.confirmation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+}
+.confirmation-actions a,
+.confirmation-back {
+    color: var(--confirmation-link);
+    text-decoration: underline;
+    text-underline-position: under;
+}
+.confirmation-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-height: 48px;
+    padding: 8px 24px;
+    border-radius: var(--radius-control);
+    font-size: 14px;
+    line-height: normal;
+}
+.confirmation-mobile-chevron {
+    display: none;
+}
+.confirmation-feedback {
+    margin: 0;
+    padding: 12px;
+    border-radius: var(--radius-control);
+    font-size: 14px;
+    line-height: 20px;
+    overflow-wrap: anywhere;
+}
+.confirmation-feedback a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+}
+@media (max-width: 600px) {
+    [data-registration-step="confirmation"] .register-layout {
+        align-items: flex-start;
+        min-height: 752px;
+        padding: 32px 24px;
+    }
+    .confirmation-card {
+        padding: var(--space-2);
+    }
+    .confirmation-email {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 0;
+        padding: var(--space-2);
+    }
+    .pending-address {
+        font-size: 14px;
+    }
+    .confirmation-mobile-chevron {
+        display: flex;
+    }
+}
+@media (forced-colors: active) {
+    .confirmation-card,
+    .confirmation-email,
+    .confirmation-badge {
+        outline: 1px solid CanvasText;
+    }
+}

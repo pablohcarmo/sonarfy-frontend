@@ -10,7 +10,7 @@ describe('Modais de Reenvio e Retificação de E-mail (cadastro.js)', () => {
     beforeEach(() => {
         vi.useFakeTimers();
 
-        const htmlPath = path.resolve(__dirname, '../pages/cadastro.html');
+        const htmlPath = path.resolve(__dirname, '../pages/register.html');
         htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
         const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
@@ -85,8 +85,16 @@ describe('Modais de Reenvio e Retificação de E-mail (cadastro.js)', () => {
         const jsPath = path.resolve(__dirname, '../js/cadastro.js');
         jsContent = fs.readFileSync(jsPath, 'utf-8');
 
+        // Initialize this script once per fixture; do not retain ready listeners across tests.
+        document.body.removeAttribute('data-registration-step');
+        const addListener = document.addEventListener.bind(document);
+        let ready;
+        vi.spyOn(document, 'addEventListener').mockImplementation((type, listener, options) => {
+            if (type === 'DOMContentLoaded') ready = listener;
+            else addListener(type, listener, options);
+        });
         eval(jsContent);
-        document.dispatchEvent(new Event('DOMContentLoaded'));
+        ready();
     });
 
     afterEach(() => {
@@ -94,99 +102,62 @@ describe('Modais de Reenvio e Retificação de E-mail (cadastro.js)', () => {
         vi.useRealTimers();
     });
 
-    describe('Modal Tradicional de Reenvio (#resendModal)', () => {
-        it('deve abrir o modal ao clicar no link correspondente e fechar ao clicar no botão fechar', () => {
-            const resendModal = document.getElementById('resendModal');
-            const openLink = document.getElementById('openResendModalLink');
-            const closeBtn = document.getElementById('closeResendModalBtn');
+    describe('Reenvio na confirmação de cadastro', () => {
+        async function openConfirmation() {
+            const values = { nameField: 'Pablo', surnameField: 'Carmo', handleField: 'pablo', emailField: 'teste@sonarfy.com', passwordField: 'Senha@123', confirmPasswordField: 'Senha@123', birthDateField: '2000-01-01', cityField: 'São Paulo' };
+            for (const [id, value] of Object.entries(values)) {
+                const input = document.getElementById(id);
+                input.value = value;
+                input.dispatchEvent(new Event('input'));
+            }
+            document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
+            await vi.waitFor(() => expect(document.getElementById('pendingSection').style.display).toBe('block'));
+            vi.advanceTimersByTime(30000);
+        }
 
-            expect(resendModal.style.display).toBe('none');
-
-            openLink.dispatchEvent(new Event('click'));
-            expect(resendModal.style.display).toBe('flex');
-
-            closeBtn.dispatchEvent(new Event('click'));
-            expect(resendModal.style.display).toBe('none');
+        it('exibe a confirmação como página e retorna ao formulário com foco', async () => {
+            await openConfirmation();
+            expect(document.body.dataset.registrationStep).toBe('confirmation');
+            document.getElementById('btnBackToForm').click();
+            expect(document.body.dataset.registrationStep).toBeUndefined();
+            expect(document.activeElement.id).toBe('nameField');
         });
 
-        it('deve fechar o resendModal ao clicar no overlay ou pressionar Escape', () => {
-            const resendModal = document.getElementById('resendModal');
-            document.getElementById('openResendModalLink').dispatchEvent(new Event('click'));
-            expect(resendModal.style.display).toBe('flex');
-
-            // Clica no overlay de fundo
-            resendModal.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-            expect(resendModal.style.display).toBe('none');
-
-            // Abre novamente e pressiona Escape
-            document.getElementById('openResendModalLink').dispatchEvent(new Event('click'));
-            expect(resendModal.style.display).toBe('flex');
-
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-            expect(resendModal.style.display).toBe('none');
+        it('reenvia o e-mail e inicia o cooldown de 30 segundos', async () => {
+            await openConfirmation();
+            document.getElementById('btnResendPendingEmail').click();
+            await vi.waitFor(() => expect(document.getElementById('pendingSuccessAlert').style.display).toBe('block'));
+            expect(document.getElementById('btnResendPendingEmail').textContent).toContain('30s');
         });
 
-        it('deve validar e-mail obrigatório e formato no resendModal', () => {
-            document.getElementById('openResendModalLink').dispatchEvent(new Event('click'));
-            const resendEmailField = document.getElementById('resendEmailField');
-            const resendModalForm = document.getElementById('resendModalForm');
-            const resendModalError = document.getElementById('resendModalError');
-
-            // E-mail vazio
-            resendEmailField.value = '';
-            resendModalForm.dispatchEvent(new Event('submit', { cancelable: true }));
-            expect(resendModalError.style.display).toBe('block');
-            expect(resendModalError.innerText).toContain('obrigatório');
-
-            // E-mail formato inválido
-            resendEmailField.value = 'invalido@';
-            resendModalForm.dispatchEvent(new Event('submit', { cancelable: true }));
-            expect(resendModalError.style.display).toBe('block');
-            expect(resendModalError.innerText).toContain('e-mail válido');
+        it('trata conta não encontrada e permite tentar novamente', async () => {
+            await openConfirmation();
+            mockBackendResponse.resend = { ok: false, status: 404, text: async () => 'User not found' };
+            document.getElementById('btnResendPendingEmail').click();
+            await vi.waitFor(() => expect(document.getElementById('pendingErrorAlert').innerText).toContain('Não encontramos'));
+            expect(document.getElementById('btnResendPendingEmail').disabled).toBe(false);
         });
 
-        it('deve reenviar com sucesso e iniciar cooldown de 60s no botão', async () => {
-            document.getElementById('openResendModalLink').dispatchEvent(new Event('click'));
-            const resendEmailField = document.getElementById('resendEmailField');
-            const btnSubmitResend = document.getElementById('btnSubmitResend');
-
-            resendEmailField.value = 'teste@sonarfy.com';
-
-            mockBackendResponse.resend = {
-                ok: true,
-                status: 200,
-                text: async () => 'Confirmation email resent successfully!'
-            };
-
-            document.getElementById('resendModalForm').dispatchEvent(new Event('submit', { cancelable: true }));
-
-            const resendModalSuccess = document.getElementById('resendModalSuccess');
-            await vi.waitFor(() => {
-                expect(resendModalSuccess.style.display).toBe('block');
-            });
-
-            expect(resendModalSuccess.innerText).toContain('reenviado com sucesso');
-            expect(btnSubmitResend.disabled).toBe(true);
-            expect(btnSubmitResend.innerHTML).toContain('Aguarde');
+        it('trata falha de rede sem deixar o botão bloqueado', async () => {
+            await openConfirmation();
+            mockBackendResponse.resend = () => Promise.reject(new Error('offline'));
+            document.getElementById('btnResendPendingEmail').click();
+            await vi.waitFor(() => expect(document.getElementById('pendingErrorAlert').innerText).toContain('Erro de conexão'));
+            expect(document.getElementById('btnResendPendingEmail').hasAttribute('aria-busy')).toBe(false);
+            expect(document.getElementById('btnResendPendingEmail').disabled).toBe(false);
         });
 
-        it('deve tratar 404 de conta não encontrada no resendModal', async () => {
-            document.getElementById('openResendModalLink').dispatchEvent(new Event('click'));
-            document.getElementById('resendEmailField').value = 'inexistente@sonarfy.com';
-
-            mockBackendResponse.resend = {
-                ok: false,
-                status: 404,
-                text: async () => 'User not found!'
-            };
-
-            document.getElementById('resendModalForm').dispatchEvent(new Event('submit', { cancelable: true }));
-
-            await vi.waitFor(() => {
-                const resendModalError = document.getElementById('resendModalError');
-                expect(resendModalError.style.display).toBe('block');
-                expect(resendModalError.innerText).toContain('Não encontramos nenhuma conta');
-            });
+        it('impede reenvios duplicados enquanto a requisição está em andamento', async () => {
+            await openConfirmation();
+            let resolve;
+            mockBackendResponse.resend = () => new Promise(done => { resolve = done; });
+            const button = document.getElementById('btnResendPendingEmail');
+            button.click();
+            button.dispatchEvent(new Event('click'));
+            const requests = fetch.mock.calls.filter(([url]) => url.includes('resend-activation-email'));
+            expect(requests).toHaveLength(1);
+            resolve({ ok: true, text: async () => 'sent' });
+            await vi.waitFor(() => expect(button.textContent).toContain('30s'));
         });
     });
 
