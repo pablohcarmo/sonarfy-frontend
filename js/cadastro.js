@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editEmailModal.style.display = 'none';
         editEmailModal.setAttribute('aria-hidden', 'true');
         clearEditEmailAlerts();
+        pendingEmailBadge?.focus();
     }
 
     // Variável de memória para o banco de dados
@@ -330,14 +331,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateChecklistItem(element, isValid) {
         if (!element) return;
-        if (isValid) {
-            element.classList.replace('invalid', 'valid');
-            element.querySelector('i').className = 'fa-solid fa-check';
-        } else {
-            element.classList.replace('valid', 'invalid');
-            element.querySelector('i').className = 'fa-solid fa-xmark';
+        element.classList.toggle('valid', isValid);
+        element.classList.toggle('invalid', !isValid);
+        const label = element.querySelector('.requirement-text')?.textContent.trim() || element.textContent.trim();
+        element.setAttribute('aria-label', `${label}: ${isValid ? 'atendido' : 'não atendido'}`);
+    }
+    [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(item => updateChecklistItem(item, false));
+
+    function validatePasswordMatch() {
+        if (!confirmPasswordField || !passwordField) return;
+        const mismatch = Boolean(confirmPasswordField.value) && passwordField.value !== confirmPasswordField.value;
+        confirmPasswordField.setCustomValidity(mismatch ? 'As senhas não coincidem.' : '');
+        confirmPasswordField.setAttribute('aria-invalid', String(mismatch));
+        const message = document.getElementById('confirmPasswordError');
+        if (message) {
+            message.textContent = mismatch ? 'As senhas não coincidem.' : '';
+            message.hidden = !mismatch;
         }
     }
+    confirmPasswordField?.addEventListener('input', validatePasswordMatch);
+    document.querySelectorAll('.btn-toggle-password').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.getAttribute('aria-controls'));
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            button.setAttribute('aria-pressed', String(show));
+            button.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+        });
+    });
+    const dateWrapper = birthDateField?.closest('.date-wrapper');
+    const syncDate = () => dateWrapper?.classList.toggle('has-value', Boolean(birthDateField.value));
+    birthDateField?.addEventListener('change', syncDate);
+    document.getElementById('openBirthDatePicker')?.addEventListener('click', () => {
+        birthDateField.focus();
+        try { birthDateField.showPicker?.(); } catch { /* Native field remains usable. */ }
+    });
+    syncDate();
 
     if (passwordField) {
         passwordField.addEventListener('input', function() {
@@ -353,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateChecklistItem(reqSpecial, hasSpecial);
 
             isPasswordValid = hasLength && hasUppercase && hasNumber && hasSpecial;
+            validatePasswordMatch();
         });
     }
 
@@ -544,84 +574,148 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Autocompletar de Cidades com GeoNames API (usando HTTPS seguro e ordenação por relevância)
+    // The provider can be replaced with window.sonarfyCitySearch(query, { signal }).
+    // It returns [{ name, adminName1, countryName }], independent of the API vendor.
     if (cityField) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'autocomplete-wrapper';
-        cityField.parentNode.insertBefore(wrapper, cityField);
-        wrapper.appendChild(cityField);
+        const wrapper = cityField.closest('.autocomplete-wrapper');
+        const suggestionList = document.getElementById('citySuggestions');
+        const status = document.getElementById('cityStatus');
+        const examples = [
+            { name: 'São Paulo', adminName1: 'São Paulo', countryName: 'Brasil' },
+            { name: 'São Paulo da Assunção de Luanda', countryName: 'Angola' },
+            { name: 'Guarulhos', adminName1: 'São Paulo', countryName: 'Brasil' },
+            { name: 'Campinas', adminName1: 'São Paulo', countryName: 'Brasil' }
+        ];
+        const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        let results = [];
+        let activeIndex = -1;
+        let request = 0;
+        let controller;
 
-        const suggestionList = document.createElement('ul');
-        suggestionList.className = 'autocomplete-list';
-        wrapper.appendChild(suggestionList);
-
-        const cityInputInvalidRegex = /[^a-zA-ZÀ-ÿ\s.'-]/g;
-
-        cityField.addEventListener('input', function() {
-            if (cityInputInvalidRegex.test(this.value)) {
-                this.value = this.value.replace(cityInputInvalidRegex, '');
+        function closeSuggestions() {
+            suggestionList.hidden = true;
+            cityField.setAttribute('aria-expanded', 'false');
+            cityField.removeAttribute('aria-activedescendant');
+            activeIndex = -1;
+        }
+        function selectCity(index) {
+            const place = results[index];
+            if (!place) return;
+            cityField.value = place.name;
+            selectedCountry = place.countryName;
+            request++;
+            controller?.abort();
+            closeSuggestions();
+            hideError();
+            cityField.focus();
+        }
+        function setActive(index) {
+            activeIndex = index;
+            Array.from(suggestionList.children).forEach((item, i) => item.setAttribute('aria-selected', String(i === index)));
+            const option = suggestionList.children[index];
+            if (option) {
+                cityField.setAttribute('aria-activedescendant', option.id);
+                option.scrollIntoView?.({ block: 'nearest' });
             }
-
+        }
+        function render(places) {
+            results = places.filter(place => place.name && place.countryName).slice(0, 10);
+            suggestionList.replaceChildren();
+            activeIndex = -1;
+            cityField.removeAttribute('aria-activedescendant');
+            results.forEach((place, index) => {
+                const item = document.createElement('li');
+                item.id = `city-option-${index}`;
+                item.className = 'autocomplete-item';
+                item.setAttribute('role', 'option');
+                item.setAttribute('aria-selected', 'false');
+                item.textContent = [place.name, place.adminName1, place.countryName].filter(Boolean).join(', ');
+                item.addEventListener('mousedown', event => event.preventDefault());
+                item.addEventListener('click', () => selectCity(index));
+                suggestionList.appendChild(item);
+            });
+            const open = results.length > 0 && document.activeElement === cityField;
+            suggestionList.hidden = !open;
+            cityField.setAttribute('aria-expanded', String(open));
+            if (status) status.textContent = results.length ? `${results.length} cidades encontradas. Use as setas para navegar.` : 'Nenhuma cidade encontrada.';
+        }
+        async function search(query, signal) {
+            if (typeof window.sonarfyCitySearch === 'function') return window.sonarfyCitySearch(query, { signal });
+            if (typeof GEONAMES_USERNAME === 'undefined' || !GEONAMES_USERNAME) {
+                return examples.filter(place => normalize(Object.values(place).join(' ')).includes(normalize(query)));
+            }
+            const params = new URLSearchParams({ name_startsWith: query, maxRows: '10', featureClass: 'P', orderby: 'population', lang: 'pt', username: GEONAMES_USERNAME });
+            let response = await fetch(`https://secure.geonames.org/searchJSON?${params}`, { signal });
+            if (!response.ok) throw new Error('City search failed');
+            let data = await response.json();
+            if (!data.geonames?.length) {
+                params.delete('name_startsWith');
+                params.set('q', query);
+                response = await fetch(`https://secure.geonames.org/searchJSON?${params}`, { signal });
+                if (!response.ok) throw new Error('City search failed');
+                data = await response.json();
+            }
+            return data.geonames || [];
+        }
+        function scheduleSearch() {
+            cityField.value = cityField.value.replace(/[^a-zA-ZÀ-ÿ\s.'-]/g, '');
+            selectedCountry = '';
             clearTimeout(geocodeTimeout);
-            const query = this.value.trim();
-            suggestionList.innerHTML = '';
-            selectedCountry = ''; // Reseta o país oculto se o usuário voltar a digitar
-
-            if (query.length < 2) return;
-
+            controller?.abort();
+            const current = ++request;
+            const query = cityField.value.trim();
+            closeSuggestions();
+            results = [];
+            if (query.length < 2) { if (status) status.textContent = ''; return; }
             geocodeTimeout = setTimeout(async () => {
+                controller = new AbortController();
+                if (status) status.textContent = 'Buscando cidades…';
                 try {
-                    const encoded = encodeURIComponent(query);
-                    // 1. Busca prioritária por prefixo e população no endpoint seguro (HTTPS)
-                    let url = `https://secure.geonames.org/searchJSON?name_startsWith=${encoded}&maxRows=10&featureClass=P&orderby=population&username=${GEONAMES_USERNAME}`;
-                    let response = await fetch(url);
-                    let places = [];
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.geonames && data.geonames.length > 0) {
-                            places = data.geonames;
-                        }
-                    }
-
-                    // 2. Fallback para busca textual mais abrangente se o prefixo não trouxer nada
-                    if (places.length === 0) {
-                        url = `https://secure.geonames.org/searchJSON?q=${encoded}&maxRows=10&featureClass=P&orderby=population&username=${GEONAMES_USERNAME}`;
-                        response = await fetch(url);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.geonames && data.geonames.length > 0) {
-                                places = data.geonames;
-                            }
-                        }
-                    }
-
-                    suggestionList.innerHTML = '';
-                    if (places.length > 0) {
-                        places.forEach(place => {
-                            const li = document.createElement('li');
-                            li.className = 'autocomplete-item';
-                            const region = place.adminName1 ? `${place.adminName1}, ` : '';
-                            li.innerText = `${place.name}, ${region}${place.countryName}`;
-
-                            li.addEventListener('click', () => {
-                                cityField.value = place.name;
-                                selectedCountry = place.countryName; // Salva o país invisivelmente
-                                suggestionList.innerHTML = '';
-                                hideError();
-                            });
-
-                            suggestionList.appendChild(li);
-                        });
-                    }
+                    const places = await search(query, controller.signal);
+                    if (current === request) render(places);
                 } catch (error) {
-                    console.error("Erro na GeoNames API:", error);
+                    if (error.name !== 'AbortError' && current === request) {
+                        closeSuggestions();
+                        if (status) status.textContent = 'Não foi possível buscar cidades. Tente novamente.';
+                    }
                 }
             }, 350);
+        }
+        cityField.addEventListener('input', scheduleSearch);
+        cityField.addEventListener('focus', () => {
+            if (results.length && cityField.value.length >= 2) {
+                suggestionList.hidden = false;
+                cityField.setAttribute('aria-expanded', 'true');
+            }
         });
-
-        document.addEventListener('click', (e) => {
-            if (e.target !== cityField) suggestionList.innerHTML = '';
+        cityField.addEventListener('blur', closeSuggestions);
+        cityField.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { request++; controller?.abort(); closeSuggestions(); }
+            if (suggestionList.hidden || !results.length) return;
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                setActive(activeIndex < 0 && event.key === 'ArrowUp' ? results.length - 1 :
+                    (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length);
+            } else if (event.key === 'Enter' && activeIndex >= 0) {
+                event.preventDefault();
+                selectCity(activeIndex);
+            }
+        });
+        document.addEventListener('click', event => { if (!wrapper.contains(event.target)) closeSuggestions(); });
+        registerForm.addEventListener('reset', () => {
+            request++;
+            clearTimeout(geocodeTimeout);
+            controller?.abort();
+            results = [];
+            closeSuggestions();
+            selectedCountry = '';
+            isPasswordValid = false;
+            [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(item => updateChecklistItem(item, false));
+            confirmPasswordField.setCustomValidity('');
+            confirmPasswordField.setAttribute('aria-invalid', 'false');
+            const message = document.getElementById('confirmPasswordError');
+            if (message) message.hidden = true;
+            dateWrapper?.classList.remove('has-value');
         });
     }
 
@@ -691,6 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resendModal.style.display = 'none';
         resendModal.setAttribute('aria-hidden', 'true');
         clearResendModalMessages();
+        openResendModalLink?.focus();
     }
 
     if (openResendModalLink) {
@@ -1040,4 +1135,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Keep keyboard focus inside the existing confirmation dialogs.
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Tab') return;
+        const modal = [resendModal, editEmailModal].find(element => element?.getAttribute('aria-hidden') === 'false');
+        if (!modal) return;
+        const focusable = Array.from(modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex="0"]'));
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+            event.preventDefault(); last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+            event.preventDefault(); first?.focus();
+        }
+    });
 });
