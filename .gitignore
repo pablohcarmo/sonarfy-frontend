@@ -13,3 +13,5 @@ template/
 *.pem
 
 template/
+
+.codex
