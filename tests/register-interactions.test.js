@@ -17,7 +17,7 @@ describe('Interações acessíveis do cadastro', () => {
             { name: 'São Paulo', adminName1: 'São Paulo', countryName: 'Brasil' },
             { name: 'Campinas', adminName1: 'São Paulo', countryName: 'Brasil' },
         ]);
-        eval(fs.readFileSync('js/cadastro.js', 'utf8'));
+        eval(fs.readFileSync('js/register.js', 'utf8'));
         document.dispatchEvent(new Event('DOMContentLoaded'));
     });
     afterEach(() => {

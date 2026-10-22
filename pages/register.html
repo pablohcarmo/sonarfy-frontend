@@ -8,7 +8,7 @@
         <title>
             Cadastro – Sonarfy
         </title>
-        <link rel="icon" type="image/png" href="../assets/images/simbolo-sonarfy.png">
+        <link rel="icon" type="image/png" href="../assets/images/sonarfy-symbol.png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
@@ -17,11 +17,11 @@
         </script>
         <script src="../js/api.js" defer>
         </script>
-        <link rel="stylesheet" href="../css/cadastro.css">
+        <link rel="stylesheet" href="../css/register.css">
         <link rel="stylesheet" href="../css/confirmation.css">
         <script src="../js/env.js" defer>
         </script>
-        <script src="../js/cadastro.js" defer>
+        <script src="../js/register.js" defer>
         </script>
     </head>
     <body class="register-page">
@@ -36,13 +36,13 @@
             </a>
             <nav class="header-actions" aria-label="Navegação principal">
                 <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
-                    <img class="theme-light-only" src="../assets/icons/register/6c233.svg" alt="">
-                    <img class="theme-dark-only" src="../assets/icons/register/68183.svg" alt="">
+                    <img class="theme-light-only" src="../assets/icons/register/theme-moon.svg" alt="">
+                    <img class="theme-dark-only" src="../assets/icons/register/theme-sun.svg" alt="">
                 </button>
                 <a class="back-link" href="../index.html">
                     <span class="back-icon" aria-hidden="true">
-                        <img class="theme-light-only" src="../assets/icons/register/e3f13.svg" alt="">
-                        <img class="theme-dark-only" src="../assets/icons/register/a5f2d.svg" alt="">
+                        <img class="theme-light-only" src="../assets/icons/register/header-arrow-back-light.svg" alt="">
+                        <img class="theme-dark-only" src="../assets/icons/register/header-arrow-back-dark.svg" alt="">
                     </span>
                     Início
                 </a>
@@ -80,8 +80,8 @@
                     <ul class="benefits">
                         <li>
                             <span class="benefit-icon">
-                                <img src="../assets/icons/register/0f436.svg" alt="" class="theme-light-only">
-                                <img src="../assets/icons/register/f673c.svg" alt="" class="theme-dark-only">
+                                <img src="../assets/icons/register/disc-light.svg" alt="" class="theme-light-only">
+                                <img src="../assets/icons/register/disc-dark.svg" alt="" class="theme-dark-only">
                             </span>
                             <div>
                                 <h3>
@@ -94,8 +94,8 @@
                         </li>
                         <li>
                             <span class="benefit-icon">
-                                <img src="../assets/icons/register/4ed2a.svg" alt="" class="theme-light-only">
-                                <img src="../assets/icons/register/d7578.svg" alt="" class="theme-dark-only">
+                                <img src="../assets/icons/register/audio-lines-light.svg" alt="" class="theme-light-only">
+                                <img src="../assets/icons/register/audio-lines-dark.svg" alt="" class="theme-dark-only">
                             </span>
                             <div>
                                 <h3>
@@ -108,8 +108,8 @@
                         </li>
                         <li>
                             <span class="benefit-icon">
-                                <img src="../assets/icons/register/c943f.svg" alt="" class="theme-light-only">
-                                <img src="../assets/icons/register/f8dd4.svg" alt="" class="theme-dark-only">
+                                <img src="../assets/icons/register/community-light.svg" alt="" class="theme-light-only">
+                                <img src="../assets/icons/register/community-dark.svg" alt="" class="theme-dark-only">
                             </span>
                             <div>
                                 <h3>
@@ -126,8 +126,8 @@
             <section class="register-content" aria-label="Cadastro">
                 <a class="back-link desktop-home" href="../index.html">
                     <span class="back-icon" aria-hidden="true">
-                        <img class="theme-light-only" src="../assets/icons/register/abd75.svg" alt="">
-                        <img class="theme-dark-only" src="../assets/icons/register/41f36.svg" alt="">
+                        <img class="theme-light-only" src="../assets/icons/register/arrow-back-light.svg" alt="">
+                        <img class="theme-dark-only" src="../assets/icons/register/arrow-back-dark.svg" alt="">
                     </span>
                     Voltar ao início
                 </a>
@@ -185,8 +185,8 @@
                                     <div class="password-input-wrapper">
                                         <input id="passwordField" name="passwordField" class="login-field" type="password" placeholder="Crie uma senha forte" required autocomplete="new-password" aria-describedby="passwordRequirements">
                                         <button type="button" class="icon-button btn-toggle-password" aria-label="Mostrar senha" aria-controls="passwordField" aria-pressed="false">
-                                            <img src="../assets/icons/register/1e2c9.svg" alt="" class="theme-light-only">
-                                            <img src="../assets/icons/register/14645.svg" alt="" class="theme-dark-only">
+                                            <img src="../assets/icons/register/eye-open-light.svg" alt="" class="theme-light-only">
+                                            <img src="../assets/icons/register/eye-open-dark.svg" alt="" class="theme-dark-only">
                                         </button>
                                     </div>
                                 </div>
@@ -197,7 +197,7 @@
                                     <div class="password-input-wrapper">
                                         <input id="confirmPasswordField" name="confirmPasswordField" class="login-field" type="password" placeholder="Repita a senha" required autocomplete="new-password" aria-describedby="confirmPasswordError">
                                         <button type="button" class="icon-button btn-toggle-password" aria-label="Mostrar senha" aria-controls="confirmPasswordField" aria-pressed="false">
-                                            <img src="../assets/icons/register/af46c.svg" alt="" class="">
+                                            <img src="../assets/icons/register/confirm-password-eye.svg" alt="" class="">
                                         </button>
                                     </div>
                                 </div>
@@ -247,8 +247,8 @@
                                         <input id="birthDateField" name="birthDate" class="login-field" type="date" placeholder="dd / mm / aaaa" autocomplete="bday" required>
                                         <button type="button" id="openBirthDatePicker" class="icon-button" aria-label="Abrir calendário" aria-controls="birthDateField">
                                             <picture>
-                                                <source media="(max-width: 600px)" srcset="../assets/icons/register/ca095.svg">
-                                                <img src="../assets/icons/register/8997e.svg" alt="" class="">
+                                                <source media="(max-width: 600px)" srcset="../assets/icons/register/calendar-mobile.svg">
+                                                <img src="../assets/icons/register/calendar-desktop.svg" alt="" class="">
                                             </picture>
                                         </button>
                                     </div>
@@ -260,12 +260,12 @@
                                     <div class="city-input-wrapper">
                                         <input id="cityField" name="city" class="login-field" type="text" placeholder="Ex: São Paulo" maxlength="100" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="citySuggestions">
                                         <picture class="city-icon-default">
-                                            <source media="(max-width: 600px)" srcset="../assets/icons/register/2b940.svg">
-                                            <img src="../assets/icons/register/3f61c.svg" alt="" class="">
+                                            <source media="(max-width: 600px)" srcset="../assets/icons/register/globe-mobile.svg">
+                                            <img src="../assets/icons/register/globe-desktop.svg" alt="" class="">
                                         </picture>
                                         <picture class="city-icon-active">
-                                            <source media="(max-width: 600px)" srcset="../assets/icons/register/e5044.svg">
-                                            <img src="../assets/icons/register/c86b7.svg" alt="">
+                                            <source media="(max-width: 600px)" srcset="../assets/icons/register/globe-active-mobile.svg">
+                                            <img src="../assets/icons/register/globe-active-desktop.svg" alt="">
                                         </picture>
                                     </div>
                                     <ul id="citySuggestions" class="autocomplete-list" role="listbox" aria-label="Sugestões de cidades" hidden>
@@ -305,7 +305,7 @@
             <section id="pendingSection" class="confirmation-section" style="display: none;" aria-labelledby="pendingTitle">
                 <div class="confirmation-card">
                     <header class="confirmation-introduction">
-                        <span class="confirmation-badge" aria-hidden="true"><img src="../assets/icons/confirmation/d2916.svg" alt=""></span>
+                        <span class="confirmation-badge" aria-hidden="true"><img src="../assets/icons/confirmation/mail-check.svg" alt=""></span>
                         <div class="confirmation-heading">
                             <h1 id="pendingTitle" tabindex="-1">Quase lá!</h1>
                             <p>Enviamos um link de confirmação para:</p>
@@ -324,7 +324,7 @@
                     <p id="pendingCooldownStatus" class="visually-hidden" role="status"></p>
                     <nav class="confirmation-actions" aria-label="Acesso e retorno">
                         <a href="login.html">Ir para o Login</a>
-                        <button type="button" id="btnBackToForm" class="confirmation-back"><span>Voltar ao formulário</span><span class="confirmation-mobile-chevron" aria-hidden="true"><img class="theme-light-only" src="../assets/icons/confirmation/2430a.svg" alt=""><img class="theme-dark-only" src="../assets/icons/confirmation/8f42c.svg" alt=""></span></button>
+                        <button type="button" id="btnBackToForm" class="confirmation-back"><span>Voltar ao formulário</span><span class="confirmation-mobile-chevron" aria-hidden="true"><img class="theme-light-only" src="../assets/icons/confirmation/chevron-down-light.svg" alt=""><img class="theme-dark-only" src="../assets/icons/confirmation/chevron-down-dark.svg" alt=""></span></button>
                     </nav>
                 </div>
             </section>
