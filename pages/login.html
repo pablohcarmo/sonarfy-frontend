@@ -17,24 +17,22 @@
 <body>
     <header class="site-header">
         <a href="../index.html" class="brand" aria-label="Sonarfy — página inicial">
-            <span class="brand-symbol" aria-hidden="true">S</span><span>Sonarfy</span>
+            <svg class="brand-desktop" width="118" height="32" viewBox="0 0 118 32" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-desktop.svg#logo"></use></svg><svg class="brand-mobile" width="95" height="24" viewBox="0 0 95 24" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-mobile.svg#logo"></use></svg>
         </a>
         <nav class="header-actions" aria-label="Navegação principal">
             <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
-                <img class="theme-light-only" src="../assets/icons/theme-moon.svg" alt="">
-                <img class="theme-dark-only" src="../assets/icons/theme-sun.svg" alt="">
+                <svg class="ui-icon theme-light-only" fill="none" width="14.99" height="20" viewBox="0 0 14.99 20" aria-hidden="true" focusable="false"><use href="../assets/icons/shared/theme-moon.svg#icon"></use></svg>
+                <svg class="ui-icon theme-dark-only" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/shared/theme-sun.svg#icon"></use></svg>
             </button>
             <a class="back-link mobile-home" href="../index.html">
-                <img class="theme-light-only" src="../assets/icons/back-light.svg" alt="">
-                <img class="theme-dark-only" src="../assets/icons/back-dark.svg" alt="">Início
+                <svg class="ui-icon" fill="none" width="9.334" height="16" viewBox="0 0 9.334 16" aria-hidden="true" focusable="false"><use href="../assets/icons/login/arrow-back.svg#icon"></use></svg>Início
             </a>
         </nav>
     </header>
     <main class="auth-container">
         <div class="login-content">
             <a class="back-link desktop-home" href="../index.html">
-                <img class="theme-light-only" src="../assets/icons/back-light.svg" alt="">
-                <img class="theme-dark-only" src="../assets/icons/back-dark.svg" alt="">Voltar ao início
+                <svg class="ui-icon" fill="none" width="9.334" height="16" viewBox="0 0 9.334 16" aria-hidden="true" focusable="false"><use href="../assets/icons/login/arrow-back.svg#icon"></use></svg>Voltar ao início
             </a>
             <form id="loginForm" class="login-card" method="post" aria-labelledby="login-title" aria-describedby="login-description" novalidate>
                 <div class="form-introduction">
@@ -54,7 +52,7 @@
                         <div class="password-input-wrapper">
                             <input id="passwordField" name="password" class="login-field" type="password" placeholder="Digite sua senha" required autocomplete="current-password" aria-describedby="passwordField-error">
                             <button type="button" id="btnTogglePassword" class="icon-button btn-toggle-password" aria-label="Mostrar senha" aria-controls="passwordField" aria-pressed="false" title="Mostrar senha">
-                                <img src="../assets/icons/eye.svg" alt="">
+                                <svg class="ui-icon eye-open" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-open.svg#icon"></use></svg><svg class="ui-icon eye-off" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-off.svg#icon"></use></svg>
                             </button>
                         </div>
                         <span id="passwordField-error" class="field-error" hidden></span>
@@ -62,7 +60,7 @@
                 </div>
                 <div class="login-options">
                     <label class="checkbox-container" for="rememberMeCheckbox">
-                        <input type="checkbox" id="rememberMeCheckbox" name="remember"><span>Lembrar meu usuário</span>
+                        <input type="checkbox" id="rememberMeCheckbox" name="remember"><svg class="checkbox-check ui-icon" fill="none" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><use href="../assets/icons/login/checkmark.svg#icon"></use></svg><span>Lembrar meu usuário</span>
                     </label>
                     <a href="recuperar-senha.html">Esqueci minha senha</a>
                 </div>
