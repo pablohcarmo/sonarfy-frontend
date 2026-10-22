@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-describe('Modais de Reenvio e Retificação de E-mail (cadastro.js)', () => {
+describe('Modais de Reenvio e Retificação de E-mail (register.js)', () => {
     let htmlContent;
     let jsContent;
     let mockBackendResponse = null;
@@ -82,7 +82,7 @@ describe('Modais de Reenvio e Retificação de E-mail (cadastro.js)', () => {
             };
         });
 
-        const jsPath = path.resolve(__dirname, '../js/cadastro.js');
+        const jsPath = path.resolve(__dirname, '../js/register.js');
         jsContent = fs.readFileSync(jsPath, 'utf-8');
 
         // Initialize this script once per fixture; do not retain ready listeners across tests.

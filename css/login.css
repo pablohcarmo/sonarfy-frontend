@@ -79,8 +79,8 @@ a:hover {
     outline: 2px solid var(--focus-ring);
     outline-offset: 4px;
 }
-/* SVG assets inherit theme colors and retain their intrinsic dimensions. */
-.ui-icon { display: block; flex-shrink: 0; overflow: visible; }
+/* Keep icon assets at their intrinsic dimensions. */
+.ui-icon { display: block; flex-shrink: 0; }
 .brand-desktop { display: block; }
 .brand-mobile { display: none; }
 [hidden], .theme-dark-only {
