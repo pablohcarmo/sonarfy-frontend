@@ -1,3 +1,5 @@
+import { getPostLoginDestination } from './spotify-sync-state.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const loginField = document.getElementById('loginField');
@@ -150,18 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('sonarfy_token', token);
                     }
 
-                    // Redirecionamento seguro caso haja query param 'redirect'
-                    let targetUrl = 'feed.html';
-                    try {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const redirectParam = urlParams.get('redirect');
-                        if (redirectParam) {
-                            const destination = new URL(redirectParam, window.location.href);
-                            if (destination.origin === window.location.origin && ['http:', 'https:'].includes(destination.protocol)) {
-                                targetUrl = destination.href;
-                            }
-                        }
-                    } catch {}
+                    const targetUrl = getPostLoginDestination();
 
                     window.location.href = targetUrl;
                 } else {
