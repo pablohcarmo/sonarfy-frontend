@@ -64,8 +64,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
     transform: translateY(calc(-100% - 24px));
 }
 .skip-link:focus { transform: none; }
-/* SVG assets inherit theme colors and retain their intrinsic dimensions. */
-.ui-icon { display: block; flex-shrink: 0; overflow: visible; }
+/* Keep icon assets at their intrinsic dimensions. */
+.ui-icon { display: block; flex-shrink: 0; }
 .brand-desktop { display: block; }
 .brand-mobile { display: none; }
 .theme-dark-only { display: none; }
