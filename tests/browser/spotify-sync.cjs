@@ -95,7 +95,7 @@ const server = http.createServer((req, res) => {
                         localStorage.removeItem('sonarfy_spotify_synced');
                         localStorage.removeItem('sonarfy_spotify_skipped_at');
                         if (state === 'synced') localStorage.setItem('sonarfy_spotify_synced', 'true');
-                        if (state === 'recent' || state === 'expired') localStorage.setItem('sonarfy_spotify_skipped_at', String(Date.now() - (state === 'expired' ? 14 * 86400000 : 1000)));
+                        if (state === 'recent' || state === 'expired') localStorage.setItem('sonarfy_spotify_skipped_at', String(Date.now() - (state === 'expired' ? 7 * 86400000 : 1000)));
                     }, state);
                     await page.route('**/auth/login', route => route.fulfill({ json: { token: 'test-token' } }));
                     await page.goto(`${base}/pages/login.html?redirect=https://example.com`);

@@ -1,4 +1,4 @@
-export const SPOTIFY_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
+export const SPOTIFY_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 export const SPOTIFY_SYNCED_KEY = 'sonarfy_spotify_synced';
 export const SPOTIFY_SKIPPED_KEY = 'sonarfy_spotify_skipped_at';
 

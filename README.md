@@ -35,7 +35,7 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 - Login com opção de lembrar o identificador e mostrar ou ocultar a senha.
 - Confirmação de e-mail, correção do endereço e reenvio do link.
 - Verificação de conta por token, com estados de sucesso e erro.
-- Tela de conexão com o Spotify, com opção de pular e lembrete após 14 dias.
+- Tela de conexão com o Spotify, com opção de pular e lembrete após 7 dias.
 - Layouts responsivos e alternância entre os temas claro e escuro.
 
 Os fluxos de conta dependem da API. Avaliações, resenhas e recursos sociais fazem parte da proposta do produto e ainda estão em desenvolvimento. A tela de conexão com o Spotify está implementada; a autorização e a sincronização real dependem da integração com o backend. A disponibilização pública em produção ainda está em preparação.
@@ -50,7 +50,7 @@ A tela de conexão com o Spotify apresenta a proposta de importar playlists, des
 
 *Capturas reais da interface: desktop em 1440 × 900 e mobile em 390 × 900. Clique nas imagens para ampliar.*
 
-No primeiro login, a tela aparece para quem ainda não conectou o Spotify. Ao pular, a preferência fica salva neste navegador por **14 dias**; nesse período, o login segue para o perfil e a conexão continua disponível manualmente nas configurações da conta. Depois de 14 dias, a tela volta a aparecer no login se a conta continuar desconectada. Contas já sincronizadas seguem diretamente para o perfil.
+No primeiro login, a tela aparece para quem ainda não conectou o Spotify. Ao pular, a preferência fica salva neste navegador por **7 dias**; nesse período, o login segue para o perfil e a conexão continua disponível manualmente nas configurações da conta. Depois de 7 dias, a tela volta a aparecer no login se a conta continuar desconectada. Contas já sincronizadas seguem diretamente para o perfil.
 
 A conexão só é marcada como concluída após a confirmação da autorização do Spotify, que ainda precisa ser integrada ao backend. O destino `profile.html` também depende da implementação da página de perfil. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
 

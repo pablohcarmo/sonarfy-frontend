@@ -278,7 +278,7 @@ de altura, sem recorte. No desktop, a altura é de aproximadamente 574px.
 
 `js/spotify-sync-state.js` centraliza o estado local: contas sincronizadas
 seguem para `profile.html`; contas não sincronizadas veem o onboarding no
-primeiro login ou após 14 dias do último skip. O acesso manual nas
+primeiro login ou após 7 dias do último skip. O acesso manual nas
 configurações usa `spotify-sync.html?source=account` durante o cooldown.
 A integração exige `window.sonarfySpotifyOAuth` com confirmação assíncrona
 `{ synced: true }` antes de gravar sucesso. O handler real e `pages/profile.html`

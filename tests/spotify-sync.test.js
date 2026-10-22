@@ -10,6 +10,9 @@ const now = 2_000_000_000_000;
 beforeEach(() => localStorage.clear());
 
 describe('Elegibilidade do Spotify após login', () => {
+    it('define o cooldown como exatamente 7 dias', () => {
+        expect(SPOTIFY_COOLDOWN_MS).toBe(7 * 24 * 60 * 60 * 1000);
+    });
     it('exibe no primeiro login', () => {
         expect(shouldShowSpotifySync(localStorage, now)).toBe(true);
         expect(getPostLoginDestination(localStorage, now)).toBe('spotify-sync.html');
@@ -24,7 +27,7 @@ describe('Elegibilidade do Spotify após login', () => {
         expect(shouldShowSpotifySync(localStorage, now)).toBe(false);
         expect(getPostLoginDestination(localStorage, now)).toBe('profile.html');
     });
-    it.each([SPOTIFY_COOLDOWN_MS, SPOTIFY_COOLDOWN_MS + 1])('reexibe a partir de 14 dias (%i ms)', elapsed => {
+    it.each([SPOTIFY_COOLDOWN_MS, SPOTIFY_COOLDOWN_MS + 1])('reexibe a partir de 7 dias (%i ms)', elapsed => {
         skipSpotifySync(localStorage, now - elapsed);
         expect(shouldShowSpotifySync(localStorage, now)).toBe(true);
     });
