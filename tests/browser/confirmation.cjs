@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const assert = require('node:assert/strict');
 
 (async () => {
-    const output = 'docs/confirmation-qa';
+    const output = process.env.OUTPUT_DIR || 'test-results/confirmation';
     fs.mkdirSync(output, { recursive: true });
     const results = [];
     for (const name of ['edge', 'firefox']) {

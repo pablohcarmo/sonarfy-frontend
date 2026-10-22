@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const assert = require('node:assert/strict');
 
 (async () => {
-    const output = process.env.OUTPUT_DIR || '.codex/shared-brand-qa';
+    const output = process.env.OUTPUT_DIR || 'test-results/shared-brand';
     fs.mkdirSync(output, { recursive: true });
     const results = [];
     for (const name of ['edge', 'firefox']) {

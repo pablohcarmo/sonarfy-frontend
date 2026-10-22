@@ -1,7 +1,8 @@
 const { chromium, firefox } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const fs = require('node:fs');
 (async () => {
- fs.mkdirSync('docs/register-qa', { recursive: true });
+ const output = process.env.OUTPUT_DIR || 'test-results/register';
+ fs.mkdirSync(output, { recursive: true });
  const reports=[];
  for(const name of ['edge','firefox']) {
   const browser = name === 'edge' ? await chromium.launch({ channel: 'msedge', headless: true }) : await firefox.launch({ headless: true });
@@ -28,7 +29,7 @@ const fs = require('node:fs');
    if(!await home.isVisible() || (await home.textContent()).trim()!=='Início')throw Error('Header home link missing');
    const pendingIndicators=await page.locator('.password-checklist .invalid .requirement-indicator').evaluateAll(items=>items.map(item=>getComputedStyle(item).backgroundColor));
    if(pendingIndicators.length!==4 || pendingIndicators.some(color=>color!=='rgba(0, 0, 0, 0)'))throw Error('Pending password circles must be hollow');
-   await page.screenshot({path:`docs/register-qa/${name}-${width}-${theme}.png`,fullPage:true});
+   await page.screenshot({path:`${output}/${name}-${width}-${theme}.png`,fullPage:true});
    await page.fill('#passwordField','Senha@123');
    if(await page.locator('.password-checklist .valid').count()!==4)throw Error('Password criteria failed');
    const completedIndicators=await page.locator('.password-checklist .valid .requirement-indicator').evaluateAll(items=>items.map(item=>getComputedStyle(item).backgroundColor));
@@ -43,7 +44,7 @@ const fs = require('node:fs');
    if(await page.locator('#passwordField').getAttribute('type')!=='text')throw Error('Visibility toggle failed');
    await page.fill('#cityField','São Paulo');
    await page.waitForSelector('#citySuggestions:not([hidden])');
-   await page.screenshot({path:`docs/register-qa/${name}-${width}-${theme}-city.png`,fullPage:true});
+   await page.screenshot({path:`${output}/${name}-${width}-${theme}-city.png`,fullPage:true});
    await page.press('#cityField','ArrowDown'); await page.press('#cityField','Enter');
    if(await page.inputValue('#cityField')!=='São Paulo')throw Error('Keyboard selection failed');
    const geometry=await page.evaluate(()=>({
@@ -63,6 +64,6 @@ const fs = require('node:fs');
   }
   await browser.close();
  }
- fs.writeFileSync('docs/register-qa/results.json',JSON.stringify(reports,null,2));
+ fs.writeFileSync(`${output}/results.json`,JSON.stringify(reports,null,2));
  console.log(JSON.stringify(reports.map(({geometry,...r})=>({...r,fontLoaded:geometry.fontLoaded,scrollWidth:geometry.scrollWidth})),null,2));
 })().catch(e=>{console.error(e);process.exit(1)});

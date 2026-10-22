@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const assert = require('node:assert/strict');
 
 (async () => {
-    const output = process.env.OUTPUT_DIR || '.codex/login-home-assets-qa';
+    const output = process.env.OUTPUT_DIR || 'test-results/login-home-assets';
     fs.mkdirSync(output, { recursive: true });
     const results = [];
     for (const name of ['edge', 'firefox']) {
