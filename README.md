@@ -1,48 +1,61 @@
-# Sonarfy — Frontend
+<p align="center">
+  <img src="assets/images/sonarfy-symbol.png" width="72" alt="Símbolo do Sonarfy">
+</p>
 
-Frontend em HTML5, CSS3 e JavaScript, com interface atual em português brasileiro e suporte a temas claro e escuro.
+<h1 align="center">Sonarfy</h1>
 
-## Desenvolvimento local
+<p align="center"><strong>Sua próxima descoberta musical pode começar com uma boa conversa.</strong></p>
 
-```sh
-npm ci
-npm test
-python -m http.server 4173 --bind 127.0.0.1
-```
+<p align="center">Música · Avaliações · Comunidade</p>
 
-- Home: `http://127.0.0.1:4173/`
-- Login: `http://127.0.0.1:4173/pages/login.html`
-- Cadastro: `http://127.0.0.1:4173/pages/register.html`
-- Prévia da confirmação, sem cadastro: `http://127.0.0.1:4173/preview/confirmation.html`
+O **Sonarfy** é uma rede social em desenvolvimento para quem gosta de ouvir, descobrir e conversar sobre música. A proposta é reunir avaliações de álbuns, resenhas e conexões entre pessoas que compartilham o mesmo gosto musical.
 
-A prévia utiliza ações simuladas e não envia e-mails. O cadastro real depende da API configurada em `js/api.js` e da configuração local de cidades em `js/env.js`.
+Projeto de autoria própria, em desenvolvimento como **Trabalho de Conclusão de Curso (TCC)**, com evolução voltada ao uso em produção. Este repositório privado contém o frontend da plataforma.
 
-## Cadastro e confirmação
+## Conheça a interface
 
-A página de cadastro usa `pages/register.html`. Os links da Home, login, verificação e prévia apontam para esse endereço. O endereço antigo `pages/cadastro.html` redireciona para a nova página, preservando query string e fragmento quando JavaScript está disponível. Sem JavaScript, há um redirecionamento simples e um link de fallback.
+Uma experiência que acompanha você no computador e no celular, com temas claro e escuro.
 
-Os nomes internos `css/cadastro.css`, `js/cadastro.js` e dos testes existentes foram mantidos: eles não determinam a URL pública nem o idioma apresentado.
+| Desktop · tema escuro | Mobile · tema claro |
+| :---: | :---: |
+| <a href="docs/screenshots/sonarfy-desktop.png"><img src="docs/screenshots/sonarfy-desktop.png" width="900" alt="Página inicial do Sonarfy no desktop: apresentação da rede social, acesso ao cadastro e introdução aos recursos, em tema escuro"></a> | <a href="docs/screenshots/sonarfy-mobile.png"><img src="docs/screenshots/sonarfy-mobile.png" width="300" alt="Página inicial do Sonarfy no celular: navegação, apresentação e botões de cadastro e Saiba Mais, em tema claro"></a> |
 
-As verificações de interface e suas limitações estão em [Cadastro](docs/register-qa/README.md) e [Confirmação de e-mail](docs/confirmation-qa/README.md). Os scripts em `tests/browser/` verificam Firefox e Microsoft Edge, desktop/mobile e claro/escuro, usando uma instalação de Playwright fornecida pelo ambiente de desenvolvimento.
+*Capturas reais da página inicial: desktop em 1440 × 1000 e mobile em 390 × 844. Clique nas imagens para ver os detalhes.*
 
-## Implementação futura: idiomas e URLs
+## Um espaço para viver a música além do play
 
-**Decisão:** usar um prefixo de idioma e manter os nomes das rotas em inglês. O idioma do conteúdo será definido pelo prefixo, sem duplicar o layout e a lógica de cada página.
+- **Conte o que um álbum despertou em você.** A proposta de avaliações e resenhas dá espaço às suas experiências de escuta.
+- **Encontre novas formas de ouvir.** Descubra artistas e álbuns pelas opiniões de outras pessoas.
+- **Conecte seus gostos.** A integração planejada com o Spotify busca aproximar suas referências musicais da comunidade.
 
-| Página | Português brasileiro | Inglês | Espanhol |
-| --- | --- | --- | --- |
-| Início | `/pt-br/` | `/en/` | `/es/` |
-| Cadastro | `/pt-br/register` | `/en/register` | `/es/register` |
-| Login | `/pt-br/login` | `/en/login` | `/es/login` |
+## O que já está disponível neste frontend
 
-Essa estrutura é um plano; as traduções, o seletor de idiomas e as rotas públicas acima ainda não estão implementados. Hoje o acesso estático continua usando `/pages/register.html`, com conteúdo em PT-BR. O domínio `sonarfy.com/register` dependerá das regras da hospedagem, que não estão configuradas neste repositório.
+- Página inicial com apresentação da plataforma.
+- Cadastro com validações, requisitos de senha e busca de cidades.
+- Login com opção de lembrar o identificador e mostrar ou ocultar a senha.
+- Confirmação de e-mail, correção do endereço e reenvio do link.
+- Verificação de conta por token, com estados de sucesso e erro.
+- Layouts responsivos e alternância entre os temas claro e escuro.
 
-Trabalho futuro:
+Os fluxos de conta dependem da API. Avaliações, resenhas, recursos sociais e sincronização com Spotify fazem parte da proposta do produto e não representam fluxos concluídos neste frontend. A disponibilização pública em produção ainda está em preparação.
 
-- Configurar as rotas sem `.html` e os prefixos de idioma na hospedagem/roteamento, com acesso direto e recarregamento funcionando.
-- Extrair textos para arquivos de tradução compartilhando o mesmo HTML, CSS e JavaScript; contemplar mensagens de validação, feedback, títulos e rótulos acessíveis.
-- Atualizar o atributo `lang` do HTML conforme o idioma, usando `pt-BR`, `en` e `es`.
-- Adicionar um seletor que preserve a página equivalente ao trocar de idioma, com preferência do usuário salva e respeito à escolha explícita na URL.
-- Relacionar versões públicas indexáveis com `hreflang` e definir URLs canônicas por idioma.
-- Configurar redirecionamentos permanentes dos endereços antigos quando as rotas públicas estiverem disponíveis.
-- Validar cada idioma em Firefox e Edge, desktop/mobile e claro/escuro, incluindo textos maiores e ausência de overflow.
+## Por trás da experiência
+
+A interface é construída com **HTML5, CSS3 e JavaScript**, sem framework de interface. Os layouts usam Flexbox e Grid, a tipografia é Inter e o design de referência está no Figma.
+
+O desenvolvimento considera navegação por teclado, foco visível, rótulos acessíveis e feedback nos formulários. Os testes automatizados usam **Vitest e Happy DOM**, com verificações de navegador em **Firefox e Microsoft Edge**.
+
+- [Referências visuais do Figma](docs/figma-references.md)
+
+<details>
+<summary><strong>Direção do produto</strong></summary>
+
+As próximas etapas incluem concluir os fluxos internos da plataforma, desenvolver as experiências de avaliações e comunidade e integrar a sincronização musical.
+
+A expansão para outros idiomas prevê interfaces em português, inglês e espanhol, com rotas como `/pt-br/register`, `/en/register` e `/es/register`. Traduções, seletor de idioma e regras de hospedagem dessas rotas ainda não estão implementados.
+
+</details>
+
+---
+
+**Projeto privado e autoral.** O código não é disponibilizado como projeto open source. O repositório reúne o desenvolvimento do frontend para o TCC e a evolução do Sonarfy como produto.
