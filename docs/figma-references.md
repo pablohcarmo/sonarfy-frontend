@@ -7,6 +7,7 @@ Este documento reúne os links, frames e especificações visuais do Sonarfy, or
 - [Cadastro / Register](#cadastro-register)
 - [Confirmação de e-mail](#confirmacao-email)
 - [Verify Account](#verify-account)
+- [Spotify Sync](#spotify-sync)
 
 Os valores correspondem aos frames de referência. As instruções de uso e testes estão nos documentos de cada página.
 
@@ -205,3 +206,89 @@ com variantes específicas para cada tema. Dimensões intrínsecas dos SVGs pres
 O símbolo da marca é texto em um círculo, conforme o componente Header / Global.
 As interações hover/active/focus-visible reutilizam os estados existentes de login;
 os frames de Verify consultados especificam a aparência de repouso.
+
+<a id="spotify-sync"></a>
+## Spotify Sync
+
+Referência: [Spotify Sync no Figma](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=168-14).
+Página local: `pages/spotify-sync.html`, em HTML5, CSS3 e módulos JavaScript nativos.
+
+| Tema | Desktop 1440 × 900 | Mobile 390 × 900 |
+| --- | --- | --- |
+| Claro | `166:2410` | `166:2456` |
+| Escuro | `166:2502` | `166:2548` |
+
+Os quatro frames têm contexto de design e screenshot obtidos pelo Figma MCP.
+A composição contém Header / Global, gráfico de conexão Sonarfy/Spotify,
+introdução, três benefícios, ações de sincronizar/pular e privacidade.
+Esta tela de onboarding não inclui o rodapé global.
+
+### Tokens e layout
+
+Os tokens compartilhados estão em `css/login.css`; os específicos, em
+`css/spotify-sync.css`. `:root` define o tema claro e `[data-theme="dark"]`,
+o escuro. A consulta de variáveis do Figma retorna `{}`; os valores abaixo
+correspondem às propriedades resolvidas dos frames.
+
+| Propriedade | Claro | Escuro |
+| --- | --- | --- |
+| Fundo | #ffffff | #1a1a1a |
+| Card | #ffffff | #242424 |
+| Texto principal | #1a1a1a | #ffffff |
+| Texto secundário | #65676b | #b2b3b5 |
+| Borda | #ebecef | #65676b |
+| Sombra | 0 8px 24px rgba(26,26,26,.03) | 0 8px 24px rgba(0,0,0,.09) |
+
+Azul Sonarfy `#27a9f5`; verde Spotify `#1ed760`; texto do CTA `#1a1a1a`.
+Inter: título 700, 32px/1.2 desktop e 28px/1.2 mobile; descrição 400,
+15px/24px; benefícios 400, 15px/24px desktop e 14px/24px mobile;
+CTA 700, 15px/20px; ação secundária 600, 14px/20px;
+privacidade 400, 12px/20px.
+
+Card com largura máxima de 560px, padding 32px desktop/24px mobile e raio
+16px. Margens mobile de 20px resultam em 350px de largura a 390px.
+As bordas internas preservam as medidas do Auto Layout. Gaps de 24px entre
+seções, 8px na introdução e nas ações e 16px entre benefícios.
+Controles com altura mínima de 48px e raio 8px. Cabeçalho de 88px desktop/
+80px mobile; área principal mínima de 812px/820px, com crescimento natural.
+
+### Assets e conteúdo
+
+Os SVGs locais estão em `assets/icons/spotify-sync/`, sem URLs temporários:
+
+- `sonarfy.svg`: círculo e monograma vetoriais de 64 × 64px, sem fundos dos frames ancestrais.
+- `spotify.svg`: símbolo oficial do Spotify na área de 64 × 64px.
+- `spotify-button.svg`: ícone oficial preto de 24 × 22,9019px, centralizado no botão.
+- `connection-light.svg` / `connection-dark.svg`: conexão de 24 × 24px por tema.
+- `check.svg`: confirmação de 16 × 16px em contêiner de 24 × 24px.
+
+O gráfico de integração tem altura de 72px e gaps de 24px entre símbolos.
+As dimensões intrínsecas dos SVGs são preservadas. Marca do cabeçalho,
+ícones de tema e retorno reutilizam os assets compartilhados do projeto.
+
+A implementação usa a cópia definida para o produto: título “Conecte sua
+conta do Spotify”, descrição “Sincronize suas músicas para desbloquear uma
+experiência personalizada no Sonarfy.” e CTA “Sincronizar com Spotify”.
+Os benefícios são importar playlists, descobrir recomendações com base no
+histórico e compartilhar o gosto musical. Esses textos diferem dos frames;
+as quebras naturais no mobile produzem um card de aproximadamente 703px
+de altura, sem recorte. No desktop, a altura é de aproximadamente 574px.
+
+### Comportamento e verificação
+
+`js/spotify-sync-state.js` centraliza o estado local: contas sincronizadas
+seguem para `profile.html`; contas não sincronizadas veem o onboarding no
+primeiro login ou após 14 dias do último skip. O acesso manual nas
+configurações usa `spotify-sync.html?source=account` durante o cooldown.
+A integração exige `window.sonarfySpotifyOAuth` com confirmação assíncrona
+`{ synced: true }` antes de gravar sucesso. O handler real e `pages/profile.html`
+não estão disponíveis neste repositório.
+
+Verificação: `npm test -- tests/spotify-sync.test.js` e
+`node tests/browser/spotify-sync.cjs`. O script de navegador usa Playwright
+(`PLAYWRIGHT_MODULE`, quando necessário), inicia seu próprio servidor e
+grava capturas/relatório em `test-results/spotify-sync/`, ignorado pelo Git.
+Edge 155 e Firefox 153 verificados em 1440px/390px, nos temas claro/escuro,
+com SVGs carregados e sem overflow na tela Spotify Sync. Mobile é verificado
+por viewport emulado; login, confirmação OAuth e destino de perfil são
+simulados nos testes.
