@@ -79,6 +79,10 @@ a:hover {
     outline: 2px solid var(--focus-ring);
     outline-offset: 4px;
 }
+/* SVG assets inherit theme colors and retain their intrinsic dimensions. */
+.ui-icon { display: block; flex-shrink: 0; overflow: visible; }
+.brand-desktop { display: block; }
+.brand-mobile { display: none; }
 [hidden], .theme-dark-only {
     display: none !important;
 }
@@ -104,6 +108,7 @@ a:hover {
     font-weight: 700;
     color: var(--text-primary);
 }
+/* Register and Verify still use the shared text-and-circle brand. */
 .brand-symbol {
     display: grid;
     place-items: center;
@@ -251,11 +256,13 @@ h1 {
     outline: none;
 }
 .btn-toggle-password {
+    color: var(--input-border);
     border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
-.btn-toggle-password[aria-pressed="true"] img {
-    opacity: .5;
-}
+#theme-toggle { color: var(--text-primary); }
+.btn-toggle-password:hover { color: var(--text-primary); }
+.btn-toggle-password .eye-off, .btn-toggle-password[aria-pressed="true"] .eye-open { display: none; }
+.btn-toggle-password[aria-pressed="true"] .eye-off { display: block; }
 .login-options {
     display: flex;
     justify-content: space-between;
@@ -268,6 +275,7 @@ h1 {
     font-weight: 600;
 }
 .checkbox-container {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--space-1);
@@ -289,15 +297,8 @@ h1 {
     background: var(--accent-color);
     border-color: var(--accent-color);
 }
-.checkbox-container input:checked::after {
-    content: "✓";
-    display: block;
-    color: #1a1a1a;
-    text-align: center;
-    font-size: 14px;
-    line-height: 17px;
-    font-weight: 700;
-}
+.checkbox-check { position: absolute; left: 2px; top: calc(50% - 8px); color: var(--button-text); pointer-events: none; visibility: hidden; }
+.checkbox-container input:checked + .checkbox-check { visibility: visible; }
 .btn-submit {
     width: 100%;
     min-height: 48px;
@@ -377,6 +378,12 @@ h1 {
     white-space: nowrap;
 }
 @media (max-width: 600px) {
+    .brand-desktop {
+        display: none;
+    }
+    .brand-mobile {
+        display: block;
+    }
     .site-header {
         min-height: 80px;
         padding: var(--space-2) var(--space-3);
@@ -426,5 +433,8 @@ h1 {
     }
     .checkbox-container input {
         appearance: auto;
+    }
+    .checkbox-check {
+        display: none;
     }
 }

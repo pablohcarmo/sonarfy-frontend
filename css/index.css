@@ -64,6 +64,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
     transform: translateY(calc(-100% - 24px));
 }
 .skip-link:focus { transform: none; }
+/* SVG assets inherit theme colors and retain their intrinsic dimensions. */
+.ui-icon { display: block; flex-shrink: 0; overflow: visible; }
+.brand-desktop { display: block; }
+.brand-mobile { display: none; }
 .theme-dark-only { display: none; }
 [data-theme="dark"] .theme-light-only { display: none; }
 [data-theme="dark"] .theme-dark-only { display: block; }
@@ -77,18 +81,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
     box-shadow: inset 0 -1px var(--border-color);
 }
 .brand { display: inline-flex; align-items: center; gap: var(--space-1); font-size: 20px; font-weight: 700; }
-.brand-symbol {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--accent-color);
-    color: var(--button-text);
-    font-size: 25px;
-    font-style: italic;
-    font-weight: 600;
-}
+
 .header-actions { display: flex; align-items: center; gap: var(--space-1); }
 .button {
     display: inline-flex;
@@ -185,6 +178,7 @@ h1 { font-size: 56px; font-weight: 700; line-height: 1.12; }
     box-shadow: var(--surface-shadow);
 }
 .feature-icon {
+    color: var(--accent-color);
     display: grid;
     place-items: center;
     width: 48px;
@@ -214,9 +208,10 @@ h1 { font-size: 56px; font-weight: 700; line-height: 1.12; }
     .feature-card { min-height: 256px; }
 }
 @media (max-width: 767px) {
+    .brand-desktop { display: none; }
+    .brand-mobile { display: block; }
     .site-header { min-height: 80px; padding-inline: var(--space-3); }
     .brand { font-size: 16px; }
-    .brand-symbol { width: 24px; height: 24px; font-size: 19px; }
     .hero { min-height: 584px; padding: var(--space-6) var(--space-3); }
     h1 { font-size: 36px; }
     .hero-introduction p { font-size: 16px; }
