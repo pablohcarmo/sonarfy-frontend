@@ -18,11 +18,11 @@ Inspected with Figma MCP: Light Desktop `84:328`, Light Mobile `84:370`, Dark De
 | CTA text | #1a1a1a | #1a1a1a |
 | CTA border | #1a1a1a | #27a9f5 |
 
-Inter: heading 700, 32px/1.2 desktop and 28px/1.2 mobile; description 400, 15px/24px; labels 600, 14px/20px; inputs 400, 15px/24px desktop and 14px/24px mobile; options 13px/24px desktop and 12px/24px mobile; CTA 600, 15px/normal; account link 14px/24px; footer 12px/20px. The header mark is styled text and a circle in Figma, not the existing bitmap logo.
+Inter: heading 700, 32px/1.2 desktop and 28px/1.2 mobile; description 400, 15px/24px; labels 600, 14px/20px; inputs 400, 15px/24px desktop and 14px/24px mobile; options 13px/24px desktop and 12px/24px mobile; CTA 600, 15px/normal; account link 14px/24px; footer 12px/20px. The header mark is styled text and a circle in Figma; it is now exported as a complete SVG in `assets/logos/`.
 
 Card: maximum 480px, 32px desktop padding; mobile outer margins/padding 24px, producing a 342px card at 390px. Sections and credentials use 24px gaps; labels use 8px gaps. Card radius 16px, controls 8px, checkbox 4px. No card shadow exists in these frames. Inset borders preserve Figma's content dimensions. Header height is 88px desktop / 80px mobile; footer minimum height 168px, top padding 32px, bottom padding 40px, gap 12px.
 
-Requested copy deliberately overrides Figma's “Usuário” / “Digite o seu usuário” with “E-mail ou Nome de Usuário” / “seu@email.com ou @usuario”. Hover, active, focus, validation and loading states extend the inspected resting designs. The original eye, arrow, moon and sun SVGs are downloaded into `assets/icons`; no temporary asset URLs are used at runtime.
+Requested copy deliberately overrides Figma's “Usuário” / “Digite o seu usuário” with “E-mail ou Nome de Usuário” / “seu@email.com ou @usuario”. Hover, active, focus, validation and loading states extend the inspected resting designs. The eye and arrow SVGs are in `assets/icons/login/`, and moon/sun SVGs in `assets/icons/shared/`; no temporary asset URLs are used at runtime.
 
 The login loads its own stylesheet and theme controller to avoid conflicting legacy global styles, automatic footer injection and password character filtering. The theme uses the existing `sonarfy_theme` storage key. Existing API login, remembered identifier, verification feedback and redirects remain supported.
 

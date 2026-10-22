@@ -31,10 +31,10 @@ Espaçamento principal: 8/16/24/32/48px; botões com raio 8px e mínimo
 preservam as dimensões de conteúdo do Auto Layout. Os mínimos verticais
 de hero e footer seguem os frames, mas podem crescer com o conteúdo.
 
-Os SVGs oficiais foram baixados para assets/icons/home-*.svg, incluindo
+Os SVGs oficiais agora estão em assets/icons/index/ e assets/icons/shared/, incluindo
 três ícones de recursos (24 × 24px) e o chevron claro/escuro (16 × 16px).
-Os antigos SVGs de retorno foram preservados, mas não são usados na Home.
-A marca “S” e as barras sonoras são elementos de texto/layout no Figma,
+Os antigos SVGs de retorno sem uso foram removidos na limpeza anterior.
+A marca completa usa os SVGs em `assets/logos/`; as barras sonoras são elementos de layout no Figma,
 reproduzidos como tais. Não foram usadas capturas como assets de página.
 
 ## Comportamento
