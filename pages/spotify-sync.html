@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Sincronizar Spotify – Sonarfy</title>
+    <link rel="icon" type="image/png" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <script src="../js/login-theme.js"></script>
+    <link rel="stylesheet" href="../css/spotify-sync.css">
+    <script type="module" src="../js/spotify-sync.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="../index.html" class="brand" aria-label="Sonarfy — página inicial">
+            <svg class="brand-desktop" width="118" height="32" viewBox="0 0 118 32" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-desktop.svg#logo"></use></svg><svg class="brand-mobile" width="95" height="24" viewBox="0 0 95 24" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-mobile.svg#logo"></use></svg>
+        </a>
+        <nav class="header-actions" aria-label="Navegação principal">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
+                <svg class="ui-icon theme-light-only" fill="none" width="14.99" height="20" viewBox="0 0 14.99 20" aria-hidden="true" focusable="false"><use href="../assets/icons/shared/theme-moon.svg#icon"></use></svg>
+                <img class="ui-icon theme-dark-only" src="../assets/icons/shared/theme-sun.svg" alt="">
+            </button>
+            <a class="back-link mobile-home" href="../index.html">
+                <img class="ui-icon theme-light-only" src="../assets/icons/login/arrow-back.svg" alt=""><img class="ui-icon theme-dark-only" src="../assets/icons/login/arrow-back-dark.svg" alt="">Início
+            </a>
+        </nav>
+    </header>
+    <main class="spotify-main">
+        <section id="spotify-card" class="spotify-card" aria-labelledby="spotify-title" aria-describedby="spotify-description">
+            <div class="spotify-integration" role="img" aria-label="Conexão entre Sonarfy e Spotify">
+                <img class="ui-icon" src="../assets/icons/spotify-sync/sonarfy.svg" alt="" width="64" height="64">
+                <img class="ui-icon theme-light-only" src="../assets/icons/spotify-sync/connection-light.svg" alt="">
+                <img class="ui-icon theme-dark-only" src="../assets/icons/spotify-sync/connection-dark.svg" alt="">
+                <img class="ui-icon" src="../assets/icons/spotify-sync/spotify.svg" alt="">
+            </div>
+            <div class="spotify-introduction">
+                <h1 id="spotify-title">Conecte sua conta do Spotify</h1>
+                <p id="spotify-description">Sincronize suas músicas para desbloquear uma experiência personalizada no Sonarfy.</p>
+            </div>
+            <ul class="spotify-benefits">
+                <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Importe suas playlists favoritas automaticamente</span></li>
+                <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Descubra recomendações baseadas no seu histórico</span></li>
+                <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Compartilhe seu gosto musical com outros usuários</span></li>
+            </ul>
+            <div class="spotify-actions">
+                <button id="spotify-connect" class="spotify-button" type="button"><img class="ui-icon" src="../assets/icons/spotify-sync/spotify-button.svg" alt=""><span>Sincronizar com Spotify</span></button>
+                <button id="spotify-skip" class="spotify-button spotify-skip" type="button">Pular por enquanto</button>
+            </div>
+            <p id="spotify-error" class="spotify-error" role="alert" hidden></p>
+            <p class="spotify-privacy">Não publicamos nada sem sua permissão. Você pode desconectar a qualquer momento nas configurações.</p>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { getPostLoginDestination } from '../js/spotify-sync-state.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,7 +49,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
     });
 
     function loadScript() {
-        eval(jsContent);
+        new Function('getPostLoginDestination', jsContent.replace(/^import .*;\r?\n/m, ''))(getPostLoginDestination);
         document.dispatchEvent(new Event('DOMContentLoaded'));
     }
 
@@ -107,7 +108,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         expect(rememberMeCheckbox.checked).toBe(true);
     });
 
-    it('deve realizar login com sucesso, salvar JWT no localStorage e redirecionar para feed.html', async () => {
+    it('deve realizar login com sucesso, salvar JWT no localStorage e redirecionar para spotify-sync.html', async () => {
         loadScript();
 
         const loginField = document.getElementById('loginField');
@@ -130,7 +131,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         await vi.waitFor(() => {
             expect(localStorage.getItem('sonarfy_token')).toBe('mocked-jwt-token-xyz');
             expect(localStorage.getItem('sonarfy_remember_login')).toBe('pablo@sonarfy.com');
-            expect(window.location.href).toContain('feed.html');
+            expect(window.location.href).toContain('spotify-sync.html');
         });
 
         expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -146,7 +147,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         );
     });
 
-    it('deve redirecionar para URL especificada no parâmetro redirect seguro quando fornecido', async () => {
+    it('deve priorizar o onboarding mesmo com parâmetro redirect local', async () => {
         if (window.happyDOM) {
             window.happyDOM.setURL('http://localhost:3000/pages/login.html?redirect=account.html');
         }
@@ -164,7 +165,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 
         await vi.waitFor(() => {
-            expect(window.location.href).toContain('account.html');
+            expect(window.location.href).toContain('spotify-sync.html');
         });
     });
 
@@ -301,6 +302,6 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         document.getElementById('loginField').value = 'usuario';
         document.getElementById('passwordField').value = 'senha';
         document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true }));
-        await vi.waitFor(() => expect(window.location.pathname).toBe('/pages/feed.html'));
+        await vi.waitFor(() => expect(window.location.pathname).toBe('/pages/spotify-sync.html'));
     });
 });

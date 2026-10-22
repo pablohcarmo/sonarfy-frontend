@@ -54,6 +54,10 @@
 
 /* Segurança e Credenciais */
 .security-list { display: flex; flex-direction: column; gap: 20px; }
+.spotify-account-item { flex-wrap: wrap; gap: 16px; }
+.spotify-account-item .security-info { min-width: 0; flex-basis: 200px; }
+.spotify-account-item .action-group { flex-wrap: wrap; }
+.spotify-account-item .btn-outline { white-space: normal; }
 .security-item {
     display: flex; justify-content: space-between; align-items: center;
     padding: 20px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px;
