@@ -17,8 +17,10 @@ const fs = require('node:fs');
     {name:'Campinas',adminName1:'São Paulo',countryName:'Brasil'}
    ]}}));
    const baseURL=process.env.BASE_URL || 'http://127.0.0.1:4173';
-   await page.goto(`${baseURL}/pages/cadastro.html?source=legacy#registerForm`);
-   await page.waitForURL('**/pages/register.html?source=legacy#registerForm');
+   for(const removedPath of ['pages/cadastro.html', 'preview/confirmation.html']) {
+    const removedResponse = await context.request.get(`${baseURL}/${removedPath}`);
+    if(removedResponse.status()!==404)throw Error(`Removed page must return 404: ${removedPath}`);
+   }
    await page.goto(`${baseURL}/pages/register.html`);
    await page.evaluate(()=>document.fonts.ready);
    if((await page.locator('label[for="handleField"]').textContent()).trim()!=='Usuário')throw Error('Username label differs from Figma');
