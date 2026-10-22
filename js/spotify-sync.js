@@ -45,7 +45,7 @@ export function initSpotifySync({
         } finally {
             connect.disabled = false;
             skip.disabled = false;
-            label.textContent = 'Sincronizar com Spotify';
+            label.textContent = 'Conectar ao Spotify';
             card.removeAttribute('aria-busy');
         }
     });
