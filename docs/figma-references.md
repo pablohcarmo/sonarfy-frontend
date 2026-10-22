@@ -266,13 +266,13 @@ O gráfico de integração tem altura de 72px e gaps de 24px entre símbolos.
 As dimensões intrínsecas dos SVGs são preservadas. Marca do cabeçalho,
 ícones de tema e retorno reutilizam os assets compartilhados do projeto.
 
-A implementação usa a cópia definida para o produto: título “Conecte sua
-conta do Spotify”, descrição “Sincronize suas músicas para desbloquear uma
-experiência personalizada no Sonarfy.” e CTA “Sincronizar com Spotify”.
-Os benefícios são importar playlists, descobrir recomendações com base no
-histórico e compartilhar o gosto musical. Esses textos diferem dos frames;
-as quebras naturais no mobile produzem um card de aproximadamente 703px
-de altura, sem recorte. No desktop, a altura é de aproximadamente 574px.
+A implementação acompanha a cópia dos quatro frames: título “Conecte sua
+conta do Spotify”, descrição “Ao conectar, o Sonarfy acessará os dados abaixo
+para ajudar você a encontrar e avaliar álbuns.” e CTA “Conectar ao Spotify”.
+A lista informa os dados acessados: “Artistas que você ouviu no Spotify”,
+“Álbuns identificados nas suas escutas” e “Títulos, capas e faixas desses álbuns”.
+O card tem aproximadamente 632px de altura no mobile e 574px no desktop,
+com crescimento natural quando necessário.
 
 ### Comportamento e verificação
 

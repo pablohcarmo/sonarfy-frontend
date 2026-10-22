@@ -42,11 +42,11 @@ Os fluxos de conta dependem da API. Avaliações, resenhas e recursos sociais fa
 
 ## Conecte suas músicas ao Sonarfy
 
-A tela de conexão com o Spotify apresenta a proposta de importar playlists, descobrir recomendações baseadas no histórico e compartilhar seu gosto musical. Você pode escolher **Sincronizar com Spotify** ou **Pular por enquanto**.
+A tela de conexão com o Spotify explica quais dados serão acessados para ajudar você a encontrar e avaliar álbuns: artistas que você ouviu no Spotify, álbuns identificados nas suas escutas e títulos, capas e faixas desses álbuns. Você pode escolher **Conectar ao Spotify** ou **Pular por enquanto**.
 
 | Desktop · tema escuro | Mobile · tema claro |
 | :---: | :---: |
-| <a href="docs/screenshots/spotify-sync-desktop.png"><img src="docs/screenshots/spotify-sync-desktop.png" width="900" alt="Tela de conexão com o Spotify no desktop em tema escuro, com logos conectados, benefícios e ações de sincronizar ou pular"></a> | <a href="docs/screenshots/spotify-sync-mobile.png"><img src="docs/screenshots/spotify-sync-mobile.png" width="300" alt="Tela de conexão com o Spotify no celular em tema claro, com benefícios, botão de sincronização e aviso de privacidade"></a> |
+| <a href="docs/screenshots/spotify-sync-desktop.png"><img src="docs/screenshots/spotify-sync-desktop.png" width="900" alt="Tela de conexão com o Spotify no desktop em tema escuro, com dados que serão acessados e ações de conectar ou pular"></a> | <a href="docs/screenshots/spotify-sync-mobile.png"><img src="docs/screenshots/spotify-sync-mobile.png" width="300" alt="Tela de conexão com o Spotify no celular em tema claro, com dados que serão acessados, botão de conexão e aviso de privacidade"></a> |
 
 *Capturas reais da interface: desktop em 1440 × 900 e mobile em 390 × 900. Clique nas imagens para ampliar.*
 
