@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Avatar / Profile">
+<g clip-path="url(#clip0_0_380)">
+<rect width="48" height="48" rx="24" fill="#D9EEF0"/>
+<circle id="Avatar Head" cx="24" cy="16.3199" r="6.72" fill="#E2B69B"/>
+<ellipse id="Avatar Silhouette" cx="24.0001" cy="36.0002" rx="14.88" ry="12.96" fill="#182A37"/>
+<ellipse id="Avatar Hair" cx="24.0001" cy="12.2399" rx="7.44" ry="4.08" fill="#15212B"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_380">
+<rect width="48" height="48" rx="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>
