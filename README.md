@@ -36,9 +36,11 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 - Confirmação de e-mail, correção do endereço e reenvio do link.
 - Verificação de conta por token, com estados de sucesso e erro.
 - Tela de conexão com o Spotify, com opção de pular e lembrete após 7 dias.
+- Página de perfil (próprio e visitante) com abas de atividades, respostas e coleção, edição e compartilhamento.
+- Feed da comunidade com abas **Seguindo** e **Para você**, navegação por teclado e estados de carregamento/vazio.
 - Layouts responsivos e alternância entre os temas claro e escuro.
 
-Os fluxos de conta dependem da API. Avaliações, resenhas e recursos sociais fazem parte da proposta do produto e ainda estão em desenvolvimento. A tela de conexão com o Spotify está implementada; a autorização e a sincronização real dependem da integração com o backend. A disponibilização pública em produção ainda está em preparação.
+Os fluxos de conta dependem da API. Perfil e Feed já estão implementados com modo demonstração local substituível via adapter, aguardando a integração com os contratos do backend. A tela de conexão com o Spotify está implementada; a autorização e a sincronização real dependem da integração com o backend. A disponibilização pública em produção ainda está em preparação.
 
 ## Conecte suas músicas ao Sonarfy
 
@@ -52,7 +54,7 @@ A tela de conexão com o Spotify explica quais dados serão acessados para ajuda
 
 No primeiro login, a tela aparece para quem ainda não conectou o Spotify. Ao pular, a preferência fica salva neste navegador por **7 dias**; nesse período, o login segue para o perfil e a conexão continua disponível manualmente nas configurações da conta. Depois de 7 dias, a tela volta a aparecer no login se a conta continuar desconectada. Contas já sincronizadas seguem diretamente para o perfil.
 
-A conexão só é marcada como concluída após a confirmação da autorização do Spotify, que ainda precisa ser integrada ao backend. O destino `profile.html` também depende da implementação da página de perfil. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
+A conexão só é marcada como concluída após a confirmação da autorização do Spotify, que ainda precisa ser integrada ao backend. O destino `pages/profile.html` já está implementado em modo demonstração substituível por adapter. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
 
 ## Por trás da experiência
 
@@ -60,7 +62,11 @@ A interface é construída com **HTML5, CSS3 e JavaScript**, sem framework de in
 
 O desenvolvimento considera navegação por teclado, foco visível, rótulos acessíveis e feedback nos formulários. Os testes automatizados usam **Vitest e Happy DOM**, com verificações de navegador em **Firefox e Microsoft Edge**.
 
+- [Índice da documentação técnica](docs/README.md)
 - [Referências visuais do Figma](docs/figma-references.md)
+- [Perfis Sonarfy](docs/profile-page.md)
+- [Feed Sonarfy](docs/feed-page.md)
+- [Guia de testes](tests/README.md)
 
 <details>
 <summary><strong>Direção do produto</strong></summary>
