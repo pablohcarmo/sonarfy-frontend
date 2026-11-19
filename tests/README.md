@@ -10,6 +10,22 @@ npm test
 
 Para acompanhar alterações, use `npm run test:watch`.
 
+## Perfis
+
+`npm test -- tests/profile.test.js` verifica limites, datas, ordenação,
+permissões e reconciliação de mutações. Execute também:
+
+```sh
+node tests/browser/profile.cjs
+node tests/browser/profile-states.cjs
+```
+
+Os scripts iniciam seus servidores e testam Firefox/Edge, 1440/390px,
+claro/escuro. Usam `PLAYWRIGHT_MODULE` quando a instalação é externa.
+Relatórios e capturas ficam em `test-results/profile*`, ignorados pelo Git.
+Integrações simuladas, estados cobertos e limitações estão em
+[Perfis Sonarfy](../docs/profile-page.md).
+
 ## Testes de navegador
 
 Sirva a raiz do projeto:

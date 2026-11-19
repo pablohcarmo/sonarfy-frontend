@@ -2,6 +2,10 @@
 
 Este documento reúne os links, frames e especificações visuais do Sonarfy, organizados por página.
 
+Perfis próprio e visitante: [inspeção, componentes e adaptações](profile-page.md#referência-visual-e-adaptações).
+Referências: [Profile Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=210-2)
+e [Profile Page (Friend)](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=385-6710).
+
 - [Home / Index](#home-index)
 - [Login](#login)
 - [Cadastro / Register](#cadastro-register)
@@ -281,8 +285,9 @@ seguem para `profile.html`; contas não sincronizadas veem o onboarding no
 primeiro login ou após 7 dias do último skip. O acesso manual nas
 configurações usa `spotify-sync.html?source=account` durante o cooldown.
 A integração exige `window.sonarfySpotifyOAuth` com confirmação assíncrona
-`{ synced: true }` antes de gravar sucesso. O handler real e `pages/profile.html`
-não estão disponíveis neste repositório.
+`{ synced: true }` antes de gravar sucesso. O handler OAuth real não está disponível
+neste repositório. O destino `pages/profile.html` usa um adapter de demonstração
+substituível; consulte [Perfis Sonarfy](profile-page.md).
 
 Verificação: `npm test -- tests/spotify-sync.test.js` e
 `node tests/browser/spotify-sync.cjs`. O script de navegador usa Playwright
