@@ -8,7 +8,8 @@ const items = [
 export function sidebar(own, routes = {}, activeItem = own ? 'profile' : null) {
     return `<nav class="profile-navigation" aria-label="Navegação principal">${items.map(([key, label, route]) => {
         const active = key === activeItem;
-        const content = `${icon(active && key === 'profile' ? 'activeProfile' : active && key === 'home' ? 'activeHome' : key)}<span>${label}</span>`;
+        const iconKey = active && key === 'profile' ? 'activeProfile' : active && key === 'home' ? 'activeHome' : active && key === 'settings' ? 'activeSettings' : key;
+        const content = `${icon(iconKey)}<span>${label}</span>`;
         // Only known local routes or host-configured routes become links.
         const href = routes[key] || route;
         return href ? `<a href="${e(href)}" ${active ? 'aria-current="page"' : ''}>${content}</a>` : `<button data-navigation="${key}">${content}</button>`;

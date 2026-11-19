@@ -1,245 +1,674 @@
-/* Container Principal e Layout */
-.app-container {
-    display: flex;
-    min-height: 100vh;
-    background-color: var(--bg-color);
-}
-.main-content {
-    flex: 1;
-    padding: 40px;
-    margin-left: 250px;
-}
-.account-header { margin-bottom: 32px; }
-.account-header h1 { font-size: 2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
-.account-header p { color: var(--text-secondary); }
-
-/* Card Unificado */
-.settings-card {
-    background-color: var(--footer-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 30px;
-}
-.card-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;
-}
-.card-header h2 { font-size: 1.4rem; font-weight: 600; color: var(--text-primary); }
-
-.section-subtitle {
-    font-size: 1.1rem; font-weight: 600; color: var(--text-primary);
-    margin-bottom: 16px;
-}
-.card-divider {
-    border: none; border-top: 1px solid var(--border-color);
-    margin: 32px 0;
+/* Settings Page: 427:31281 (Desktop 1440px / Mobile 390px, Light / Dark). */
+.account-page {
+    --profile-page: var(--page-bg);
+    --profile-surface: var(--card-bg);
+    --profile-text: var(--text-primary);
+    --profile-muted: var(--text-secondary);
+    --profile-border: var(--border-color);
+    --profile-divider: var(--border-color);
+    --account-field-bg: #f7f8fa;
+    --account-control-border: #8c8d90;
+    --account-danger: #b42318;
+    --account-danger-bg: #fef3f2;
+    --account-danger-ink: #ffffff;
+    --account-success: #216e39;
+    --account-spotify: #1ed760;
+    --account-cta-border: #1a1a1a;
 }
 
-/* Botão Lápis */
-.icon-btn-edit {
-    background: transparent; border: none; color: var(--text-secondary);
-    font-size: 1.2rem; cursor: pointer; transition: color 0.2s ease;
-}
-.icon-btn-edit:hover, .icon-btn-edit.editing { color: var(--accent-color); }
-
-/* Formulário e Inputs */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.input-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
-.account-field {
-    width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px;
-    font-size: 1rem; background-color: var(--bg-color); color: var(--text-primary); transition: all 0.3s ease;
-}
-.account-field:disabled { background-color: rgba(0, 0, 0, 0.05); color: var(--text-secondary); cursor: not-allowed; border-style: dashed; }
-.locked-field:disabled { background-color: rgba(0, 0, 0, 0.1); opacity: 0.7; }
-
-/* Segurança e Credenciais */
-.security-list { display: flex; flex-direction: column; gap: 20px; }
-.spotify-account-item { flex-wrap: wrap; gap: 16px; }
-.spotify-account-item .security-info { min-width: 0; flex-basis: 200px; }
-.spotify-account-item .action-group { flex-wrap: wrap; }
-.spotify-account-item .btn-outline { white-space: normal; }
-.security-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 20px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px;
-}
-.security-info { flex: 1; margin-right: 20px; }
-.security-info label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
-
-/* Agrupamento de Botão e Temporizador */
-.action-group {
-    display: flex; align-items: center; gap: 12px;
-}
-.cooldown-timer {
-    font-size: 0.9rem; font-weight: 600; color: #e74c3c;
-    min-width: 45px; text-align: right;
+[data-theme="dark"] .account-page {
+    --account-field-bg: #2a2a2a;
+    --account-danger: #fda29b;
+    --account-danger-bg: #3b1816;
+    --account-danger-ink: #1a1a1a;
+    --account-success: #86efac;
+    --account-cta-border: #27a9f5;
 }
 
-.btn-outline {
-    background-color: transparent; color: var(--text-primary); border: 1px solid var(--border-color);
-    padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
-}
-.btn-outline:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
-.btn-outline:disabled { opacity: 0.5; cursor: not-allowed; background-color: rgba(0,0,0,0.05); }
-
-/* Feedback Form (Perfil) */
-.feedback-message { padding: 16px; border-radius: 8px; margin-bottom: 24px; font-weight: 600; }
-.feedback-success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-
-/* Modal (Pop-up) */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
-    display: flex; justify-content: center; align-items: center; z-index: 9999;
-}
-.modal-box {
-    background-color: var(--bg-color); border: 1px solid var(--border-color);
-    border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    text-align: center; overflow: hidden; animation: fadeIn 0.3s ease;
-}
-.modal-content { padding: 32px 24px; }
-.modal-icon { font-size: 3.5rem; color: #2e7d32; margin-bottom: 16px; }
-.modal-content h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
-.modal-content p { color: var(--text-secondary); line-height: 1.5; }
-.modal-footer { padding: 16px 24px; background-color: var(--footer-bg); border-top: 1px solid var(--border-color); }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ==========================================
-   Correção do Input de Usuário (Handle)
-   ========================================== */
-.handle-wrapper {
-    display: flex;
-    align-items: center;
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    overflow: hidden;
-    height: 45px; /* Trava a altura para alinhar perfeitamente */
-    transition: border-color 0.3s ease;
+.account-layout {
+    grid-template-columns: 248px minmax(0, 1080px);
+    gap: 32px;
+    padding-inline: 40px;
 }
 
-/* Quando bloqueado, o fundo fica mais escuro */
-.handle-wrapper.locked-wrapper {
-    background-color: rgba(0, 0, 0, 0.05);
+.account-layout .profile-sidebar {
+    padding-top: 64px;
 }
 
-.handle-wrapper:focus-within {
-    border-color: var(--accent-color);
+.account-main {
+    gap: 24px;
+    padding: 32px 0 48px;
 }
 
-.handle-prefix {
-    padding: 0 16px;
-    background-color: var(--footer-bg);
-    color: var(--text-secondary);
-    font-weight: 600;
-    border-right: 1px solid var(--border-color);
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-
-.handle-wrapper .account-field {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    height: 100%;
-    box-shadow: none;
-    background-color: transparent;
-}
-
-.handle-wrapper .account-field:focus {
-    border: none;
-    box-shadow: none;
-}
-
-.handle-prefix {
-    padding: 0 16px;
-    background-color: var(--footer-bg);
-    color: var(--text-secondary);
-    font-weight: 600;
-    border-right: 1px solid var(--border-color);
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-
-/* Substituímos .login-field por .account-field para refletir o HTML atual */
-.handle-wrapper .account-field {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    height: 100%;
-    box-shadow: none;
-}
-
-.handle-wrapper .account-field:focus {
-    border: none;
-    box-shadow: none;
-}
-
-/* ==========================================
-   Menu Lateral (Sidebar)
-   ========================================== */
-.sidebar {
-    width: 250px;
-    background-color: var(--bg-color);
-    border-right: 1px solid var(--border-color);
+.account-heading {
     display: flex;
     flex-direction: column;
-    position: fixed; /* Mantém o menu fixo enquanto a página rola */
-    height: 100vh;
-    top: 0;
-    left: 0;
-    z-index: 100;
+    gap: 8px;
 }
 
-.sidebar .logo,
-.sidebar .sidebar-logo {
-    padding: 24px;
-    font-size: 1.5rem;
+.account-heading h1 {
+    font-size: 28px;
+    line-height: 34px;
     font-weight: 700;
-    color: var(--accent-color);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-}
-
-.sidebar .sidebar-logo .logo-img {
-    height: 42px;
-}
-
-.nav-menu ul {
-    list-style: none;
-    padding: 0 16px;
-}
-
-.nav-menu li {
-    margin-bottom: 8px;
-}
-
-.nav-menu a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px 16px;
-    text-decoration: none;
     color: var(--text-primary);
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.2s ease;
 }
 
-.nav-menu a:hover, .nav-menu li.active a {
-    background-color: var(--footer-bg);
-    color: var(--accent-color);
+.account-heading p {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--text-secondary);
+}
+
+.account-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.account-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.account-card-header h2 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.account-edit-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: none;
+}
+
+.account-edit-btn[aria-pressed="true"] {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.account-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.account-section h3 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.account-divider {
+    border: 0;
+    height: 1px;
+    background: var(--border-color);
+    width: 100%;
+    margin: 0;
+}
+
+.account-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.account-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    position: relative;
+}
+
+.account-field label {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.account-input-box {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    border: 1px solid var(--account-control-border);
+    border-radius: 8px;
+    background: var(--account-field-bg);
+    overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.account-input-box.is-editable {
+    background: var(--page-bg);
+}
+
+.account-input-box:focus-within {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(39, 169, 245, 0.2);
+}
+
+.account-input-box.has-error {
+    border-color: var(--account-danger);
+}
+
+.account-input-box input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    padding: 0 16px;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.account-input-box input:disabled {
+    color: var(--text-secondary);
+    opacity: 1;
+    cursor: default;
+}
+
+.account-input-box input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+}
+
+.account-handle-box {
+    gap: 0;
+}
+
+.account-handle-prefix {
+    width: 48px;
+    height: 100%;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--account-control-border);
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.account-handle-box input {
+    padding-left: 12px;
+}
+
+.account-icon-box {
+    padding-right: 16px;
+    gap: 12px;
+}
+
+.account-icon-box input {
+    padding-right: 0;
+}
+
+.account-field-icon {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.account-field-feedback {
+    margin: 0;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.account-field-feedback:empty {
+    display: none;
+}
+
+.account-field-feedback.is-error {
+    color: var(--account-danger);
+}
+
+.account-field-feedback.is-success {
+    color: var(--account-success);
+}
+
+.account-city-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+    max-height: 216px;
+    overflow-y: auto;
+}
+
+.account-city-list li button {
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.account-city-list li button span {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.account-city-list li button:hover,
+.account-city-list li button:focus-visible {
+    background: var(--profile-active);
+}
+
+.account-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.account-edit-actions[hidden],
+.account-cooldown-banner[hidden] {
+    display: none;
+}
+
+.account-btn-primary,
+.account-btn-secondary,
+.account-btn-spotify,
+.account-btn-danger-outline,
+.account-btn-danger-solid {
+    min-height: 48px;
+    height: 48px;
+    padding: 8px 24px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: normal;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.account-btn-primary {
+    background: var(--accent-color);
+    color: #1a1a1a;
+    border: 1px solid var(--account-cta-border);
+    min-width: 190px;
+}
+
+.account-btn-secondary {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--account-control-border);
+    min-width: 120px;
+}
+
+.account-btn-spotify {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--account-spotify);
+    min-width: 230px;
+}
+
+.account-btn-fixed {
+    min-width: 190px;
+}
+
+.account-btn-danger-outline {
+    background: var(--card-bg);
+    color: var(--account-danger);
+    border: 1px solid var(--account-danger);
+    font-size: 14px;
+}
+
+.account-btn-danger-solid {
+    background: var(--account-danger);
+    color: var(--account-danger-ink);
+    border: 1px solid var(--account-danger);
+    font-size: 14px;
+}
+
+.account-cooldown-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--account-field-bg);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.account-spotify-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.account-spotify-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.account-spotify-info img {
+    flex: none;
+}
+
+.account-spotify-info h4 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.account-spotify-info p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 21px;
+    color: var(--text-secondary);
+}
+
+.account-credential-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.account-credential-row .account-field {
+    flex: 1;
+}
+
+.account-credential-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex: none;
+}
+
+.account-timer {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-secondary);
+}
+
+.account-timer:empty {
+    display: none;
+}
+
+.account-management-desc {
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-secondary);
+}
+
+.account-management-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.account-management-actions .account-btn-secondary {
+    font-size: 14px;
+}
+
+.account-page .profile-footer .footer-links {
+    gap: 5px;
+}
+
+.account-dialog {
+    width: min(480px, calc(100vw - 32px));
+    margin: auto;
+    padding: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.account-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.account-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.account-dialog-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.account-dialog-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--account-field-bg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+}
+
+.account-dialog-badge.is-danger {
+    background: var(--account-danger-bg);
+}
+
+.account-dialog-badge.is-success {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+}
+
+.account-dialog-close {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.account-dialog-title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.account-dialog-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--text-secondary);
+}
+
+.account-dialog-note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--text-secondary);
+}
+
+.account-dialog-info {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--account-field-bg);
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-secondary);
+}
+
+.account-dialog-info strong {
+    color: var(--text-primary);
     font-weight: 600;
 }
 
-/* Garante que o conteúdo não fique escondido atrás do menu fixo */
-.main-content {
-    flex: 1;
-    padding: 40px;
-    margin-left: 250px;
-    width: calc(100% - 250px);
+.account-dialog-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.account-dialog-actions.is-single {
+    grid-template-columns: 1fr;
+}
+
+.account-dialog-actions button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 16px;
+    font-size: 14px;
+}
+
+.account-dialog-status {
+    margin: 0;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--account-danger);
+}
+
+.account-dialog-status:empty {
+    display: none;
+}
+
+.account-dialog-success-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+@media (max-width: 1100px) and (min-width: 768px) {
+    .account-layout {
+        padding-inline: 24px;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 767px) {
+    .account-layout {
+        padding-inline: 16px;
+    }
+
+    .account-main {
+        padding: 24px 0 40px;
+    }
+
+    .account-card {
+        padding: 20px;
+    }
+
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-edit-actions,
+    .account-management-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .account-edit-actions button,
+    .account-management-actions button,
+    .account-btn-spotify,
+    .account-btn-fixed {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .account-spotify-box {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .account-spotify-action {
+        width: 100%;
+    }
+
+    .account-credential-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .account-credential-action {
+        align-items: stretch;
+    }
+
+    .account-dialog {
+        padding: 24px;
+    }
+
+    .account-dialog-title {
+        font-size: 20px;
+        line-height: 28px;
+    }
+
+    .account-dialog-actions {
+        grid-template-columns: 1fr;
+    }
 }
