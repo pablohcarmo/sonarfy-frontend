@@ -28,6 +28,15 @@ Integrações simuladas, estados cobertos e limitações estão em
 
 ## Testes de navegador
 
+### Feed
+
+`npm test` inclui `tests/feed.test.js` em Vitest + Happy DOM.
+`node tests/browser/feed.cjs` inicia seu próprio servidor e verifica Feed no Edge
+e Firefox, em 1440/390px e claro/escuro, incluindo drawer, foco visível, teclado,
+assets SVG, overflow, tabs/histórico, curtidas, vazio, loading/reduced-motion,
+resenha de 255 pontos de código, retry e logout. Relatórios/capturas:
+`test-results/feed/`. Contrato e resultados: [Feed](../docs/feed-page.md).
+
 Sirva a raiz do projeto:
 
 ```sh

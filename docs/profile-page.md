@@ -5,6 +5,10 @@ Sirva a raiz do repositório e abra `pages/profile.html` (próprio) ou
 `pages/profile.html?handle=lucas_vinyl` (visitante). `tab=activities|replies|collection`
 mantém a aba na URL. O tema reutiliza `sonarfy_theme` e `js/login-theme.js`.
 
+Home agora abre [Feed](feed-page.md) em `pages/feed.html`. Header e footer
+também são renderizados por `profile-shell.js`; os cards globais compartilham
+links de perfil no avatar, nome e handle, além da validação de resenha no renderer.
+
 ## Dados e integração
 
 **Não existe contrato de API de perfil, mídia, relacionamento ou publicações neste

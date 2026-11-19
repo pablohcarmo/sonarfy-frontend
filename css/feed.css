@@ -1,0 +1,40 @@
+/* Feed Page: 406:11863/11866/11870/11873. Global card geometry is inherited. */
+.feed-page {
+    --profile-page: var(--page-bg);
+    --profile-surface: var(--card-bg);
+    --profile-text: var(--text-primary);
+    --profile-muted: var(--text-secondary);
+    --profile-border: var(--border-color);
+    --profile-divider: var(--border-color);
+}
+.feed-layout { grid-template-columns: 248px minmax(0,1080px); gap: 32px; padding-inline: 40px; min-height: 660px; }
+.feed-layout .profile-sidebar { padding-top: 64px; }
+.feed-main { gap: 16px; padding: 32px 0 48px; }
+.feed-main h1 { font-size: 28px; line-height: 41px; }
+.feed-tabs { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.feed-tabs button { height: 56px; font-size: 16px; }
+.feed-tabs [aria-selected="true"]::after { width: 64px; }
+.feed-page .profile-footer .footer-links { gap: 5px; }
+.quick-review { display: flex; align-items: center; gap: 16px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg); padding: 16px 20px; }
+.quick-review-invite { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; color: var(--text-secondary); font-size: 16px; line-height: 23px; }
+.quick-review .profile-avatar { width: 44px; height: 44px; }
+.quick-review button { min-height: 40px; width: 156px; padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 700; }
+.feed-empty { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 64px 80px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg); text-align: center; }
+.feed-empty-mark { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--profile-field); color: var(--accent-color); font-size: 24px; font-weight: 700; }
+.feed-empty h2 { margin: 0; font-size: 24px; line-height: 35px; }
+.feed-empty p { max-width: 580px; color: var(--text-secondary); font-size: 16px; line-height: 23px; }
+.feed-empty button { color: var(--accent-color); background: transparent; border: 0; padding: 0; font-size: 14px; line-height: 20px; font-weight: 600; min-height: 20px; }
+[data-theme="dark"] .feed-page { --profile-field: #2a2a2a; }
+[data-theme="dark"] .feed-page .activity-card { box-shadow: none; }
+@media (max-width: 1100px) and (min-width: 768px) { .feed-layout { padding-inline: 24px; gap: 24px; } }
+@media (max-width: 767px) {
+    .feed-layout { padding-inline: 16px; min-height: 620px; }
+    .feed-main { padding: 16px 0 32px; }
+    .feed-main h1 { font-size: 24px; line-height: 35px; }
+    .quick-review { flex-direction: column; align-items: end; }
+    .quick-review-invite { width: 100%; font-size: 14px; line-height: 20px; }
+    .quick-review button { width: 144px; }
+    .feed-empty { padding: 64px 24px; }
+    .feed-empty h2 { font-size: 20px; line-height: 29px; }
+    .feed-empty h2, .feed-empty p { width: 270px; max-width: 100%; }
+}

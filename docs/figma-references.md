@@ -2,6 +2,9 @@
 
 Este documento reúne os links, frames e especificações visuais do Sonarfy, organizados por página.
 
+Feed: [nós, componentes, adapter e verificação](feed-page.md), referência
+[Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862).
+
 Perfis próprio e visitante: [inspeção, componentes e adaptações](profile-page.md#referência-visual-e-adaptações).
 Referências: [Profile Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=210-2)
 e [Profile Page (Friend)](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=385-6710).

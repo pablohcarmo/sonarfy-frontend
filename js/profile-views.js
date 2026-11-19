@@ -1,5 +1,5 @@
 import { icon } from './profile-icons.js';
-import { escapeHTML as e, safeImage, count, timestamp, joined, profileURL, sortOptions } from './profile-utils.js';
+import { escapeHTML as e, safeImage, count, timestamp, joined, profileURL, sortOptions, validateReview } from './profile-utils.js';
 import { waveform, emptyState } from './profile-shell.js';
 
 export function avatar(profile, className = '') {
@@ -32,7 +32,8 @@ export function albumDetails(album) {
 // Global activity card has one layout for ratings, written reviews and replies.
 export function activityCard(item, pending) {
     const author = item.author;
-    return `<article class="activity-card ${!item.review ? 'rating-only' : ''}" data-publication="${e(item.id)}"><div class="activity-left">${avatar(author, 'activity-avatar')}<div class="activity-content"><div class="activity-publication"><header class="activity-author"><a href="${e(profileURL(author.handle))}">${e(author.displayName)}</a><span class="activity-author-meta"><span>@${e(author.handle)}</span><span aria-hidden="true">·</span><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></span></header>${item.replyTo ? `<p class="activity-reply">Em resposta a <a href="${e(profileURL(item.replyTo))}">@${e(item.replyTo)}</a></p>` : ''}${item.review ? `<p class="activity-review">${e(item.review)}</p>` : ''}${item.replyTo ? '' : stars(item.rating)}</div>${socialActions(item, pending)}</div></div>${albumDetails(item.album)}</article>`;
+    validateReview(item.review);
+    return `<article class="activity-card ${!item.review ? 'rating-only' : ''}" data-publication="${e(item.id)}"><div class="activity-left"><a class="activity-avatar-link" href="${e(profileURL(author.handle))}" aria-label="Ver perfil de ${e(author.displayName)}">${avatar(author, 'activity-avatar')}</a><div class="activity-content"><div class="activity-publication"><header class="activity-author"><a href="${e(profileURL(author.handle))}">${e(author.displayName)}</a><span class="activity-author-meta"><a href="${e(profileURL(author.handle))}">@${e(author.handle)}</a><span aria-hidden="true">·</span><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></span></header>${item.replyTo ? `<p class="activity-reply">Em resposta a <a href="${e(profileURL(item.replyTo))}">@${e(item.replyTo)}</a></p>` : ''}${item.review ? `<p class="activity-review">${e(item.review)}</p>` : ''}${item.replyTo ? '' : stars(item.rating)}</div>${socialActions(item, pending)}</div></div>${albumDetails(item.album)}</article>`;
 }
 export function activityFeed(items, pending) {
     return items.length ? `<div class="activity-feed">${items.map(item => activityCard(item, pending)).join('')}</div>` : emptyState('Nenhuma publicação ainda');

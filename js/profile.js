@@ -2,11 +2,13 @@ import { createProfileAdapter, validateData } from './profile-data.js';
 import { createProfileState } from './profile-state.js';
 import { createDialogs, containFocus } from './profile-dialogs.js';
 import { icon } from './profile-icons.js';
-import { sidebar, skeleton } from './profile-shell.js';
+import { sidebar, skeleton, globalHeader, globalFooter } from './profile-shell.js';
 import { profileHeader, activityFeed, collectionView, socialActions } from './profile-views.js';
 import { sortOptions } from './profile-utils.js';
 
 const adapter = createProfileAdapter();
+document.querySelector('.profile-global-header').innerHTML = globalHeader(adapter.routes?.home);
+document.querySelector('.profile-footer').innerHTML = globalFooter();
 const store = createProfileState(adapter);
 const { state } = store;
 const root = document.getElementById('profile-main');
