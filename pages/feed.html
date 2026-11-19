@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Feed – Sonarfy</title>
+    <link rel="icon" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="../css/profile-activity.css">
+    <link rel="stylesheet" href="../css/profile-dialogs.css">
+    <link rel="stylesheet" href="../css/feed.css">
+    <script src="../js/login-theme.js"></script>
+    <script type="module" src="../js/feed.js"></script>
+</head>
+<body class="feed-page">
+    <a class="skip-link" href="#feed-main">Ir para o feed</a>
+    <header class="site-header profile-global-header"></header>
+    <div class="profile-layout feed-layout">
+        <aside id="profile-sidebar" class="profile-sidebar" aria-label="Menu principal"></aside>
+        <main id="feed-main" class="profile-main feed-main" tabindex="-1">
+            <h1>Feed</h1>
+            <p id="feed-demo" class="profile-notice" hidden>Demonstração local · alterações não são enviadas ao servidor.</p>
+            <p id="feed-status" class="profile-status" role="status" aria-live="polite"></p>
+            <nav class="profile-tabs feed-tabs" role="tablist" aria-label="Conteúdo do feed">
+                <button id="tab-following" role="tab" aria-controls="panel-following" aria-selected="true">Seguindo</button>
+                <button id="tab-for-you" role="tab" aria-controls="panel-for-you" aria-selected="false" tabindex="-1">Para você</button>
+            </nav>
+            <section id="quick-review" class="quick-review" aria-label="Avaliar um álbum"></section>
+            <section id="panel-following" role="tabpanel" aria-labelledby="tab-following" tabindex="0"></section>
+            <section id="panel-for-you" role="tabpanel" aria-labelledby="tab-for-you" tabindex="0" hidden></section>
+        </main>
+    </div>
+    <dialog id="profile-drawer" class="profile-drawer" aria-label="Menu principal"></dialog>
+    <footer class="site-footer profile-footer"></footer>
+</body>
+</html>

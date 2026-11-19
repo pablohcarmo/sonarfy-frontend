@@ -1,5 +1,6 @@
 // Original Figma SVGs are kept intact; theme variants preserve their original geometry.
 const icons = {
+    activeHome: ['active-home','active-home'],
     home: ['home-light','home-dark'], search: ['search-light','search-dark'], echoes: ['echoes-light','echoes-dark'],
     notifications: ['notifications-light','notifications-dark'], profile: ['profile-light','profile-dark'], activeProfile: ['active-profile-light','active-profile-light'],
     settings: ['settings-light','settings-dark'], logout: ['logout-light','logout-dark'], menu: ['menu-light','menu-dark'],
