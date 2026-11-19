@@ -38,6 +38,7 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 - Tela de conexão com o Spotify, com opção de pular e lembrete após 7 dias.
 - Página de perfil (próprio e visitante) com abas de atividades, respostas e coleção, edição e compartilhamento.
 - Feed da comunidade com abas **Seguindo** e **Para você**, navegação por teclado e estados de carregamento/vazio.
+- Configurações da conta com edição de dados pessoais e `@handle`, integração visual com Spotify, cooldowns de segurança e popups de desativação e exclusão de conta.
 - Layouts responsivos e alternância entre os temas claro e escuro.
 
 Os fluxos de conta dependem da API. Perfil e Feed já estão implementados com modo demonstração local substituível via adapter, aguardando a integração com os contratos do backend. A tela de conexão com o Spotify está implementada; a autorização e a sincronização real dependem da integração com o backend. A disponibilização pública em produção ainda está em preparação.
@@ -66,6 +67,7 @@ O desenvolvimento considera navegação por teclado, foco visível, rótulos ace
 - [Referências visuais do Figma](docs/figma-references.md)
 - [Perfis Sonarfy](docs/profile-page.md)
 - [Feed Sonarfy](docs/feed-page.md)
+- [Configurações da Conta](docs/account-page.md)
 - [Guia de testes](tests/README.md)
 
 <details>

@@ -1,130 +1,447 @@
-document.addEventListener('DOMContentLoaded', async () => {
+import { createAccountAdapter } from './account-fixtures.js';
+import { createAccountState, logoutAccount, normalizeHandle } from './account-state.js';
+import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
+import { icon } from './profile-icons.js';
+import { containFocus } from './profile-dialogs.js';
+import { escapeHTML as e } from './profile-utils.js';
 
-    const editProfileBtn = document.getElementById('editProfileBtn');
-    const saveProfileBtn = document.getElementById('saveProfileBtn');
-    const accountForm = document.getElementById('accountForm');
-    const feedbackMessage = document.getElementById('feedbackMessage');
+// Render a themed SVG pair from assets/icons/account.
+function accountIcon(lightFile, darkFile, size, alt = '') {
+    if (!darkFile || lightFile === darkFile) {
+        return `<img src="../assets/icons/account/${lightFile}.svg" width="${size}" height="${size}" alt="${e(alt)}" aria-hidden="true">`;
+    }
+    return `<img class="theme-light-only" src="../assets/icons/account/${lightFile}.svg" width="${size}" height="${size}" alt="${e(alt)}" aria-hidden="true"><img class="theme-dark-only" src="../assets/icons/account/${darkFile}.svg" width="${size}" height="${size}" alt="${e(alt)}" aria-hidden="true">`;
+}
 
-    const reqChangeEmailBtn = document.getElementById('reqChangeEmailBtn');
-    const emailTimerSpan = document.getElementById('emailTimer');
+// Mount the Settings / Account page controller and bind all UI interactions.
+export function mountAccount(adapter = createAccountAdapter(), options = {}) {
+    const navigate = options.navigate || (url => { location.href = url; });
+    const store = createAccountState(adapter);
+    const { state } = store;
+    const controller = new AbortController();
+    const on = (target, type, fn, opts = {}) => target?.addEventListener(type, fn, { ...opts, signal: controller.signal });
 
-    const reqChangePwdBtn = document.getElementById('reqChangePwdBtn');
-    const pwdTimerSpan = document.getElementById('pwdTimer');
+    const statusEl = document.getElementById('account-status');
+    const demoEl = document.getElementById('account-demo');
+    const drawer = document.getElementById('profile-drawer');
+    const dialog = document.getElementById('account-dialog');
+    containFocus(drawer);
+    containFocus(dialog);
 
-    const actionModal = document.getElementById('actionModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const closeModalBtn = document.getElementById('closeModalBtn');
+    document.querySelector('.profile-global-header').innerHTML = globalHeader(adapter.routes?.home || 'feed.html');
+    document.querySelector('.profile-footer').innerHTML = globalFooter();
+    document.getElementById('profile-sidebar').innerHTML = sidebar(false, adapter.routes, 'settings');
+    demoEl.hidden = !adapter.demo;
 
-    const birthDateField = document.getElementById('birthDateField');
-    if (birthDateField) {
-        const today = new Date();
-        const maxDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
-        const yyyy = maxDate.getFullYear();
-        const mm = String(maxDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(maxDate.getDate()).padStart(2, '0');
-        birthDateField.max = `${yyyy}-${mm}-${dd}`;
-        birthDateField.min = '1900-01-01';
+    const menuTrigger = document.getElementById('open-menu');
+    const editBtn = document.getElementById('edit-account-btn');
+    const form = document.getElementById('account-form');
+    const firstNameInput = document.getElementById('first-name');
+    const lastNameInput = document.getElementById('last-name');
+    const handleInput = document.getElementById('handle-input');
+    const handleBox = handleInput.closest('.account-input-box');
+    const handleFeedback = document.getElementById('handle-feedback');
+    const birthDateInput = document.getElementById('birth-date');
+    const countryInput = document.getElementById('country-input');
+    const cityInput = document.getElementById('city-input');
+    const cityList = document.getElementById('city-suggestions');
+    const editActions = document.getElementById('edit-actions');
+    const saveBtn = document.getElementById('save-account-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    const saveCooldownBanner = document.getElementById('save-cooldown');
+    const saveCooldownText = document.getElementById('save-cooldown-text');
+    const spotifyDesc = document.getElementById('spotify-description');
+    const spotifySlot = document.getElementById('spotify-action-slot');
+    const emailInput = document.getElementById('email-input');
+    const emailBtn = document.getElementById('change-email-btn');
+    const emailTimerEl = document.getElementById('email-timer');
+    const passwordBtn = document.getElementById('reset-password-btn');
+    const passwordTimerEl = document.getElementById('password-timer');
+    const deactivateBtn = document.getElementById('deactivate-account-btn');
+    const deleteBtn = document.getElementById('delete-account-btn');
+
+    const editableInputs = [firstNameInput, lastNameInput, handleInput, birthDateInput, cityInput];
+    let selectedCityId = null;
+    let dialogTrigger = null;
+    let dialogBusy = false;
+    let handleDebounce = null;
+    let cityDebounce = null;
+    const activeTimers = new Map();
+
+    // Announce status messages in the page-level live region.
+    function notify(message) {
+        statusEl.textContent = message || '';
     }
 
-    const editableFields = [
-        document.getElementById('nameField'),
-        document.getElementById('surnameField'),
-        birthDateField,
-        document.getElementById('cityField')
-    ];
+    // Populate form inputs from the current committed account snapshot.
+    function populateForm(account) {
+        if (!account) return;
+        firstNameInput.value = account.firstName || '';
+        lastNameInput.value = account.lastName || '';
+        handleInput.value = normalizeHandle(account.handle || '');
+        birthDateInput.value = account.birthDate || '';
+        countryInput.value = account.country || '';
+        cityInput.value = account.city || '';
+        selectedCityId = account.cityId || null;
+        emailInput.value = account.email || '';
+    }
 
-    let isEditing = false;
+    // Close and clear the city autocomplete listbox.
+    function closeCities() {
+        cityList.hidden = true;
+        cityList.innerHTML = '';
+        cityInput.setAttribute('aria-expanded', 'false');
+    }
 
-    // Fetch da API (ex: GET /api/users/me)
-    const loadUserData = () => {
-        document.getElementById('nameField').value = "Name";
-        document.getElementById('surnameField').value = "Surname";
-        // Removemos o @ do valor bruto, pois o wrapper visual gerencia o prefixo
-        document.getElementById('handleField').value = "username";
-        document.getElementById('emailField').value = "your@email.com";
-        document.getElementById('birthDateField').value = "2000-01-01";
-        document.getElementById('countryField').value = "Country";
-        document.getElementById('cityField').value = "City";
-    };
+    // Start a per-action cooldown countdown and disable its button while active.
+    function startCooldown(key, seconds, button, outputEl, onTick) {
+        if (activeTimers.has(key)) clearInterval(activeTimers.get(key));
+        let remaining = Math.max(1, Math.round(seconds || 30));
+        const update = () => {
+            if (remaining <= 0) {
+                clearInterval(activeTimers.get(key));
+                activeTimers.delete(key);
+                if (button) button.disabled = false;
+                if (outputEl) outputEl.textContent = '';
+                if (onTick) onTick(0);
+                return;
+            }
+            if (button) button.disabled = true;
+            if (outputEl) outputEl.textContent = `Aguarde ${remaining}s para tentar novamente.`;
+            if (onTick) onTick(remaining);
+            remaining -= 1;
+        };
+        update();
+        activeTimers.set(key, setInterval(update, 1000));
+    }
 
-    loadUserData();
+    // Synchronize the UI controls with the current account state.
+    function render() {
+        const { account, editing, saving, handleStatus, handleMessage } = state;
+        editBtn.setAttribute('aria-pressed', String(editing));
+        editBtn.disabled = saving || !account;
+        editableInputs.forEach(input => {
+            input.disabled = !editing || saving;
+            input.closest('.account-input-box')?.classList.toggle('is-editable', editing);
+        });
+        editActions.hidden = !editing;
+        saveBtn.disabled = saving || activeTimers.has('save') || handleStatus === 'taken' || handleStatus === 'invalid' || handleStatus === 'checking';
+        cancelBtn.disabled = saving;
 
-    // Controle de Edição
-    editProfileBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        isEditing = !isEditing;
+        handleFeedback.textContent = editing ? handleMessage : '';
+        handleFeedback.className = 'account-field-feedback';
+        const isHandleError = editing && (handleStatus === 'taken' || handleStatus === 'invalid' || handleStatus === 'error');
+        const isHandleOk = editing && handleStatus === 'available';
+        if (isHandleError) handleFeedback.classList.add('is-error');
+        if (isHandleOk) handleFeedback.classList.add('is-success');
+        handleBox.classList.toggle('has-error', isHandleError);
+        handleInput.setAttribute('aria-invalid', String(isHandleError));
 
-        if (isEditing) {
-            editableFields.forEach(field => field.removeAttribute('disabled'));
-            editableFields[0].focus();
+        if (!editing) closeCities();
 
-            editProfileBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-            editProfileBtn.classList.add('editing');
-            saveProfileBtn.style.display = 'block';
+        if (account) {
+            if (account.spotifyConnected) {
+                spotifyDesc.textContent = 'Sua conta do Spotify está conectada ao Sonarfy.';
+                spotifySlot.innerHTML = `<button id="spotify-disconnect-btn" type="button" class="account-btn-spotify"${state.pendingAction === 'spotify' ? ' disabled' : ''}>Conectado · Desconectar</button>`;
+            } else {
+                const syncHref = adapter.routes?.spotifySync || 'spotify-sync.html?source=account';
+                spotifyDesc.textContent = 'Conecte sua conta para personalizar sua experiência.';
+                spotifySlot.innerHTML = `<a id="spotify-sync-link" class="account-btn-spotify" href="${e(syncHref)}">Sincronizar com Spotify</a>`;
+            }
+        }
+    }
+
+    // Open a native modal dialog with focus containment and safe closing.
+    function openDialog(html, onConfirm) {
+        dialogTrigger = document.activeElement;
+        dialogBusy = false;
+        dialog.innerHTML = html;
+        dialog.showModal();
+        document.body.classList.add('profile-modal-open');
+        const confirmBtn = dialog.querySelector('[data-confirm]');
+        const closeButtons = dialog.querySelectorAll('[data-close]');
+        const dialogStatus = dialog.querySelector('.account-dialog-status');
+        closeButtons.forEach(btn => btn.addEventListener('click', () => { if (!dialogBusy) dialog.close(); }));
+        if (confirmBtn && onConfirm) {
+            confirmBtn.addEventListener('click', async () => {
+                if (dialogBusy) return;
+                dialogBusy = true;
+                dialog.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
+                if (dialogStatus) dialogStatus.textContent = '';
+                try {
+                    await onConfirm();
+                    dialogBusy = false;
+                    if (dialog.open) dialog.close();
+                } catch (error) {
+                    dialogBusy = false;
+                    dialog.querySelectorAll('button').forEach(btn => { btn.disabled = false; });
+                    if (dialogStatus) dialogStatus.textContent = error.message || 'Não foi possível concluir a ação. Tente novamente.';
+                }
+            });
+        }
+        (dialog.querySelector('[data-close]') || confirmBtn || dialog).focus();
+    }
+
+    // Open the success feedback modal matching the Figma specification.
+    function openSuccessDialog(message, note = 'Por segurança, aguarde antes de fazer uma nova alteração.') {
+        openDialog(
+            `<div class="account-dialog-content">
+                <div class="account-dialog-success-head">
+                    <span class="account-dialog-badge is-success" aria-hidden="true">${accountIcon('circle-check', 'circle-check', 24)}</span>
+                    <h2 id="account-dialog-title" class="account-dialog-title">Sucesso</h2>
+                </div>
+                <p class="account-dialog-text">${e(message)}</p>
+                <p class="account-dialog-note">${e(note)}</p>
+                <div class="account-dialog-actions is-single">
+                    <button type="button" class="account-btn-primary" data-close>Entendi</button>
+                </div>
+            </div>`
+        );
+    }
+
+    // Open the Deactivate Account confirmation modal.
+    function openDeactivateDialog() {
+        openDialog(
+            `<div class="account-dialog-content">
+                <div class="account-dialog-top">
+                    <span class="account-dialog-badge" aria-hidden="true">${accountIcon('eye-off-light', 'eye-off-dark', 24)}</span>
+                    <button type="button" class="account-dialog-close" data-close aria-label="Fechar">${accountIcon('close-light', 'close-dark', 20)}</button>
+                </div>
+                <h2 id="account-dialog-title" class="account-dialog-title">Desativar sua conta?</h2>
+                <p class="account-dialog-text">Ao confirmar a desativação, seu perfil ficará temporariamente indisponível para outros usuários, mas todas as suas avaliações, resenhas e dados continuarão armazenados com segurança.</p>
+                <div class="account-dialog-info"><strong>Reativação automática:</strong> Sua conta será reativada automaticamente assim que você realizar o próximo login.</div>
+                <p class="account-dialog-status" role="alert" aria-live="polite"></p>
+                <div class="account-dialog-actions">
+                    <button type="button" class="account-btn-secondary" data-close>Cancelar</button>
+                    <button type="button" class="account-btn-primary" data-confirm>Confirmar Desativação</button>
+                </div>
+            </div>`,
+            () => store.deactivateAccount(navigate)
+        );
+    }
+
+    // Open the destructive Delete Account confirmation modal.
+    function openDeleteDialog() {
+        openDialog(
+            `<div class="account-dialog-content">
+                <div class="account-dialog-top">
+                    <span class="account-dialog-badge is-danger" aria-hidden="true">${accountIcon('trash-light', 'trash-dark', 24)}</span>
+                    <button type="button" class="account-dialog-close" data-close aria-label="Fechar">${accountIcon('close-light', 'close-dark', 20)}</button>
+                </div>
+                <h2 id="account-dialog-title" class="account-dialog-title">Deletar conta permanentemente?</h2>
+                <p class="account-dialog-text">Esta ação é definitiva e não pode ser desfeita. Seu perfil, histórico, avaliações, resenhas e conexões serão permanentemente removidos do Sonarfy.</p>
+                <p class="account-dialog-note">Se quiser apenas ocultar seu perfil sem perder seus dados, utilize a opção Desativar Conta.</p>
+                <p class="account-dialog-status" role="alert" aria-live="polite"></p>
+                <div class="account-dialog-actions">
+                    <button type="button" class="account-btn-secondary" data-close>Cancelar</button>
+                    <button type="button" class="account-btn-danger-solid" data-confirm>Deletar Permanentemente</button>
+                </div>
+            </div>`,
+            () => store.deleteAccount(navigate)
+        );
+    }
+
+    const unsubscribe = store.subscribe(render);
+
+    on(dialog, 'cancel', event => { if (dialogBusy) event.preventDefault(); });
+    on(dialog, 'click', event => { if (event.target === dialog && !dialogBusy) dialog.close(); });
+    on(dialog, 'close', () => {
+        document.body.classList.remove('profile-modal-open');
+        if (dialogTrigger?.isConnected) dialogTrigger.focus();
+    });
+
+    on(editBtn, 'click', () => {
+        notify('');
+        if (state.editing) {
+            populateForm(state.account);
+            store.setEditing(false);
         } else {
-            editableFields.forEach(field => field.setAttribute('disabled', 'true'));
-            editProfileBtn.innerHTML = '<i class="fa-solid fa-pencil"></i>';
-            editProfileBtn.classList.remove('editing');
-            saveProfileBtn.style.display = 'none';
-            loadUserData();
+            store.setEditing(true);
+            firstNameInput.focus();
         }
     });
 
-    accountForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        feedbackMessage.innerText = "Perfil atualizado com sucesso!";
-        feedbackMessage.className = `feedback-message feedback-success`;
-        feedbackMessage.style.display = 'block';
-        setTimeout(() => feedbackMessage.style.display = 'none', 5000);
-        editProfileBtn.click();
+    on(cancelBtn, 'click', () => {
+        notify('');
+        populateForm(state.account);
+        store.setEditing(false);
+        editBtn.focus();
     });
 
-    function showModal(title, message) {
-        modalTitle.innerText = title;
-        modalMessage.innerText = message;
-        actionModal.style.display = 'flex';
-    }
-
-    closeModalBtn.addEventListener('click', () => {
-        actionModal.style.display = 'none';
+    on(handleInput, 'input', () => {
+        if (!state.editing) return;
+        clearTimeout(handleDebounce);
+        const cleaned = handleInput.value.replace(/^@+/, '');
+        if (cleaned !== handleInput.value) handleInput.value = cleaned;
+        handleDebounce = setTimeout(() => store.checkHandle(handleInput.value), 180);
     });
 
-    function startCooldown(buttonElement, timerElement) {
-        buttonElement.disabled = true;
-        let timeLeft = 60;
-        timerElement.innerText = `${timeLeft}s`;
+    on(handleInput, 'blur', () => {
+        if (!state.editing) return;
+        clearTimeout(handleDebounce);
+        store.checkHandle(handleInput.value);
+    });
 
-        const countdown = setInterval(() => {
-            timeLeft--;
-            timerElement.innerText = `${timeLeft}s`;
-
-            if (timeLeft <= 0) {
-                clearInterval(countdown);
-                timerElement.innerText = '';
-                buttonElement.disabled = false;
-                buttonElement.innerHTML = buttonElement.dataset.originalText;
+    on(cityInput, 'input', () => {
+        if (!state.editing || typeof adapter.searchCities !== 'function') return;
+        selectedCityId = null;
+        clearTimeout(cityDebounce);
+        const query = cityInput.value.trim();
+        if (query.length < 2) { closeCities(); return; }
+        cityDebounce = setTimeout(async () => {
+            try {
+                const results = await adapter.searchCities(query);
+                if (!state.editing || cityInput.value.trim() !== query) return;
+                if (!results?.length) { closeCities(); return; }
+                cityList.innerHTML = results.map((city, idx) => `<li role="option"><button type="button" data-city-idx="${idx}">${e(city.name)}<span>${e(city.countryName || '')}</span></button></li>`).join('');
+                cityList.hidden = false;
+                cityInput.setAttribute('aria-expanded', 'true');
+                cityList.querySelectorAll('button').forEach((btn, idx) => {
+                    btn.addEventListener('click', () => {
+                        const chosen = results[idx];
+                        cityInput.value = chosen.name;
+                        countryInput.value = chosen.countryName || '';
+                        selectedCityId = chosen.id || null;
+                        closeCities();
+                        cityInput.focus();
+                    });
+                });
+            } catch {
+                closeCities();
             }
-        }, 1000);
+        }, 180);
+    });
+
+    on(form, 'submit', async event => {
+        event.preventDefault();
+        notify('');
+        clearTimeout(handleDebounce);
+        try {
+            const response = await store.savePersonalInfo({
+                firstName: firstNameInput.value,
+                lastName: lastNameInput.value,
+                handle: handleInput.value,
+                birthDate: birthDateInput.value,
+                city: cityInput.value,
+                country: countryInput.value,
+                cityId: selectedCityId
+            });
+            if (!response) return;
+            populateForm(state.account);
+            saveCooldownBanner.hidden = false;
+            startCooldown('save', response.cooldownSeconds || 30, saveBtn, null, remaining => {
+                saveCooldownText.textContent = remaining > 0
+                    ? `Alterações salvas. Aguarde ${remaining}s antes de salvar novamente.`
+                    : 'Você já pode salvar novas alterações.';
+                if (remaining === 0) saveCooldownBanner.hidden = true;
+                render();
+            });
+            openSuccessDialog('Suas informações foram atualizadas com sucesso.');
+        } catch (error) {
+            notify(error.message || 'Não foi possível salvar as alterações.');
+        }
+    });
+
+    on(emailBtn, 'click', async () => {
+        if (emailBtn.disabled) return;
+        notify('');
+        emailBtn.disabled = true;
+        try {
+            const result = await adapter.requestEmailChange();
+            startCooldown('email', result?.cooldownSeconds || 30, emailBtn, emailTimerEl);
+            openSuccessDialog(result?.message || 'Enviamos as instruções para alteração do seu e-mail.');
+        } catch (error) {
+            emailBtn.disabled = false;
+            notify(error.message || 'Não foi possível solicitar a alteração de e-mail.');
+        }
+    });
+
+    on(passwordBtn, 'click', async () => {
+        if (passwordBtn.disabled) return;
+        notify('');
+        passwordBtn.disabled = true;
+        try {
+            const result = await adapter.requestPasswordReset();
+            startCooldown('password', result?.cooldownSeconds || 30, passwordBtn, passwordTimerEl);
+            openSuccessDialog(result?.message || 'Enviamos um link para redefinição de senha no seu e-mail.');
+        } catch (error) {
+            passwordBtn.disabled = false;
+            notify(error.message || 'Não foi possível solicitar a redefinição de senha.');
+        }
+    });
+
+    on(deactivateBtn, 'click', openDeactivateDialog);
+    on(deleteBtn, 'click', openDeleteDialog);
+
+    // Handle sidebar navigation actions, Spotify disconnect, and footer buttons.
+    async function handleNavigation(key) {
+        if (key === 'logout') return logoutAccount(adapter, navigate);
+        if (adapter.actions?.[key]) return adapter.actions[key]();
+        notify(key === 'notifications' ? 'Notificações estarão disponíveis em breve.' : 'Esta funcionalidade ainda não está disponível neste frontend.');
     }
 
-    reqChangeEmailBtn.addEventListener('click', async () => {
-        reqChangeEmailBtn.dataset.originalText = reqChangeEmailBtn.innerHTML;
-        reqChangeEmailBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        setTimeout(() => {
-            showModal("Link Enviado", "Enviamos um link de verificação para o seu e-mail atual. Clique nele para redefinir seu e-mail de acesso na plataforma.");
-            startCooldown(reqChangeEmailBtn, emailTimerSpan);
-        }, 800);
+    on(document, 'click', event => {
+        const target = event.target.closest('button, a');
+        if (!target) {
+            if (!event.target.closest('.account-city-field')) closeCities();
+            return;
+        }
+        if (target.id === 'spotify-disconnect-btn') {
+            notify('');
+            store.disconnectSpotify().catch(error => notify(error.message || 'Não foi possível desconectar o Spotify.'));
+        }
+        if (target.dataset.navigation) {
+            handleNavigation(target.dataset.navigation);
+            if (drawer.open) drawer.close();
+        }
+        if (target.dataset.unavailable) {
+            notify(`${target.dataset.unavailable} ainda não está disponível neste frontend.`);
+        }
     });
 
-    reqChangePwdBtn.addEventListener('click', async () => {
-        reqChangePwdBtn.dataset.originalText = reqChangePwdBtn.innerHTML;
-        reqChangePwdBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        setTimeout(() => {
-            showModal("Redefinição Solicitada", "As instruções para redefinição de senha foram enviadas. Verifique a caixa de entrada do seu e-mail associado a esta conta.");
-            startCooldown(reqChangePwdBtn, pwdTimerSpan);
-        }, 800);
+    on(menuTrigger, 'click', () => {
+        drawer.innerHTML = `<header class="drawer-heading"><a class="brand" href="${e(adapter.routes?.home || 'feed.html')}"><svg width="95" height="24" viewBox="0 0 95 24" aria-label="Sonarfy"><use href="../assets/logos/sonarfy-mobile.svg#logo"></use></svg></a><button class="profile-icon-button" id="close-menu" aria-label="Fechar">${icon('close')}</button></header>${sidebar(false, adapter.routes, 'settings')}`;
+        drawer.showModal();
+        document.body.classList.add('profile-modal-open');
+        menuTrigger.setAttribute('aria-expanded', 'true');
+        drawer.querySelector('#close-menu').addEventListener('click', () => drawer.close(), { once: true });
+        drawer.querySelector('#close-menu').focus();
     });
-});
+
+    on(drawer, 'click', event => {
+        if (event.target !== drawer) return;
+        const box = drawer.getBoundingClientRect();
+        if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) drawer.close();
+    });
+
+    on(drawer, 'close', () => {
+        document.body.classList.remove('profile-modal-open');
+        menuTrigger.setAttribute('aria-expanded', 'false');
+        menuTrigger.focus();
+    });
+
+    const ready = store.load().then(account => {
+        populateForm(account);
+        render();
+        return account;
+    }).catch(error => {
+        notify(error.message || 'Não foi possível carregar as configurações.');
+    });
+
+    return {
+        store,
+        ready,
+        openDeactivateDialog,
+        openDeleteDialog,
+        destroy() {
+            clearTimeout(handleDebounce);
+            clearTimeout(cityDebounce);
+            activeTimers.forEach(timer => clearInterval(timer));
+            activeTimers.clear();
+            unsubscribe();
+            controller.abort();
+        }
+    };
+}
+
+if (document.getElementById('account-main')) mountAccount();
