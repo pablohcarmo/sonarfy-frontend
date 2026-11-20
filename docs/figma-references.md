@@ -18,6 +18,7 @@ e [Profile Page (Friend)](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/So
 - [Confirmação de e-mail](#confirmacao-email)
 - [Verify Account](#verify-account)
 - [Spotify Sync](#spotify-sync)
+- [Logout](#logout)
 
 Os valores correspondem aos frames de referência. As instruções de uso e testes estão nos documentos de cada página.
 
@@ -303,3 +304,40 @@ Edge 155 e Firefox 153 verificados em 1440px/390px, nos temas claro/escuro,
 com SVGs carregados e sem overflow na tela Spotify Sync. Mobile é verificado
 por viewport emulado; login, confirmação OAuth e destino de perfil são
 simulados nos testes.
+
+<a id="logout"></a>
+## Logout
+
+Referência: [Logout Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=432-10484).
+
+### Inspeção pelo Figma MCP
+
+A página `Logout Page` (`432:10484`) foi inspecionada via `get_metadata` e `get_design_context` (com screenshots) em 19/11/2026 nos quatro frames oficiais:
+
+| Tema | Desktop `1440px` (`1440 × 874`) | Mobile `390px` (`390 × 860`) |
+| --- | --- | --- |
+| Claro | `499:8385` | `499:8430` |
+| Escuro | `499:8478` | `499:8523` |
+
+Estrutura, tokens e assets verificados nos frames:
+
+- `Header / Global` (`187:548`): `88px` desktop (`187:509` / `187:519`) e `80px` mobile (`187:533` / `187:547`), contendo apenas o logo Sonarfy (link direto para `feed.html`, substituindo o antigo link `← Início`) e o alternador de tema.
+- `Footer / Global` (`175:216` — `175:214` / `175:215`): último elemento no fluxo normal (`padding: 32px 20px 40px`, `gap: 12px`, `12px/20px`).
+- Card centralizado (`499:8398` / `499:8446` / `499:8491` / `499:8539`): `480px` desktop (`padding: 32px`) / `342px` mobile (`padding: 24px`), `gap: 24px`, raio `16px`, borda `1px` `#ebecef` (claro) / `#65676b` (escuro), superfície `#ffffff` / `#242424`.
+- Badge superior (`64 × 64px`, raio `16px`, `#f7f8fa` / `#2a2a2a`, sem borda) com ícone de sair `16 × 18px` (`assets/icons/profile/logout-light.svg` e `logout-dark.svg`, correspondentes aos SVGs `a77f5.svg` e `80a72.svg` do MCP).
+- Cópia oficial: título `Sair da sua conta?` (`32px/38px` desktop, `28px/34px` mobile, Bold), descrição `Você será desconectado do Sonarfy neste navegador. Você poderá entrar novamente a qualquer momento para acessar seu perfil e suas avaliações.` (`15px/24px`), resumo de conta conectada (`padding: 12px 16px`, `gap: 12px`, raio `8px`, avatar `44 × 44px` via `assets/icons/profile/avatar.svg`) e botões `Confirmar e sair` (`#27a9f5`, `15px/20px`, altura `48px`) e `Cancelar e voltar` (borda `1px #8c8d90`, `14px/20px`, altura `48px`).
+
+### Contrato do adapter (`window.sonarfyLogoutAdapter`) e modo demonstração
+
+Sem backend acoplado, `js/logout.js` opera em modo demonstração usando os dados locais de `js/profile-fixtures.js` (`Display Name`, `@username_123456`, `assets/icons/profile/avatar.svg`). Um host pode injetar `window.sonarfyLogoutAdapter` com:
+
+- `user` ou `getUser()`: objeto ou função assíncrona retornando `{ displayName, handle, avatar }`.
+- `logout()` ou `actions.logout()`: função assíncrona opcional para revogação remota de sessão; o botão `"Confirmar e sair"` bloqueia cliques concorrentes enquanto aguarda a promessa e sempre remove `sonarfy_token` (preservando `sonarfy_theme`) antes de redirecionar para `pages/login.html`, mesmo em caso de falha remota.
+- `routes.login` e `routes.fallback`: rotas relativas opcionais (padrão `login.html` e `feed.html`). O parâmetro de query `from` é validado para aceitar apenas rotas internas relativas sob `/pages/` (bloqueando URLs externas, `//`, `javascript:` e loop para `logout.html`).
+- A sidebar compartilhada (`js/profile-shell.js`) direciona o item `"Sair"` para `logout.html?from=<página atual>`.
+
+### Verificação
+
+- Suíte unitária (`npm test`, incluindo `tests/logout.test.js`): 13 arquivos, 143 testes aprovados em Vitest + Happy DOM.
+- Verificação de navegador (`node tests/browser/logout.cjs`): 8 combinações aprovadas no Microsoft Edge `157.0.4341.60` e Firefox `153.0`, em `1440px` e `390px`, nos temas claro e escuro, validando dimensões do card (`480px`/`342px`), badge `64 × 64px`, header `88px`/`80px`, zero overflow horizontal, foco por teclado, carregamento de SVGs e fluxos de cancelar/confirmar.
+- Limitações: mobile verificado por viewport emulado em navegador headless; revogação remota e dados do usuário usam adapter simulado/fixtures locais.

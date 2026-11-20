@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Sair da sua conta – Sonarfy</title>
+    <link rel="icon" type="image/png" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/logout.css">
+    <script src="../js/login-theme.js"></script>
+    <script type="module" src="../js/logout.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="feed.html" class="brand" aria-label="Sonarfy — página inicial">
+            <svg class="brand-desktop" width="118" height="32" viewBox="0 0 118 32" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-desktop.svg#logo"></use></svg><svg class="brand-mobile" width="95" height="24" viewBox="0 0 95 24" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-mobile.svg#logo"></use></svg>
+        </a>
+        <nav class="header-actions" aria-label="Navegação principal">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
+                <svg class="ui-icon theme-light-only" fill="none" width="16" height="20" viewBox="-0.5 0 16 20" overflow="visible" aria-hidden="true" focusable="false"><use href="../assets/icons/shared/theme-moon.svg#icon"></use></svg>
+                <img class="ui-icon theme-dark-only" src="../assets/icons/shared/theme-sun.svg" alt="">
+            </button>
+        </nav>
+    </header>
+    <main class="auth-container logout-main">
+        <div class="login-content">
+            <section class="login-card logout-card" aria-labelledby="logout-title" aria-describedby="logout-description">
+                <span class="logout-badge" aria-hidden="true">
+                    <img class="ui-icon theme-light-only" src="../assets/icons/profile/logout-light.svg" width="16" height="18" alt="">
+                    <img class="ui-icon theme-dark-only" src="../assets/icons/profile/logout-dark.svg" width="16" height="18" alt="">
+                </span>
+                <div class="form-introduction logout-intro">
+                    <h1 id="logout-title">Sair da sua conta?</h1>
+                    <p id="logout-description">Você será desconectado do Sonarfy neste navegador. Você poderá entrar novamente a qualquer momento para acessar seu perfil e suas avaliações.</p>
+                </div>
+                <div class="logout-account-summary" aria-label="Conta conectada">
+                    <img id="logoutUserAvatar" class="logout-avatar" src="../assets/icons/profile/avatar.svg" width="44" height="44" alt="">
+                    <div class="logout-account-meta">
+                        <strong id="logoutUserName" class="logout-user-name">Display Name</strong>
+                        <span id="logoutUserHandle" class="logout-user-handle">@username_123456</span>
+                    </div>
+                </div>
+                <div class="logout-actions">
+                    <button id="btnConfirmLogout" class="btn-submit" type="button">Confirmar e sair</button>
+                    <a id="btnCancelLogout" class="btn-secondary-logout" href="feed.html" data-logout-back>Cancelar e voltar</a>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer class="site-footer">
+        <nav class="footer-links" aria-label="Links institucionais">
+            <a href="termos.html">Termos de Uso</a><span aria-hidden="true">•</span>
+            <a href="privacidade.html">Privacidade</a><span aria-hidden="true">•</span>
+            <a href="regulamentos.html">Diretrizes</a><span aria-hidden="true">•</span>
+            <a href="apoio.html">Apoie o Sonarfy</a>
+        </nav>
+        <p>© 2026 Sonarfy</p>
+    </footer>
+</body>
+</html>
