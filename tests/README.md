@@ -93,6 +93,17 @@ node tests/browser/shared-brand.cjs
 
 O primeiro script verifica assets, navegação, temas e controles de login/index. O segundo verifica as marcas compartilhadas de Home, login, cadastro e Verify. Ambos exercitam Firefox e Edge, desktop/mobile e claro/escuro.
 
+### Logout
+
+Referência: [Figma — Logout](../docs/figma-references.md#logout).
+
+```sh
+npm test -- tests/logout.test.js
+node tests/browser/logout.cjs
+```
+
+Verifica renderização da conta conectada (adapter e fallback local), bloqueio de cliques concorrentes, remoção de `sonarfy_token` com preservação de `sonarfy_theme`, resiliência a falha remota, proteção contra open redirect no parâmetro `from`, além de dimensões, foco, SVGs e ausência de overflow no Edge e Firefox (`1440px`/`390px`, claro/escuro).
+
 ## Limitações
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.

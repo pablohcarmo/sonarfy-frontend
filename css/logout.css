@@ -1,0 +1,143 @@
+/* Logout Page (Figma 432:10484 — 499:8385/8430/8478/8523); base tokens, header, card, CTA and footer come from login.css. */
+:root {
+    --logout-surface: #f7f8fa;
+    --logout-secondary-hover: #f7f8fa;
+    --logout-secondary-active: #ebecef;
+}
+
+[data-theme="dark"] {
+    --logout-surface: #2a2a2a;
+    --logout-secondary-hover: #2a2a2a;
+    --logout-secondary-active: #343434;
+}
+
+.logout-main {
+    min-height: 662px;
+    padding: 64px 48px;
+}
+
+.logout-card {
+    align-items: center;
+    text-align: center;
+    gap: var(--space-3);
+}
+
+.logout-badge {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-card);
+    background: var(--logout-surface);
+}
+
+.logout-intro {
+    width: 100%;
+    text-align: center;
+}
+
+.logout-intro h1 {
+    line-height: 38px;
+}
+
+.logout-account-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px var(--space-2);
+    border-radius: var(--radius-control);
+    background: var(--logout-surface);
+    outline: 1px solid var(--border-color);
+    outline-offset: -1px;
+    text-align: left;
+    min-width: 0;
+}
+
+.logout-avatar {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--card-bg);
+}
+
+.logout-account-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.logout-user-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-user-handle {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 18px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.btn-secondary-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    text-decoration: none;
+}
+
+.btn-secondary-logout:hover {
+    background: var(--logout-secondary-hover);
+    text-decoration: none;
+}
+
+.btn-secondary-logout:active {
+    background: var(--logout-secondary-active);
+}
+
+@media (max-width: 767px) {
+    .logout-main {
+        min-height: 656px;
+        padding: 32px 24px;
+    }
+
+    .logout-intro h1 {
+        line-height: 34px;
+    }
+}
+
+@media (forced-colors: active) {
+    .logout-account-summary,
+    .btn-secondary-logout {
+        border: 1px solid CanvasText;
+    }
+}

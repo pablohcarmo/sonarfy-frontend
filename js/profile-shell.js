@@ -5,13 +5,19 @@ const items = [
     ['notifications', 'Notificações'], ['profile', 'Perfil', 'profile.html'],
     ['settings', 'Configurações', 'account.html'], ['logout', 'Sair']
 ];
+// Build the logout page link preserving the originating internal page when available.
+export function logoutRoute() {
+    const file = typeof location === 'object' ? location.pathname.split('/').pop() : '';
+    if (!file || file === 'logout.html' || !/\.html$/i.test(file)) return 'logout.html';
+    return `logout.html?from=${encodeURIComponent(`${file}${location.search || ''}`)}`;
+}
 export function sidebar(own, routes = {}, activeItem = own ? 'profile' : null) {
     return `<nav class="profile-navigation" aria-label="Navegação principal">${items.map(([key, label, route]) => {
         const active = key === activeItem;
         const iconKey = active && key === 'profile' ? 'activeProfile' : active && key === 'home' ? 'activeHome' : active && key === 'settings' ? 'activeSettings' : key;
         const content = `${icon(iconKey)}<span>${label}</span>`;
         // Only known local routes or host-configured routes become links.
-        const href = routes[key] || route;
+        const href = routes[key] || (key === 'logout' ? logoutRoute() : route);
         return href ? `<a href="${e(href)}" ${active ? 'aria-current="page"' : ''}>${content}</a>` : `<button data-navigation="${key}">${content}</button>`;
     }).join('')}</nav><button class="profile-primary review-cta" data-navigation="review">Avaliar Álbum</button>`;
 }
