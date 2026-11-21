@@ -11,34 +11,56 @@ links de perfil no avatar, nome e handle, além da validação de resenha no ren
 
 ## Dados e integração
 
-**Não existe contrato de API de perfil, mídia, relacionamento ou publicações neste
-repositório.** Sem integração, a página mostra explicitamente demonstração local,
-com fixtures isoladas em `js/profile-fixtures.js`. Editar, fazer upload, seguir e
-curtir só modificam a memória da demonstração; recarregar restaura as fixtures.
-Não há endpoints fictícios nem pedidos enviados ao backend para essas ações.
+O cabeçalho e os relacionamentos usam o backend por padrão. A página sem handle
+consulta GET `/api/profile/me`; com handle consulta também
+GET `/api/profile/by-handle/{handle}`. A identidade autenticada vem de `/me`,
+não de IDs fornecidos pela URL, fixtures ou decodificação do token no navegador.
 
-O host pode definir `window.sonarfyProfileAdapter` antes de carregar `profile.js`.
-O adapter de produção substitui inteiramente as fixtures. Este é um ponto de
-integração proposto para o frontend, não um contrato existente do backend:
+`js/profile-http.js` mapeia somente `ProfileDto.identity`, `viewer.isFollowing` e
+`statistics.followers/following`. Não exibe campos cadastrais privados nem inventa
+contagem de álbuns. Atividades, respostas e coleção mostram indisponibilidade
+explícita; listas vazias no adapter não são apresentadas como ausência de publicações.
+A edição e os uploads permanecem fora desta integração, sem controles demonstrativos
+sobre um perfil real. Os estilos e a sidebar global existentes foram preservados.
 
-| Método/propriedade | Resultado esperado |
-| --- | --- |
-| `load(handle)` | Promise de `{profile, session, activities, replies, collection, collectionTotal?}` |
-| `collection(sort)` | Promise de itens ordenados/filtrados pelo serviço; sem descartar dados durante envio |
-| `updateProfile({displayName,bio,avatar,cover})` | Promise dos dados públicos atualizados, após validação/permissão no servidor |
-| `follow(boolean)` | Promise de `{isFollowing,followers}` reconciliados pelo servidor |
-| `like(publicationId, boolean)` | Promise de `{liked,likeCount}` reconciliados pelo servidor |
-| `upload(file, field)` | Promise da URL persistente da imagem; `field` é `avatar` ou `cover` |
-| `uploadPolicy` | `{types: string[], maxBytes: number}` conforme o backend real |
-| `routes` | Destinos opcionais `home`, `search`, `echoes`, `profile`, `settings` |
-| `actions` | Handlers opcionais `search`, `echoes`, `review`, `logout`, `comments(id)`, `album(id)` |
-| `publicOrigin` / `profileURL(profile)` | Origem pública configurada ou construção da URL pelo host |
+O token de acesso existente em `sonarfy_token` é enviado no header Authorization
+Bearer, com credentials=omit e cache=no-store. Não enviar token na URL nem header
+CSRF para estas operações Bearer. Base da API: `js/api.js`; localhost usa
+`http://localhost:8080/api`, conforme o backend local. O endereço remoto existente
+continua dependendo da configuração real do ambiente. A mudança de porta também
+se aplica às páginas de login/cadastro que já usam esse arquivo compartilhado.
 
-`profile` contém `id`, `displayName`, `handle` (sem @), `avatar`, `cover`, `bio`,
-`city`, `country`, `joinedAt`, `ratedCount`, `followers`, `following`, `isFollowing`.
-`session.userId` identifica a sessão; propriedade é determinada por ID estável.
-Não há fallback para nome/sobrenome privados. Identidade e autorização devem ser
-confirmadas no servidor. Os limites são 50/150/255 caracteres para nome/bio/resenha.
+Seguir usa PUT e deixar de seguir usa DELETE em `/api/profile/{identity.id}/following`,
+sem corpo. Somente 204 confirma a mutação; o adapter faz um novo GET do perfil e
+reconcilia estado e contadores com a resposta. Não incrementa números localmente.
+Durante a operação o botão fica desabilitado e cliques adicionais são ignorados.
+Falha de mutação ou da leitura posterior preserva o último snapshot e oferece
+Atualizar estado; esse próximo clique apenas consulta o perfil, sem enviar uma
+nova mutação ou inverter uma operação cujo resultado seja incerto. Em falha não
+anuncia sucesso. O próprio perfil não apresenta botão de seguir.
+
+Sem token ou com 401, remove o token e encaminha para login. Ainda não há renovação
+automática compartilhada no frontend; isso não foi introduzido nesta entrega.
+404 informa perfil indisponível; falha inicial permite tentar carregar novamente.
+Respostas recebidas após troca de token são descartadas. Alteração de sessão em
+outra aba recarrega a página; reconciliação de um perfil substituído é descartada.
+
+### Demonstração explícita
+
+Use `pages/profile.html?demo=true` ou
+`pages/profile.html?demo=true&handle=lucas_vinyl` para as fixtures isoladas.
+Nunca há fallback para demonstração após falha de rede ou autenticação.
+Edição, uploads, publicações e curtidas continuam simulados apenas nesse modo;
+recarregar restaura as fixtures. Compartilhamento gera a URL canônica de perfil
+real, sem propagar demo=true. O host ainda pode injetar `window.sonarfyProfileAdapter`.
+
+No adapter HTTP, load retorna `{profile,session,contentAvailable:false,activities:[],replies:[],collection:[]}`;
+follow retorna o perfil público reconciliado. O adapter demonstrativo mantém seus
+métodos collection, updateProfile, like e upload para a regressão visual.
+`profile` contém identidade pública, mídia, localização e os três campos reais
+followers/following/isFollowing. `session.userId` é normalizado como string para
+comparação com profile.id. O limite demonstrativo de edição continua em 50/150;
+o futuro editor real deve usar os limites do backend (60/150 pontos de código).
 
 Cada publicação contém `id`, `author` (perfil público), `album`
 (`id,title,artist,mark,cover?`), `createdAt` ISO, `rating`, `review`, `replyTo?`,
@@ -52,7 +74,8 @@ o conjunto filtrado/ordenado e a contagem correta; não deve ordenar somente a
 página atual como se ela representasse a coleção completa. A interface não inventa
 um protocolo de paginação enquanto esse contrato não existir.
 
-Login já grava `sonarfy_token`; Sair remove essa credencial e navega ao login.
+Login já grava `sonarfy_token`; Sair abre a confirmação existente e, ao confirmar,
+remove essa credencial e navega ao login.
 O host pode substituir essa ação para revogação remota. Home e Configurações usam
 as páginas existentes. Pesquisa, Ecos, Avaliar Álbum, comentários e álbum usam
 handlers configuráveis; sem eles, mostram feedback de indisponibilidade. Ecos não
@@ -139,3 +162,31 @@ Não houve merge ou push. `feature/profile-page` permanece na base original.
 A última branch contém a implementação completa pela ancestralidade dos commits,
 sem commits de merge. A exclusão local pré-existente do logo legado foi preservada
 e não integra os commits desta implementação.
+
+## Validação de relacionamentos — 20/11/2026
+
+- npm test: 14 arquivos / 157 testes passaram, incluindo o adapter HTTP e a reconciliação.
+- tests/browser/profile-following.cjs: Edge 157.0.4341.60 e Firefox 153.0,
+  headless, viewports 1440px e 390px (mobile emulado), claro e escuro: oito
+  combinações aprovadas. Capturas em test-results/profile-following.
+- As requisições são interceptadas pelo Playwright com respostas simuladas.
+  Cobertura: perfil próprio/visitante, dados públicos reais do contrato, ausência
+  de fixtures, seguir/deixar de seguir, clique duplo, estado pendente, GET posterior,
+  recuperação após 204 seguido de erro, 404 com retry, 401, foco e drawer mobile.
+- Não representa validação pela rede contra o backend real, uso de contas reais,
+  teste em celular físico ou CI remoto. A validação manual integrada está pendente.
+
+Roteiro manual: iniciar backend com migração 008 aplicada e servir a raiz do
+frontend por HTTP em uma origem permitida pelo CORS do backend (por padrão,
+http://localhost:63342; manter o host localhost). Fazer login com conta de teste e abrir pages/profile.html:
+confirmar identidade, contagens e ausência do botão seguir. Abrir
+profile.html?handle=<outra conta de teste>, seguir e deixar de seguir; conferir
+PUT/DELETE 204 seguidos de GET 200 e valores reais. Simular perda da leitura após
+uma mutação e usar Atualizar estado: deve haver somente GET, até reconciliar.
+Verificar 404 sem dados fictícios e 401 encaminhando ao login. Não compartilhar
+headers de autorização, credenciais ou capturas que exibam tokens.
+
+Regressão de demonstração: profile.cjs passou em 16 combinações próprio/visitante,
+Edge/Firefox, desktop/mobile, claro/escuro. profile-states.cjs passou em 40 cenários;
+a expectativa antiga de logout foi alinhada à confirmação já existente na main.
+As capturas mobile escura e desktop clara do fluxo HTTP foram inspecionadas.

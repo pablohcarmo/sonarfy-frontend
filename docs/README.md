@@ -7,7 +7,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 ## Índice de Documentação
 
 - **[Referências do Figma](figma-references.md)** — Links, nós inspecionados, tokens de tema e especificações das telas Home, Login, Cadastro, Confirmação de e-mail, Verify Account e Spotify Sync.
-- **[Perfis Sonarfy](profile-page.md)** — Contrato de `window.sonarfyProfileAdapter`, modo demonstração, referências do Figma (`Profile Page` e `Profile Page (Friend)`), verificação e limitações.
+- **[Perfis Sonarfy](profile-page.md)** — Perfil e relacionamentos via HTTP, contrato de `window.sonarfyProfileAdapter`, demonstração explícita, referências do Figma (`Profile Page` e `Profile Page (Friend)`), verificação e limitações.
 - **[Feed Sonarfy](feed-page.md)** — Contrato de `window.sonarfyFeedAdapter`, cache/reconciliação por aba, reutilização do shell compartilhado, referências do Figma (`Feed Page`) e verificação.
 - **[Configurações da Conta](account-page.md)** — Contrato de `window.sonarfyAccountAdapter`, edição de `@handle` com disponibilidade, autocomplete de cidade/país, Spotify, cooldowns, popups de desativação/exclusão e verificação.
 - **[Guia de Testes](../tests/README.md)** — Execução da suíte Vitest/Happy DOM (`npm test`) e dos scripts de verificação em navegador (`tests/browser/*.cjs`).
@@ -24,7 +24,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 | Verificação de Conta | `pages/verify.html` | [figma-references.md](figma-references.md#verify-account) | `tests/verify.test.js`, `tests/browser/shared-brand.cjs` |
 | Conexão Spotify | `pages/spotify-sync.html` | [figma-references.md](figma-references.md#spotify-sync) | `tests/spotify-sync.test.js`, `tests/browser/spotify-sync.cjs` |
 | Configurações da Conta | `pages/account.html` | [account-page.md](account-page.md) | `tests/account.test.js`, `tests/browser/account.cjs` |
-| Perfil (próprio e visitante) | `pages/profile.html` | [profile-page.md](profile-page.md) | `tests/profile.test.js`, `tests/browser/profile.cjs`, `tests/browser/profile-states.cjs` |
+| Perfil (próprio e visitante) | `pages/profile.html` | [profile-page.md](profile-page.md) | `tests/profile.test.js`, `tests/profile-http.test.js`, `tests/browser/profile.cjs`, `tests/browser/profile-states.cjs`, `tests/browser/profile-following.cjs` |
 | Feed da Comunidade | `pages/feed.html` | [feed-page.md](feed-page.md) | `tests/feed.test.js`, `tests/browser/feed.cjs` |
 
 ---
@@ -38,7 +38,7 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 | Cadastro / Cidades | `window.sonarfyCitySearch` / `GEONAMES_USERNAME` | Integrável; fallback local limitado | `docs/api/locations.md` e `docs/integrations/locations.md` |
 | Login / Cadastro / Verify | Chamadas HTTP diretas via `js/env.js` | Integrado ao contrato base (refresh/logout HttpOnly pendentes) | `docs/api/authentication.md`, `docs/api/registration.md`, `docs/integrations/authentication.md` |
 | Conexão Spotify | `window.sonarfySpotifyOAuth` | Fluxo UI e cooldown de 7 dias prontos; OAuth real pendente | `docs/integrations/spotify.md` |
-| Perfil | `window.sonarfyProfileAdapter` | Modo demonstração local (`js/profile-fixtures.js`) | `docs/api/profiles.md` e `docs/integrations/profile-page.md` |
+| Perfil | `js/profile-http.js` / `window.sonarfyProfileAdapter` | Integrado via HTTP para identidade e relacionamentos (seguir/deixar de seguir); publicações e edição pendentes; demonstração explícita em `?demo=true` | `docs/api/profiles.md`, `docs/api/following.md`, `docs/integrations/profile-page.md` e `docs/integrations/following.md` |
 | Feed | `window.sonarfyFeedAdapter` | Modo demonstração local (`js/feed-fixtures.js`) | Contrato de backend ainda não definido |
 | Configurações da Conta | `window.sonarfyAccountAdapter` | Modo demonstração local (`js/account-fixtures.js`) | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `email-change.md`, `password-change.md` |
 

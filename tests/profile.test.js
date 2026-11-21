@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createFixtures } from '../js/profile-fixtures.js';
-import { createProfileAdapter, validateData } from '../js/profile-data.js';
+import { createProfileAdapter, createDemoProfileAdapter, validateData } from '../js/profile-data.js';
 import { createProfileState } from '../js/profile-state.js';
 import { validateProfile, validateReview, timestamp, sortCollection, profileURL, escapeHTML } from '../js/profile-utils.js';
 
@@ -81,7 +81,7 @@ describe('mutações e reconciliação', () => {
         expect(item).toMatchObject(before); expect(store.state.pending.size).toBe(0);
     });
     it('reconcilia seguir, contagens e falha sem usar o tema', async () => {
-        const adapter = createProfileAdapter(null); const data = await adapter.load('lucas_vinyl');
+        const adapter = createDemoProfileAdapter(); const data = await adapter.load('lucas_vinyl');
         const store = createProfileState(adapter); store.setData(data);
         await store.follow(); expect(data.profile.isFollowing).toBe(true); expect(data.profile.followers).toBe(1401);
         await store.follow(); expect(data.profile.isFollowing).toBe(false); expect(data.profile.followers).toBe(1400);

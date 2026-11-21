@@ -1,10 +1,13 @@
 import { createFixtures } from './profile-fixtures.js';
 import { sortCollection, validateProfile, validateReview } from './profile-utils.js';
+import { createHttpProfileAdapter } from './profile-http.js';
 
-// No public-profile, follow, media or social API contract exists in this repository.
-// This bridge is an explicit integration seam, not a claim that those endpoints exist.
-export function createProfileAdapter(integration = window.sonarfyProfileAdapter) {
+// Fixtures só são usadas quando a demonstração é solicitada explicitamente.
+export function createProfileAdapter(integration = globalThis.sonarfyProfileAdapter) {
     if (integration) return integration;
+    return new URLSearchParams(location.search).get('demo') === 'true' ? createDemoProfileAdapter() : createHttpProfileAdapter();
+}
+export function createDemoProfileAdapter() {
     let data;
     const wait = () => new Promise(resolve => setTimeout(resolve, 180));
     return {

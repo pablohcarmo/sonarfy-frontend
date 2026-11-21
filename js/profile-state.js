@@ -9,7 +9,8 @@ export function createProfileState(adapter) {
         async mutate(key, operation, reconcile) {
             if (state.pending.has(key)) return;
             state.pending.add(key); emit();
-            try { const result = await operation(); reconcile(result); }
+            const data = state.data;
+            try { const result = await operation(); if (state.data === data) reconcile(result); }
             finally { state.pending.delete(key); emit(); }
         },
         like(id) {
@@ -23,7 +24,11 @@ export function createProfileState(adapter) {
         },
         follow() {
             if (!state.data.session?.userId) return Promise.reject(new Error('Entre na conta para seguir.'));
-            return this.mutate('follow', () => adapter.follow(!state.data.profile.isFollowing), result => Object.assign(state.data.profile, result));
+            const profile = state.data.profile;
+            return this.mutate('follow', async () => {
+                try { return await adapter.follow(!profile.isFollowing); }
+                catch (error) { if (error.reconcileRequired) profile.followUncertain = true; throw error; }
+            }, result => Object.assign(profile, result));
         },
         async sort(sort) {
             if (state.pending.has('sort')) return;

@@ -12,12 +12,13 @@ Para acompanhar alterações, use `npm run test:watch`.
 
 ## Perfis
 
-`npm test -- tests/profile.test.js` verifica limites, datas, ordenação,
-permissões e reconciliação de mutações. Execute também:
+`npm test -- tests/profile.test.js tests/profile-http.test.js` verifica limites, datas, ordenação,
+permissões, adapter HTTP de perfil/relacionamentos e reconciliação de mutações. Execute também:
 
 ```sh
 node tests/browser/profile.cjs
 node tests/browser/profile-states.cjs
+node tests/browser/profile-following.cjs
 ```
 
 Os scripts iniciam seus servidores e testam Firefox/Edge, 1440/390px,
@@ -25,6 +26,17 @@ claro/escuro. Usam `PLAYWRIGHT_MODULE` quando a instalação é externa.
 Relatórios e capturas ficam em `test-results/profile*`, ignorados pelo Git.
 Integrações simuladas, estados cobertos e limitações estão em
 [Perfis Sonarfy](../docs/profile-page.md).
+
+### Perfil e relacionamentos HTTP
+
+`node tests/browser/profile-following.cjs` intercepta o HTTP da API sem alterar
+contas ou bancos reais. Edge `157.0.4341.60` e Firefox `153.0` passaram nas oito
+combinações `1440px`/`390px` e claro/escuro, cobrindo pendência, clique repetido,
+`204` seguido de `GET`, reconciliação incerta sem nova mutação, `404`/retry,
+`401`/login, perfil próprio, foco e drawer. Capturas e relatório:
+`test-results/profile-following`. A regressão visual em `profile.cjs` solicita
+`?demo=true` explicitamente. Mobile emulado/headless; execução automatizada
+contra backend real e CI remoto não realizadas nesta entrega.
 
 ## Testes de navegador
 

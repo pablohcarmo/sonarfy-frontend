@@ -133,7 +133,10 @@ async function installAdapter(page, { theme, mode, width }) {
                         assert.equal(await page.locator('h1').textContent(), 'Alterado');
                         await page.evaluate(() => localStorage.setItem('sonarfy_token', 'test-token'));
                         if (width === 390) await page.locator('#open-menu').click();
-                        await page.locator(width === 390 ? '#profile-drawer [data-navigation="logout"]' : '#profile-sidebar [data-navigation="logout"]').click();
+                        await page.locator(width === 390 ? '#profile-drawer [href^="logout.html"]' : '#profile-sidebar [href^="logout.html"]').click();
+                        await page.waitForURL('**/pages/logout.html?*');
+                        assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), 'test-token');
+                        await page.locator('#btnConfirmLogout').click();
                         await page.waitForURL('**/pages/login.html');
                         assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), null);
                     }
