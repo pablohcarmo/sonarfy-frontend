@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="referrer" content="no-referrer">
+    <title>Recuperar senha – Sonarfy</title>
+    <link rel="icon" type="image/png" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <script src="../js/login-theme.js"></script>
+    <script src="../js/api.js" defer></script>
+    <script type="module" src="../js/password-recovery.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="../index.html" class="brand" aria-label="Sonarfy — página inicial">
+            <svg class="brand-desktop" width="118" height="32" viewBox="0 0 118 32" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-desktop.svg#logo"></use></svg><svg class="brand-mobile" width="95" height="24" viewBox="0 0 95 24" role="img" aria-label="Sonarfy" focusable="false"><use href="../assets/logos/sonarfy-mobile.svg#logo"></use></svg>
+        </a>
+        <nav class="header-actions" aria-label="Navegação principal">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
+                <svg class="ui-icon theme-light-only" fill="none" width="14.99" height="20" viewBox="0 0 14.99 20" aria-hidden="true" focusable="false"><use href="../assets/icons/shared/theme-moon.svg#icon"></use></svg>
+                <img class="ui-icon theme-dark-only" src="../assets/icons/shared/theme-sun.svg" alt="">
+            </button>
+            <a class="back-link mobile-home" href="login.html">
+                <img class="ui-icon theme-light-only" src="../assets/icons/login/arrow-back.svg" alt=""><img class="ui-icon theme-dark-only" src="../assets/icons/login/arrow-back-dark.svg" alt="">Login
+            </a>
+        </nav>
+    </header>
+    <main class="auth-container">
+        <div class="login-content">
+            <a class="back-link desktop-home" href="login.html">
+                <img class="ui-icon theme-light-only" src="../assets/icons/login/arrow-back.svg" alt=""><img class="ui-icon theme-dark-only" src="../assets/icons/login/arrow-back-dark.svg" alt="">Voltar para o login
+            </a>
+            <section class="login-card" aria-labelledby="recovery-title" aria-describedby="recovery-description">
+                <div class="form-introduction">
+                    <h1 id="recovery-title">Recuperar senha</h1>
+                    <p id="recovery-description">Informe seu e-mail cadastrado para receber instruções de redefinição de senha.</p>
+                </div>
+                <p id="recoveryError" class="feedback feedback-error" role="alert"></p>
+                <p id="recoverySuccess" class="feedback feedback-success" role="status"></p>
+
+                <form id="forgotPasswordForm" method="post" novalidate>
+                    <div class="credentials">
+                        <div class="input-group">
+                            <label for="recoveryEmail">E-mail</label>
+                            <input id="recoveryEmail" name="email" class="login-field" type="email" placeholder="seu@email.com" maxlength="150" required autocomplete="email" autocapitalize="none" spellcheck="false">
+                        </div>
+                    </div>
+                    <button id="btnForgotSubmit" class="btn-submit" type="submit">Enviar instruções</button>
+                </form>
+
+                <form id="resetPasswordForm" method="post" novalidate hidden>
+                    <div class="credentials">
+                        <div class="input-group">
+                            <label for="newPassword">Nova senha</label>
+                            <div class="password-input-wrapper">
+                                <input id="newPassword" name="newPassword" class="login-field" type="password" placeholder="Mínimo de 8 caracteres" required minlength="8" autocomplete="new-password">
+                                <button type="button" class="icon-button btn-toggle-password" data-toggle-password="newPassword" aria-label="Mostrar senha" aria-controls="newPassword" aria-pressed="false">
+                                    <svg class="ui-icon eye-open" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-open.svg#icon"></use></svg><svg class="ui-icon eye-off" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-off.svg#icon"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="confirmNewPassword">Confirmar nova senha</label>
+                            <div class="password-input-wrapper">
+                                <input id="confirmNewPassword" name="confirmNewPassword" class="login-field" type="password" placeholder="Repita a nova senha" required minlength="8" autocomplete="new-password">
+                                <button type="button" class="icon-button btn-toggle-password" data-toggle-password="confirmNewPassword" aria-label="Mostrar senha" aria-controls="confirmNewPassword" aria-pressed="false">
+                                    <svg class="ui-icon eye-open" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-open.svg#icon"></use></svg><svg class="ui-icon eye-off" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-off.svg#icon"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="btnResetSubmit" class="btn-submit" type="submit">Redefinir senha</button>
+                </form>
+
+                <p class="auth-links">Lembrou da senha? <a href="login.html">Voltar ao login</a></p>
+            </section>
+        </div>
+    </main>
+    <footer class="site-footer">
+        <nav class="footer-links" aria-label="Links institucionais">
+            <a href="termos.html">Termos de Uso</a><span aria-hidden="true">•</span>
+            <a href="privacidade.html">Privacidade</a><span aria-hidden="true">•</span>
+            <a href="regulamentos.html">Diretrizes</a><span aria-hidden="true">•</span>
+            <a href="apoio.html">Apoie o Sonarfy</a>
+        </nav>
+        <p>© 2026 Sonarfy</p>
+    </footer>
+</body>
+</html>

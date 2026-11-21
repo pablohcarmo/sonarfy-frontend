@@ -2,6 +2,7 @@ import { createAccountAdapter } from './account-fixtures.js';
 import { createHttpAccountAdapter } from './account-http.js';
 import { createAccountState, logoutAccount, normalizeHandle } from './account-state.js';
 import { readSpotifyCallbackOutcome } from './spotify-http.js';
+import { extractUrlToken } from './password-http.js';
 import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
@@ -255,6 +256,54 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         );
     }
 
+    // Open the authenticated password change modal when arriving with #password-change-token=...
+    function openPasswordChangeDialog(initialToken) {
+        let authToken = initialToken;
+        openDialog(
+            `<div class="account-dialog-content">
+                <div class="account-dialog-top">
+                    <span class="account-dialog-badge" aria-hidden="true">${accountIcon('lock-light', 'lock-dark', 24)}</span>
+                    <button type="button" class="account-dialog-close" data-close aria-label="Fechar">${accountIcon('close-light', 'close-dark', 20)}</button>
+                </div>
+                <h2 id="account-dialog-title" class="account-dialog-title">Alterar senha de acesso</h2>
+                <p class="account-dialog-text">Informe sua senha atual e escolha uma nova senha com pelo menos 8 caracteres. Ao concluir, você precisará entrar novamente.</p>
+                <form id="password-change-form" class="account-section" novalidate>
+                    <div class="account-field">
+                        <label for="pwd-current">Senha atual</label>
+                        <div class="account-input-box is-editable">
+                            <input id="pwd-current" name="currentPassword" type="password" autocomplete="current-password" required>
+                        </div>
+                    </div>
+                    <div class="account-field">
+                        <label for="pwd-new">Nova senha</label>
+                        <div class="account-input-box is-editable">
+                            <input id="pwd-new" name="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+                        </div>
+                    </div>
+                    <div class="account-field">
+                        <label for="pwd-confirm">Confirmar nova senha</label>
+                        <div class="account-input-box is-editable">
+                            <input id="pwd-confirm" name="confirmNewPassword" type="password" autocomplete="new-password" minlength="8" required>
+                        </div>
+                    </div>
+                    <p class="account-dialog-status" role="alert" aria-live="polite"></p>
+                    <div class="account-dialog-actions">
+                        <button type="button" class="account-btn-secondary" data-close>Cancelar</button>
+                        <button type="button" class="account-btn-primary" data-confirm>Confirmar nova senha</button>
+                    </div>
+                </form>
+            </div>`,
+            async () => {
+                const currentPassword = dialog.querySelector('#pwd-current')?.value || '';
+                const newPassword = dialog.querySelector('#pwd-new')?.value || '';
+                const confirmNewPassword = dialog.querySelector('#pwd-confirm')?.value || '';
+                await adapter.changePassword({ token: authToken, currentPassword, newPassword, confirmNewPassword });
+                authToken = null;
+                navigate('login.html?reset=true');
+            }
+        );
+    }
+
     const unsubscribe = store.subscribe(render);
 
     on(dialog, 'cancel', event => { if (dialogBusy) event.preventDefault(); });
@@ -450,11 +499,22 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
     });
 
     const spotifyCallback = readSpotifyCallbackOutcome(options.location, options.history);
+    const passwordChangeToken = extractUrlToken('password-change-token', options.location, options.history);
+
+    on(window, 'hashchange', () => {
+        const nextToken = extractUrlToken('password-change-token', options.location, options.history);
+        if (nextToken && typeof adapter.changePassword === 'function') {
+            openPasswordChangeDialog(nextToken);
+        }
+    });
 
     const ready = store.load().then(account => {
         populateForm(account);
         render();
         if (spotifyCallback) notify(spotifyCallback.message);
+        if (passwordChangeToken && typeof adapter.changePassword === 'function') {
+            openPasswordChangeDialog(passwordChangeToken);
+        }
         return account;
     }).catch(error => {
         notify(error.message || 'Não foi possível carregar as configurações.');
