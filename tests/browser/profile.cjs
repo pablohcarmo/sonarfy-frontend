@@ -35,7 +35,7 @@ async function focusContained(page, dialog) {
                     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.copiedURL = text; } } });
                 }, theme);
                 const prefix = `${name}-${width}-${theme}-${friend ? 'friend' : 'own'}`;
-                const url = `${base}/pages/profile.html${friend ? '?handle=lucas_vinyl' : ''}`;
+                const url = `${base}/pages/profile.html?demo=true${friend ? '&handle=lucas_vinyl' : ''}`;
                 await page.goto(url);
                 await page.locator('.profile-card').waitFor(); await page.evaluate(() => document.fonts.ready);
                 assert.equal(await page.locator('h1').textContent(), friend ? 'Lucas Andrade' : 'Display Name');

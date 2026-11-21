@@ -2,7 +2,7 @@ import { createProfileAdapter, validateData } from './profile-data.js';
 import { createProfileState } from './profile-state.js';
 import { createDialogs, containFocus } from './profile-dialogs.js';
 import { icon } from './profile-icons.js';
-import { sidebar, skeleton, globalHeader, globalFooter } from './profile-shell.js';
+import { sidebar, skeleton, globalHeader, globalFooter, emptyState } from './profile-shell.js';
 import { profileHeader, activityFeed, collectionView, socialActions } from './profile-views.js';
 import { sortOptions } from './profile-utils.js';
 
@@ -31,6 +31,10 @@ function render() {
     header.innerHTML = profileHeader(profile, own(), state.pending.has('follow'));
     if (focusedAction) header.querySelector(`[data-action="${focusedAction}"]`)?.focus();
     document.title = `${profile.displayName} (@${profile.handle}) – Sonarfy`;
+    if (state.data.contentAvailable === false) {
+        tabs.forEach(tab => { document.getElementById(`panel-${tab}`).innerHTML = emptyState('Conteúdo ainda não disponível', 'Avaliações, respostas e coleção ainda não estão integradas.'); });
+        return;
+    }
     for (const tab of ['activities', 'replies']) {
         document.getElementById(`panel-${tab}`).innerHTML = activityFeed(state.data[tab], state.pending);
     }
@@ -102,6 +106,7 @@ document.addEventListener('click', event => {
     if (target.dataset.action === 'edit') dialogs.edit();
     if (target.dataset.action === 'share') dialogs.share();
     if (target.dataset.action === 'follow') run(async () => {
+        notify('');
         try { await store.follow(); }
         finally { header.querySelector('[data-action="follow"]')?.focus(); }
     });
@@ -171,5 +176,8 @@ async function load() {
         const retry = document.createElement('button'); retry.className = 'profile-secondary'; retry.textContent = 'Tentar novamente'; retry.addEventListener('click', load); status.append(retry);
     }
 }
+window.addEventListener('storage', event => {
+    if (!adapter.demo && (event.key === 'sonarfy_token' || event.key === null)) location.reload();
+});
 changeTab(new URL(location.href).searchParams.get('tab'), false);
 load();

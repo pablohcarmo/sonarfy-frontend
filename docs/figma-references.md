@@ -295,8 +295,7 @@ primeiro login ou após 7 dias do último skip. O acesso manual nas
 configurações usa `spotify-sync.html?source=account` durante o cooldown.
 A integração exige `window.sonarfySpotifyOAuth` com confirmação assíncrona
 `{ synced: true }` antes de gravar sucesso. O handler OAuth real não está disponível
-neste repositório. O destino `pages/profile.html` usa um adapter de demonstração
-substituível; consulte [Perfis Sonarfy](profile-page.md).
+neste repositório. O destino `pages/profile.html` usa um adapter HTTP para identidade e relacionamentos; a demonstração é explícita em ?demo=true; consulte [Perfis Sonarfy](profile-page.md).
 
 Verificação: `npm test -- tests/spotify-sync.test.js` e
 `node tests/browser/spotify-sync.cjs`. O script de navegador usa Playwright
@@ -343,3 +342,14 @@ Sem backend acoplado, `js/logout.js` opera em modo demonstração usando os dado
 - Suíte unitária (`npm test`, incluindo `tests/logout.test.js`): 13 arquivos, 143 testes aprovados em Vitest + Happy DOM.
 - Verificação de navegador (`node tests/browser/logout.cjs`): 8 combinações aprovadas no Microsoft Edge `157.0.4341.60` e Firefox `153.0`, em `1440px` e `390px`, nos temas claro e escuro, validando dimensões do card (`480px`/`342px`), badge `64 × 64px`, header `88px`/`80px`, zero overflow horizontal, foco por teclado, carregamento de SVGs e fluxos de cancelar/confirmar.
 - Limitações: mobile verificado por viewport emulado em navegador headless; revogação remota e dados do usuário usam adapter simulado/fixtures locais.
+
+<a id="profile-http"></a>
+## Perfil — integração HTTP de relacionamentos (20/11/2026)
+
+O cabeçalho de Profile Page usa identidade, mídia e contagens do backend; o botão
+Seguir/Seguindo usa o estado do visitante. Preservados o layout, tokens, sidebar
+Desktop e drawer Mobile existentes; nenhum nó ou componente Figma foi alterado.
+Seções sem API exibem indisponibilidade; o contador de álbuns não é inventado.
+Fixtures e interações visuais antigas permanecem em `?demo=true`, sem fallback de rede.
+Verificação de relacionamentos em Edge/Firefox, 1440/390, claro/escuro, com HTTP
+simulado e mobile emulado: detalhes em [profile-page.md](profile-page.md).

@@ -55,7 +55,7 @@ A tela de conexão com o Spotify explica quais dados serão acessados para ajuda
 
 No primeiro login, a tela aparece para quem ainda não conectou o Spotify. Ao pular, a preferência fica salva neste navegador por **7 dias**; nesse período, o login segue para o perfil e a conexão continua disponível manualmente nas configurações da conta. Depois de 7 dias, a tela volta a aparecer no login se a conta continuar desconectada. Contas já sincronizadas seguem diretamente para o perfil.
 
-A conexão só é marcada como concluída após a confirmação da autorização do Spotify, que ainda precisa ser integrada ao backend. O destino `pages/profile.html` já está implementado em modo demonstração substituível por adapter. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
+A conexão só é marcada como concluída após a confirmação da autorização do Spotify, que ainda precisa ser integrada ao backend. O destino `pages/profile.html` usa consultas reais de perfil e relacionamentos; publicações e edição ainda não estão integradas. Demonstração explícita em `?demo=true`. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
 
 ## Por trás da experiência
 
