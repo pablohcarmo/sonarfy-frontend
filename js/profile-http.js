@@ -1,4 +1,5 @@
 import { createAuthClient, getAccessToken, setAccessToken, clearAccessToken } from './auth-http.js';
+import { AVATAR_UPLOAD_POLICY, validateAvatarCrop, validateAvatarFile } from './avatar-crop.js';
 
 // Seleciona somente os campos públicos usados pelo cabeçalho, sem dados cadastrais.
 export function mapProfile(dto) {
@@ -64,6 +65,7 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
     const read = handle => request(`/profile/by-handle/${encodeURIComponent(handle)}`);
     return {
         demo: false,
+        uploadPolicy: AVATAR_UPLOAD_POLICY,
         async load(handle) {
             loaded = null; needsRefresh = false; sessionToken = getToken();
             const me = mapProfile(await request('/profile/me'));
@@ -80,6 +82,55 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
                 biography: typeof bio === 'string' ? bio : ''
             };
             const updated = mapProfile(await request('/profile/me', 'PUT', { body: payload, expectedStatus: 200 }));
+            if (loaded) loaded.profile = updated;
+            return updated;
+        },
+        // Envia avatar em multipart/form-data com recorte inteiro opcional para POST /api/profile/me/avatar.
+        async uploadAvatar(file, crop = null) {
+            if (loaded && !loaded.profile.editable) throw new Error('Sem permissão para editar este perfil.');
+            validateAvatarFile(file);
+            const validatedCrop = validateAvatarCrop(crop);
+            const token = getToken();
+            if (!token || (sessionToken && token !== sessionToken)) {
+                const error = new Error('Entre novamente para acessar o perfil.'); error.status = 401;
+                if (!token) expire();
+                throw error;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            if (validatedCrop) {
+                formData.append('cropX', String(validatedCrop.cropX));
+                formData.append('cropY', String(validatedCrop.cropY));
+                formData.append('cropSize', String(validatedCrop.cropSize));
+            }
+            const { response, token: usedToken } = await client.authorizedFetch('/profile/me/avatar', {
+                method: 'POST',
+                body: formData,
+                credentials: 'omit',
+                cache: 'no-store'
+            }, {
+                onTokenRefreshed: nextToken => { sessionToken = nextToken; }
+            });
+            if (response.status !== 401 && getToken() !== usedToken) throw new Error('A sessão mudou. Recarregue o perfil.');
+            if (response.status !== 200) {
+                const message = response.status === 401 ? 'Sessão expirada. Entre novamente.'
+                    : response.status === 413 ? 'A imagem excede o limite máximo de 5 MiB.'
+                    : response.status === 415 ? 'Formato de imagem não suportado. Use apenas JPEG ou PNG estático.'
+                    : response.status === 400 ? 'Imagem ou recorte inválido. Envie um JPEG ou PNG estático de até 16 milhões de pixels.'
+                    : response.status === 503 ? 'Serviço de armazenamento temporariamente indisponível. Tente novamente.'
+                    : 'Não foi possível enviar o avatar. Tente novamente.';
+                const error = new Error(message);
+                error.status = response.status;
+                throw error;
+            }
+            let dto;
+            try { dto = await response.json(); }
+            catch (cause) {
+                const error = new Error('Resposta de perfil inválida. Tente novamente.');
+                error.cause = cause;
+                throw error;
+            }
+            const updated = mapProfile(dto);
             if (loaded) loaded.profile = updated;
             return updated;
         },
