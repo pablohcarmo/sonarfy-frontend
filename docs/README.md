@@ -37,10 +37,10 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 | --- | --- | --- | --- |
 | Cadastro / Cidades | `GET /api/locations/cities?q=...` (sobrescrevível via `window.sonarfyCitySearch`) | Integrado ao contrato `CityDto` e envio de `cityId` em `POST /api/auth/register` | `docs/api/locations.md` e `docs/integrations/locations.md` |
 | Login / Sessão / Cadastro / Verify | Chamadas HTTP via `js/api.js` e `js/auth-http.js` | Integrado ao contrato base (`cityId`, `PATCH /api/auth/update-pending-email` com `{ newEmail }`, renovação single-flight via `POST /api/auth/refresh` e revogação via `POST /api/auth/logout` com cookie `HttpOnly` e `X-Sonarfy-CSRF: 1`) | `docs/api/authentication.md`, `docs/api/registration.md`, `docs/integrations/authentication.md` |
-| Conexão Spotify | `window.sonarfySpotifyOAuth` | Fluxo UI e cooldown de 7 dias prontos; OAuth real pendente | `docs/integrations/spotify.md` |
+| Conexão Spotify | `js/spotify-http.js` / `window.sonarfySpotifyOAuth` | Integrado via HTTP (`POST /api/spotify/authorization`, `GET/DELETE /api/spotify/connection` e tratamento de `?spotify=connected\|denied\|invalid_state\|error`) mantendo cooldown de 7 dias ao pular | `docs/integrations/spotify.md` |
 | Perfil | `js/profile-http.js` / `window.sonarfyProfileAdapter` | Integrado via HTTP para identidade e relacionamentos (seguir/deixar de seguir); publicações e edição pendentes; demonstração explícita em `?demo=true` | `docs/api/profiles.md`, `docs/api/following.md`, `docs/integrations/profile-page.md` e `docs/integrations/following.md` |
 | Feed | `window.sonarfyFeedAdapter` | Modo demonstração local (`js/feed-fixtures.js`) | Contrato de backend ainda não definido |
-| Configurações da Conta | `js/account-http.js` / `window.sonarfyAccountAdapter` | Integrado via HTTP para `GET/PUT /api/users/me` e `GET /api/locations/cities`; desativar/deletar conta, e-mail, senha e Spotify ainda indisponíveis em HTTP; modo demonstração explícito em `?demo=true` | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `docs/api/locations.md` |
+| Configurações da Conta | `js/account-http.js` / `window.sonarfyAccountAdapter` | Integrado via HTTP para `GET/PUT /api/users/me`, `GET /api/locations/cities` e `GET/DELETE /api/spotify/connection`; desativar/deletar conta, e-mail e senha ainda indisponíveis em HTTP; modo demonstração explícito em `?demo=true` | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `docs/api/locations.md`, `docs/integrations/spotify.md` |
 
 ---
 

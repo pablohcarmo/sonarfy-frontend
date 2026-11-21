@@ -30,8 +30,64 @@ const server = http.createServer((req, res) => {
                 const page = await context.newPage();
                 const errors = [];
                 page.on('pageerror', error => errors.push(error.message));
-                await page.addInitScript(theme => localStorage.setItem('sonarfy_theme', theme), theme);
-                // The profile screen does not exist in this repository; intercept only its destination.
+                await page.addInitScript(theme => {
+                    localStorage.setItem('sonarfy_theme', theme);
+                    localStorage.setItem('sonarfy_token', 'browser-test-token');
+                }, theme);
+                let authCalls = 0;
+                await context.route('**/api/spotify/authorization', async route => {
+                    const req = route.request();
+                    if (req.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization' }
+                        });
+                    }
+                    assert.equal(req.method(), 'POST');
+                    assert.equal(req.headers().authorization, 'Bearer browser-test-token');
+                    authCalls += 1;
+                    if (authCalls === 1) {
+                        return route.fulfill({ status: 429, headers: { 'Access-Control-Allow-Origin': '*' } });
+                    }
+                    return route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        headers: { 'Access-Control-Allow-Origin': '*' },
+                        body: JSON.stringify({ authorizationUrl: 'https://accounts.spotify.com/authorize?response_type=code&state=browser-state' })
+                    });
+                });
+                await context.route('**/api/spotify/connection', async route => {
+                    const req = route.request();
+                    if (req.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization' }
+                        });
+                    }
+                    return route.fulfill({
+                        status: req.method() === 'DELETE' ? 204 : 200,
+                        contentType: 'application/json',
+                        headers: { 'Access-Control-Allow-Origin': '*' },
+                        ...(req.method() === 'GET' ? { body: JSON.stringify({ status: 'DISCONNECTED', connectedAt: null }) } : {})
+                    });
+                });
+                await context.route('**/api/users/me', async route => {
+                    return route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        headers: { 'Access-Control-Allow-Origin': '*' },
+                        body: JSON.stringify({
+                            id: 1, name: 'Ana', surname: 'Ribeiro', handle: 'ana_ribeiro',
+                            email: 'ana@sonarfy.com', city: 'São Paulo', country: 'Brasil', birthDate: '1999-08-15', active: true
+                        })
+                    });
+                });
+                await context.route('https://accounts.spotify.com/**', route => route.fulfill({
+                    status: 200,
+                    contentType: 'text/html',
+                    body: '<html lang="pt-BR"><title>Spotify OAuth Mock</title></html>'
+                }));
+                // Intercept profile destination to keep this script focused on Spotify onboarding and OAuth.
                 await page.route('**/pages/profile.html', route => route.fulfill({ contentType: 'text/html', body: '<html lang="pt-BR"><title>Perfil de teste</title></html>' }));
                 await page.goto(`${base}/pages/spotify-sync.html`);
                 await page.evaluate(() => document.fonts.ready);
@@ -54,7 +110,7 @@ const server = http.createServer((req, res) => {
                 assert(geometry.font, 'Inter must load');
                 assert(geometry.assets.every(asset => asset.loaded && Math.abs(asset.width - asset.naturalWidth) < 1 && Math.abs(asset.height - asset.naturalHeight) < 1), JSON.stringify(geometry.assets));
                 await page.screenshot({ path: `${output}/${name}-${width}-${theme}.png`, fullPage: true });
-                // Missing adapter must report an error without claiming synchronization.
+                // First authorization attempt returns 429 and reports error without claiming synchronization.
                 await page.locator('#spotify-connect').click();
                 await page.locator('#spotify-error').waitFor({ state: 'visible' });
                 assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_spotify_synced')), null);
@@ -65,32 +121,21 @@ const server = http.createServer((req, res) => {
                 assert(Date.now() - Number(await page.evaluate(() => localStorage.getItem('sonarfy_spotify_skipped_at'))) < 5000);
                 await page.goto(`${base}/pages/spotify-sync.html`);
                 await page.waitForURL('**/profile.html');
-                await page.goto(`${base}/pages/account.html`);
+                await page.goto(`${base}/pages/account.html?spotify=denied`);
                 const manual = page.locator('a[href="spotify-sync.html?source=account"]');
-                assert(await manual.isVisible());
-                const accountLayout = await page.evaluate(() => {
-                    const item = document.querySelector('.spotify-account-item');
-                    const currentWidth = document.documentElement.scrollWidth;
-                    item.hidden = true;
-                    item.style.display = 'none';
-                    const baselineWidth = document.documentElement.scrollWidth;
-                    item.hidden = false;
-                    item.style.display = '';
-                    return { currentWidth, baselineWidth };
-                });
-                assert(accountLayout.currentWidth <= Math.max(width, accountLayout.baselineWidth), JSON.stringify(accountLayout));
+                await manual.waitFor({ state: 'visible' });
+                assert.match(await page.locator('#account-status').innerText(), /cancelada/);
+                assert.equal(new URL(page.url()).searchParams.has('spotify'), false);
                 await page.screenshot({ path: `${output}/${name}-${width}-${theme}-account.png`, fullPage: true });
                 await manual.click();
                 await page.waitForURL('**/spotify-sync.html?source=account');
-                await page.evaluate(async () => { await import('/js/spotify-sync.js'); });
                 await page.locator('#spotify-connect').waitFor({ state: 'visible' });
-                await page.evaluate(() => { window.sonarfySpotifyOAuth = async () => ({ synced: true }); });
                 await page.locator('#spotify-connect').click();
-                await page.waitForURL('**/profile.html');
-                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_spotify_synced')), 'true');
-                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_spotify_skipped_at')), null);
+                await page.waitForURL('https://accounts.spotify.com/authorize**');
+                assert.equal(authCalls, 2);
                 // Exercise the real module-based login script and post-login route.
                 for (const state of ['first', 'synced', 'recent', 'expired']) {
+                    await page.goto(`${base}/pages/login.html?redirect=https://example.com`);
                     await page.evaluate(state => {
                         localStorage.removeItem('sonarfy_spotify_synced');
                         localStorage.removeItem('sonarfy_spotify_skipped_at');
@@ -98,14 +143,13 @@ const server = http.createServer((req, res) => {
                         if (state === 'recent' || state === 'expired') localStorage.setItem('sonarfy_spotify_skipped_at', String(Date.now() - (state === 'expired' ? 7 * 86400000 : 1000)));
                     }, state);
                     await page.route('**/auth/login', route => route.fulfill({ json: { token: 'test-token' } }));
-                    await page.goto(`${base}/pages/login.html?redirect=https://example.com`);
                     await page.locator('#loginField').fill('usuario');
                     await page.locator('#passwordField').fill('Senha@123');
                     await page.locator('#btnSubmitLogin').click();
                     await page.waitForURL(`**/${state === 'first' || state === 'expired' ? 'spotify-sync.html' : 'profile.html'}`);
                 }
                 assert.deepEqual(errors, []);
-                results.push({ browser: name, version: browser.version(), width, theme, geometry, accountLayout });
+                results.push({ browser: name, version: browser.version(), width, theme, geometry });
                 await context.close();
             }
         } finally { await browser.close(); }

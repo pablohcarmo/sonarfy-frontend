@@ -1,21 +1,13 @@
 import { createAuthClient, getAccessToken, setAccessToken, clearAccessToken, resolveApiBaseUrl } from './auth-http.js';
-import { SPOTIFY_SYNCED_KEY } from './spotify-sync-state.js';
+import { createSpotifyClient } from './spotify-http.js';
 
-// Read local Spotify sync marker until the dedicated Spotify HTTP integration lands.
-function readLocalSpotifyStatus() {
-    try {
-        return typeof localStorage !== 'undefined' && localStorage.getItem(SPOTIFY_SYNCED_KEY) === 'true';
-    } catch {
-        return false;
-    }
-}
-
-// Map backend UserDto to the Account page state snapshot.
-export function mapUserDto(dto) {
+// Map backend UserDto and optional Spotify connection snapshot to the Account page state.
+export function mapUserDto(dto, spotify = null) {
     if (!dto || dto.id === undefined || dto.id === null || typeof dto.name !== 'string' || typeof dto.surname !== 'string'
         || typeof dto.handle !== 'string' || typeof dto.email !== 'string') {
         throw new Error('Resposta de conta inválida. Tente novamente.');
     }
+    const spotifyStatus = spotify?.status || 'DISCONNECTED';
     return {
         id: String(dto.id),
         firstName: dto.name,
@@ -26,7 +18,9 @@ export function mapUserDto(dto) {
         country: typeof dto.country === 'string' ? dto.country : '',
         cityId: null,
         email: dto.email,
-        spotifyConnected: readLocalSpotifyStatus()
+        spotifyStatus,
+        spotifyConnected: spotifyStatus === 'CONNECTED',
+        spotifyConnectedAt: spotify?.connectedAt ?? null
     };
 }
 
@@ -65,6 +59,8 @@ export function createHttpAccountAdapter({
         clearToken: () => clearAccessToken(),
         expire
     });
+    const spotifyClient = createSpotifyClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
+    let lastSpotify = { status: 'DISCONNECTED', connectedAt: null };
 
     const unavailable = feature => async () => {
         throw new Error(`${feature} ainda não está disponível no backend.`);
@@ -104,7 +100,13 @@ export function createHttpAccountAdapter({
                 error.cause = cause;
                 throw error;
             }
-            return { account: mapUserDto(dto) };
+            try {
+                const conn = await spotifyClient.getConnection();
+                lastSpotify = { status: conn.status, connectedAt: conn.connectedAt };
+            } catch {
+                lastSpotify = { status: 'DISCONNECTED', connectedAt: null };
+            }
+            return { account: mapUserDto(dto, lastSpotify) };
         },
         // Search cities through the public GET /api/locations/cities endpoint without sending Bearer.
         async searchCities(query, { signal } = {}) {
@@ -198,11 +200,27 @@ export function createHttpAccountAdapter({
                 error.cause = cause;
                 throw error;
             }
-            return { account: mapUserDto(dto), cooldownSeconds: 30 };
+            return { account: mapUserDto(dto, lastSpotify), cooldownSeconds: 30 };
+        },
+        // Query the authoritative Spotify connection status via GET /api/spotify/connection.
+        async getSpotifyConnection() {
+            const conn = await spotifyClient.getConnection();
+            lastSpotify = { status: conn.status, connectedAt: conn.connectedAt };
+            return conn;
+        },
+        // Disconnect Spotify via DELETE /api/spotify/connection.
+        async disconnectSpotify() {
+            const result = await spotifyClient.disconnectConnection();
+            lastSpotify = { status: 'DISCONNECTED', connectedAt: null };
+            return {
+                spotifyConnected: false,
+                spotifyStatus: 'DISCONNECTED',
+                spotifyConnectedAt: null,
+                message: result.message
+            };
         },
         requestEmailChange: unavailable('Alteração de e-mail'),
         requestPasswordReset: unavailable('Redefinição de senha'),
-        disconnectSpotify: unavailable('Desconexão do Spotify'),
         deactivateAccount: unavailable('Desativação de conta'),
         deleteAccount: unavailable('Exclusão permanente de conta')
     };
