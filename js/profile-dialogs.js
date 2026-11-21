@@ -75,6 +75,7 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
             let avatarCrop = null;
             let avatarDims = null;
             const supportsAvatarCrop = typeof adapter.uploadAvatar === 'function';
+            const supportsWallpaperUpload = typeof adapter.uploadWallpaper === 'function';
             open('Editar Perfil', `<form id="edit-profile-form"><div class="edit-media"><div class="edit-cover">${safeImage(draft.cover) ? `<img src="${safeImage(draft.cover)}" alt="Capa atual">` : waveform()}<label class="media-upload" aria-label="Alterar capa">${icon('camera')}<input name="cover" type="file" aria-label="Alterar capa"></label></div><div class="edit-avatar">${avatar(profile)}<label class="media-upload" aria-label="Alterar avatar">${icon('camera')}<input name="avatar" type="file" aria-label="Alterar avatar"></label></div></div><section id="avatar-crop-panel" class="avatar-crop-panel" aria-label="Ajustar recorte do avatar" hidden><div class="avatar-crop-stage-wrap"><div id="avatar-crop-stage" class="avatar-crop-stage" role="img" aria-label="Prévia circular do avatar"><img id="avatar-crop-img" alt=""></div></div><div class="avatar-crop-controls"><label>Zoom <input id="avatar-zoom" type="range" min="1" max="4" step="0.05" value="1"></label><label>Posição horizontal <input id="avatar-pan-x" type="range" min="-1" max="1" step="0.02" value="0"></label><label>Posição vertical <input id="avatar-pan-y" type="range" min="-1" max="1" step="0.02" value="0"></label><div class="avatar-crop-buttons"><button type="button" id="avatar-crop-reset" class="profile-secondary">Centralizar</button><button type="button" id="avatar-crop-cancel" class="profile-secondary">Descartar foto</button></div></div></section><div class="edit-field"><div><label for="display-name">Nome de exibição</label><output id="name-count" for="display-name">${length(draft.displayName)} / ${nameLimit}</output></div><input id="display-name" name="displayName" value="${e(draft.displayName)}" required maxlength="${nameLimit}"></div><div class="edit-field"><div><label for="profile-bio">Bio</label><output id="bio-count" for="profile-bio">${length(draft.bio)} / 150</output></div><textarea id="profile-bio" name="bio" maxlength="150">${e(draft.bio)}</textarea></div><div class="edit-actions"><button type="button" class="profile-secondary" data-close>Cancelar</button><button class="profile-primary" id="save-profile">Salvar Alterações</button></div></form>`, 'edit-dialog');
             const form = dialog.querySelector('form');
             const cropPanel = dialog.querySelector('#avatar-crop-panel');
@@ -162,12 +163,38 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
                 const policy = adapter.uploadPolicy;
                 const canUploadField = field === 'avatar'
                     ? Boolean((supportsAvatarCrop || adapter.upload) && policy)
-                    : Boolean(adapter.upload && policy);
+                    : Boolean((supportsWallpaperUpload || adapter.upload) && policy);
                 input.accept = policy?.types?.join(',') || '';
                 input.disabled = !canUploadField;
                 input.addEventListener('change', () => {
                     const file = input.files[0];
                     if (!file) return;
+                    if (field === 'cover' && supportsWallpaperUpload) {
+                        try { validateAvatarFile(file, null, policy); }
+                        catch (err) { input.value = ''; status(err.message); return; }
+                        const url = URL.createObjectURL(file); urls.push(url);
+                        const probe = new Image();
+                        probe.onload = () => {
+                            if (!alive) return;
+                            const dims = { width: probe.naturalWidth, height: probe.naturalHeight };
+                            try { validateAvatarFile(file, dims, policy); }
+                            catch (err) { input.value = ''; status(err.message); return; }
+                            files.cover = file;
+                            const slot = dialog.querySelector('.edit-cover');
+                            let img = slot.querySelector(':scope > img');
+                            if (!img) { img = document.createElement('img'); img.alt = 'Prévia da capa'; slot.prepend(img); }
+                            slot.querySelector('.waveform')?.remove();
+                            img.src = url;
+                            status('');
+                        };
+                        probe.onerror = () => {
+                            if (!alive) return;
+                            input.value = '';
+                            status('Não foi possível ler a imagem selecionada. Escolha um JPEG ou PNG válido.');
+                        };
+                        probe.src = url;
+                        return;
+                    }
                     if (field === 'avatar' && supportsAvatarCrop) {
                         try { validateAvatarFile(file, null, policy); }
                         catch (err) { input.value = ''; status(err.message); return; }
@@ -232,9 +259,16 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
                         delete files.avatar;
                         cropPanel.hidden = true;
                     }
+                    if (files.cover && supportsWallpaperUpload) {
+                        latest = await adapter.uploadWallpaper(files.cover);
+                        if (!alive) return;
+                        draft.cover = latest.cover || '';
+                        delete files.cover;
+                    }
                     for (const [field, file] of Object.entries(files)) draft[field] = await adapter.upload(file, field);
                     const textChanged = draft.displayName.trim() !== profile.displayName || draft.bio !== (profile.bio || '');
-                    const updated = (!supportsAvatarCrop || textChanged || !latest)
+                    const usesDedicatedMedia = supportsAvatarCrop || supportsWallpaperUpload;
+                    const updated = (!usesDedicatedMedia || textChanged || !latest)
                         ? await adapter.updateProfile({ ...draft, displayName: draft.displayName.trim() })
                         : latest;
                     if (!alive) return;

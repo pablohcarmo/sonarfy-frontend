@@ -85,11 +85,10 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
             if (loaded) loaded.profile = updated;
             return updated;
         },
-        // Envia avatar em multipart/form-data com recorte inteiro opcional para POST /api/profile/me/avatar.
-        async uploadAvatar(file, crop = null) {
+        // Envia arquivo único em multipart/form-data para /profile/me/avatar ou /profile/me/wallpaper.
+        async uploadMedia(path, file, extraFields = null, fallbackMessage = 'Não foi possível enviar a imagem. Tente novamente.') {
             if (loaded && !loaded.profile.editable) throw new Error('Sem permissão para editar este perfil.');
             validateAvatarFile(file);
-            const validatedCrop = validateAvatarCrop(crop);
             const token = getToken();
             if (!token || (sessionToken && token !== sessionToken)) {
                 const error = new Error('Entre novamente para acessar o perfil.'); error.status = 401;
@@ -98,12 +97,12 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
             }
             const formData = new FormData();
             formData.append('file', file);
-            if (validatedCrop) {
-                formData.append('cropX', String(validatedCrop.cropX));
-                formData.append('cropY', String(validatedCrop.cropY));
-                formData.append('cropSize', String(validatedCrop.cropSize));
+            if (extraFields) {
+                for (const [key, value] of Object.entries(extraFields)) {
+                    formData.append(key, String(value));
+                }
             }
-            const { response, token: usedToken } = await client.authorizedFetch('/profile/me/avatar', {
+            const { response, token: usedToken } = await client.authorizedFetch(path, {
                 method: 'POST',
                 body: formData,
                 credentials: 'omit',
@@ -118,7 +117,7 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
                     : response.status === 415 ? 'Formato de imagem não suportado. Use apenas JPEG ou PNG estático.'
                     : response.status === 400 ? 'Imagem ou recorte inválido. Envie um JPEG ou PNG estático de até 16 milhões de pixels.'
                     : response.status === 503 ? 'Serviço de armazenamento temporariamente indisponível. Tente novamente.'
-                    : 'Não foi possível enviar o avatar. Tente novamente.';
+                    : fallbackMessage;
                 const error = new Error(message);
                 error.status = response.status;
                 throw error;
@@ -133,6 +132,15 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
             const updated = mapProfile(dto);
             if (loaded) loaded.profile = updated;
             return updated;
+        },
+        // Envia avatar em multipart/form-data com recorte inteiro opcional para POST /api/profile/me/avatar.
+        async uploadAvatar(file, crop = null) {
+            const validatedCrop = validateAvatarCrop(crop);
+            return this.uploadMedia('/profile/me/avatar', file, validatedCrop, 'Não foi possível enviar o avatar. Tente novamente.');
+        },
+        // Envia capa/wallpaper em multipart/form-data (campo único file) para POST /api/profile/me/wallpaper.
+        async uploadWallpaper(file) {
+            return this.uploadMedia('/profile/me/wallpaper', file, null, 'Não foi possível enviar a capa. Tente novamente.');
         },
         async follow(following) {
             if (!loaded || loaded.profile.id === loaded.session.userId) throw new Error('Este é o perfil autenticado.');
