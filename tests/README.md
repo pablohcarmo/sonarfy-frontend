@@ -77,13 +77,11 @@ node tests/browser/register.cjs
 
 Verifica `pages/register.html` no Firefox e Edge, 1440px/390px e claro/escuro: requisitos de senha, confirmação, autocomplete por teclado, tema, assets e ausência de overflow. Também verifica resposta 404 para a página antiga de cadastro e a prévia de confirmação.
 
-As cidades são simuladas; o teste não depende da disponibilidade real da GeoNames.
+As cidades são simuladas via interceptação de `GET /api/locations/cities?q=...`; o teste não depende da disponibilidade real do backend ou do provedor externo.
 
 #### Configuração de cidades
 
-O cadastro usa GeoNames quando `GEONAMES_USERNAME` está configurado em `js/env.js`. Um provedor pode ser injetado como `window.sonarfyCitySearch = async (query, { signal }) => [...]`, retornando objetos `{ name, adminName1, countryName }`. O componente aplica debounce de 350ms, cancelamento e descarte de respostas antigas.
-
-Sem provedor/configuração, há uma lista local limitada de exemplos, que não representa uma base mundial.
+O cadastro consulta `GET ${API_BASE_URL}/locations/cities?q=...` e espera objetos no formato `CityDto` (`{ cityId, name, region, country }`). Um provedor alternativo pode ser injetado para testes como `window.sonarfyCitySearch = async (query, { signal }) => [...]`, retornando itens com `cityId` numérico positivo. O componente aplica debounce de 350ms, cancelamento (`AbortController`), descarte de respostas antigas e exige a seleção de uma cidade válida antes de enviar `cityId` em `POST /api/auth/register`.
 
 ### Confirmação de e-mail
 

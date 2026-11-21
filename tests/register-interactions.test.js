@@ -14,8 +14,8 @@ describe('Interações acessíveis do cadastro', () => {
         const html = fs.readFileSync('pages/register.html', 'utf8');
         document.body.innerHTML = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)[1].replace(/<script[\s\S]*?<\/script>/gi, '');
         window.sonarfyCitySearch = vi.fn(async () => [
-            { name: 'São Paulo', adminName1: 'São Paulo', countryName: 'Brasil' },
-            { name: 'Campinas', adminName1: 'São Paulo', countryName: 'Brasil' },
+            { cityId: 3448439, name: 'São Paulo', region: 'São Paulo', country: 'Brasil' },
+            { cityId: 3467865, name: 'Campinas', region: 'São Paulo', country: 'Brasil' },
         ]);
         eval(fs.readFileSync('js/register.js', 'utf8'));
         document.dispatchEvent(new Event('DOMContentLoaded'));
@@ -68,7 +68,7 @@ describe('Interações acessíveis do cadastro', () => {
         await vi.advanceTimersByTimeAsync(350);
         type('cityField', 'Camp');
         await vi.advanceTimersByTimeAsync(350);
-        resolveOld([{ name: 'Resultado antigo', countryName: 'Brasil' }]);
+        resolveOld([{ cityId: 999999, name: 'Resultado antigo', country: 'Brasil' }]);
         await Promise.resolve();
         expect(document.getElementById('citySuggestions').textContent).not.toContain('Resultado antigo');
     });
@@ -84,5 +84,26 @@ describe('Interações acessíveis do cadastro', () => {
         await vi.advanceTimersByTimeAsync(350);
         expect(city.value).toBe('Lisboa');
         expect(document.getElementById('cityStatus').textContent).toContain('Não foi possível');
+    });
+
+    // Garante que sem window.sonarfyCitySearch o componente consulta GET /api/locations/cities?q=...
+    it('consulta GET /api/locations/cities por padrão quando window.sonarfyCitySearch não está definido', async () => {
+        delete window.sonarfyCitySearch;
+        globalThis.API_BASE_URL = 'http://localhost:8080/api';
+        globalThis.fetch = vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => [{ cityId: 3467865, name: 'Campinas', region: 'São Paulo', country: 'Brasil' }]
+        }));
+        document.getElementById('cityField').focus();
+        type('cityField', 'Camp');
+        await vi.advanceTimersByTimeAsync(350);
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+            'http://localhost:8080/api/locations/cities?q=Camp',
+            expect.objectContaining({
+                headers: expect.objectContaining({ Accept: 'application/json' })
+            })
+        );
+        expect(document.getElementById('citySuggestions').textContent).toContain('Campinas, São Paulo, Brasil');
     });
 });

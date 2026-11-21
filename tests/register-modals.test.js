@@ -47,14 +47,13 @@ describe('Modais de Reenvio e Retificação de E-mail (register.js)', () => {
         };
 
         globalThis.API_BASE_URL = 'http://localhost:8081/api';
-        globalThis.GEONAMES_USERNAME = 'testuser';
 
         globalThis.fetch = vi.fn(async (url, options) => {
-            if (url.includes('geonames.org')) {
+            if (url.includes('/locations/cities')) {
                 return {
                     ok: true,
                     status: 200,
-                    json: async () => ({ geonames: [{ countryName: 'Brazil' }] })
+                    json: async () => ([{ cityId: 3448439, name: 'São Paulo', region: 'São Paulo', country: 'Brasil' }])
                 };
             }
             if (url.includes('/auth/register')) {
@@ -102,17 +101,28 @@ describe('Modais de Reenvio e Retificação de E-mail (register.js)', () => {
         vi.useRealTimers();
     });
 
+    // Preenche o cadastro com seleção de cidade e avança para a tela de confirmação.
+    async function registerAndOpenConfirmation(email = 'teste@sonarfy.com') {
+        const values = { nameField: 'Pablo', surnameField: 'Carmo', handleField: 'pablo', emailField: email, passwordField: 'Senha@123', confirmPasswordField: 'Senha@123', birthDateField: '2000-01-01' };
+        for (const [id, value] of Object.entries(values)) {
+            const input = document.getElementById(id);
+            input.value = value;
+            input.dispatchEvent(new Event('input'));
+        }
+        const cityField = document.getElementById('cityField');
+        cityField.focus();
+        cityField.value = 'São Paulo';
+        cityField.dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(350);
+        document.querySelector('#citySuggestions .autocomplete-item').click();
+        document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        await vi.waitFor(() => expect(document.getElementById('pendingSection').style.display).toBe('block'));
+        vi.advanceTimersByTime(30000);
+    }
+
     describe('Reenvio na confirmação de cadastro', () => {
         async function openConfirmation() {
-            const values = { nameField: 'Pablo', surnameField: 'Carmo', handleField: 'pablo', emailField: 'teste@sonarfy.com', passwordField: 'Senha@123', confirmPasswordField: 'Senha@123', birthDateField: '2000-01-01', cityField: 'São Paulo' };
-            for (const [id, value] of Object.entries(values)) {
-                const input = document.getElementById(id);
-                input.value = value;
-                input.dispatchEvent(new Event('input'));
-            }
-            document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
-            await vi.waitFor(() => expect(document.getElementById('pendingSection').style.display).toBe('block'));
-            vi.advanceTimersByTime(30000);
+            await registerAndOpenConfirmation('teste@sonarfy.com');
         }
 
         it('exibe a confirmação como página e retorna ao formulário com foco', async () => {
@@ -195,24 +205,7 @@ describe('Modais de Reenvio e Retificação de E-mail (register.js)', () => {
         });
 
         it('deve rejeitar alteração se novo e-mail for idêntico ao atual', async () => {
-            document.getElementById('nameField').value = 'Pablo';
-            document.getElementById('surnameField').value = 'Carmo';
-            document.getElementById('handleField').value = 'pablo';
-            document.getElementById('emailField').value = 'mesmo@sonarfy.com';
-            const passwordField = document.getElementById('passwordField');
-            passwordField.value = 'Senha@123';
-            passwordField.dispatchEvent(new Event('input'));
-            document.getElementById('confirmPasswordField').value = 'Senha@123';
-            document.getElementById('birthDateField').value = '2000-01-01';
-            document.getElementById('cityField').value = 'São Paulo';
-
-            document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
-
-            await vi.waitFor(() => {
-                expect(document.getElementById('pendingSection').style.display).toBe('block');
-            });
-
-            vi.advanceTimersByTime(30000);
+            await registerAndOpenConfirmation('mesmo@sonarfy.com');
             document.getElementById('pendingEmailBadge').dispatchEvent(new Event('click'));
 
             // Tenta submeter o mesmo e-mail
@@ -225,24 +218,7 @@ describe('Modais de Reenvio e Retificação de E-mail (register.js)', () => {
         });
 
         it('deve tratar 401 Unauthorized informando expiração de sessão', async () => {
-            document.getElementById('nameField').value = 'Pablo';
-            document.getElementById('surnameField').value = 'Carmo';
-            document.getElementById('handleField').value = 'pablo';
-            document.getElementById('emailField').value = 'teste@sonarfy.com';
-            const passwordField = document.getElementById('passwordField');
-            passwordField.value = 'Senha@123';
-            passwordField.dispatchEvent(new Event('input'));
-            document.getElementById('confirmPasswordField').value = 'Senha@123';
-            document.getElementById('birthDateField').value = '2000-01-01';
-            document.getElementById('cityField').value = 'São Paulo';
-
-            document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
-
-            await vi.waitFor(() => {
-                expect(document.getElementById('pendingSection').style.display).toBe('block');
-            });
-
-            vi.advanceTimersByTime(30000);
+            await registerAndOpenConfirmation('teste@sonarfy.com');
             document.getElementById('pendingEmailBadge').dispatchEvent(new Event('click'));
 
             mockBackendResponse.updatePending = {
@@ -262,24 +238,7 @@ describe('Modais de Reenvio e Retificação de E-mail (register.js)', () => {
         });
 
         it('deve tratar caso de conta já ativada ao tentar reenviar pelo pendingSection', async () => {
-            document.getElementById('nameField').value = 'Pablo';
-            document.getElementById('surnameField').value = 'Carmo';
-            document.getElementById('handleField').value = 'pablo';
-            document.getElementById('emailField').value = 'ativo@sonarfy.com';
-            const passwordField = document.getElementById('passwordField');
-            passwordField.value = 'Senha@123';
-            passwordField.dispatchEvent(new Event('input'));
-            document.getElementById('confirmPasswordField').value = 'Senha@123';
-            document.getElementById('birthDateField').value = '2000-01-01';
-            document.getElementById('cityField').value = 'São Paulo';
-
-            document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
-
-            await vi.waitFor(() => {
-                expect(document.getElementById('pendingSection').style.display).toBe('block');
-            });
-
-            vi.advanceTimersByTime(30000);
+            await registerAndOpenConfirmation('ativo@sonarfy.com');
 
             // Mock reenvio retornando que a conta já foi ativada
             mockBackendResponse.resend = {

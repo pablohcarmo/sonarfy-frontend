@@ -55,7 +55,6 @@ Sempre que gerar a descrição/mensagem de um Pull Request, use a estrutura abai
 - Suíte unitária (`npm test`):
 - Verificação de navegador (Firefox e Microsoft Edge, desktop/mobile, claro/escuro):
 - Limitações de verificação:
-- CI no GitHub: <!-- pendente até executar / resultado e link -->
 
 ## Limitações e próximos passos
 

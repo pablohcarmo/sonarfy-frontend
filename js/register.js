@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Estado da sessão de cadastro pendente
     let currentRegistrationToken = '';
-    let currentRegisteredHandle = '';
     let currentRegisteredEmail = '';
     let pendingCooldownInterval = null;
     let pendingCooldownRemaining = 0;
@@ -225,8 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEditEmailIcon?.focus();
     }
 
-    // Variável de memória para o banco de dados
-    let selectedCountry = '';
+    // Identificador da cidade selecionada no autocomplete (CityDto.cityId)
+    let selectedCityId = null;
     let geocodeTimeout;
 
     // Regras do Checklist de Senha
@@ -239,8 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’-][A-Za-zÀ-ÖØ-öø-ÿ]+)*(?:\s[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’-][A-Za-zÀ-ÖØ-öø-ÿ]+)*)*$/;
     const HANDLE_REGEX = /^[a-zA-Z0-9_.-]+$/;
     const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const CITY_REGEX = /^[a-zA-ZÀ-ÿ\s.'-]+$/;
-    const COUNTRY_REGEX = /^[a-zA-ZÀ-ÿ\s.'-]+$/;
 
     // Funções utilitárias para exibição de mensagens
     function showError(msg) {
@@ -512,42 +509,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // 7. Validação da Cidade
+                // 7. Validação da Cidade selecionada (cityId positivo obrigatório)
                 const cityVal = cityField ? cityField.value.trim() : '';
                 if (!cityVal) {
                     showError("A cidade é obrigatória.");
                     if (cityField) cityField.focus();
                     return;
                 }
-                if (!CITY_REGEX.test(cityVal)) {
-                    showError("A cidade deve conter apenas letras, espaços, hífens e pontos.");
+                if (!Number.isSafeInteger(selectedCityId) || selectedCityId <= 0) {
+                    showError("Selecione uma cidade válida na lista de sugestões.");
                     if (cityField) cityField.focus();
-                    return;
-                }
-
-                // 8. Validação do País (seleção na lista suspensa do GeoNames ou auto-resolução)
-                if (!selectedCountry) {
-                    try {
-                        const encodedQuery = encodeURIComponent(cityVal);
-                        const autoUrl = `https://secure.geonames.org/searchJSON?name_startsWith=${encodedQuery}&maxRows=1&featureClass=P&orderby=population&username=${GEONAMES_USERNAME}`;
-                        const autoResp = await fetch(autoUrl);
-                        if (autoResp.ok) {
-                            const autoData = await autoResp.json();
-                            if (autoData.geonames && autoData.geonames.length > 0) {
-                                selectedCountry = autoData.geonames[0].countryName;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn("Falha no auto-resolve de país:", e);
-                    }
-
-                    if (!selectedCountry) {
-                        selectedCountry = 'Brazil';
-                    }
-                }
-
-                if (!COUNTRY_REGEX.test(selectedCountry)) {
-                    showError("O país selecionado é inválido.");
                     return;
                 }
 
@@ -558,8 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     email: emailVal,
                     password: passwordVal,
                     birthDate: birthDateField.value,
-                    city: cityVal,
-                    country: selectedCountry
+                    cityId: selectedCityId
                 };
 
                 try {
@@ -572,13 +542,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.ok) {
                         const data = await response.json().catch(() => ({}));
                         currentRegistrationToken = data.registrationToken || '';
-                        currentRegisteredHandle = handleVal.replace(/^@/, '');
                         currentRegisteredEmail = data.email || emailVal;
 
                         registerForm.reset();
                         [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(el => updateChecklistItem(el, false));
                         isPasswordValid = false;
-                        selectedCountry = ''; // Reseta o país após sucesso
+                        selectedCityId = null;
                         hideError();
 
                         if (registerSection && pendingSection) {
@@ -613,23 +582,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // The provider can be replaced with window.sonarfyCitySearch(query, { signal }).
-    // It returns [{ name, adminName1, countryName }], independent of the API vendor.
+    // O provedor pode ser substituído via window.sonarfyCitySearch(query, { signal }).
+    // Espera objetos no formato CityDto: [{ cityId, name, region, country }].
     if (cityField) {
         const wrapper = cityField.closest('.autocomplete-wrapper');
         const suggestionList = document.getElementById('citySuggestions');
         const status = document.getElementById('cityStatus');
-        const examples = [
-            { name: 'São Paulo', adminName1: 'São Paulo', countryName: 'Brasil' },
-            { name: 'São Paulo da Assunção de Luanda', countryName: 'Angola' },
-            { name: 'Guarulhos', adminName1: 'São Paulo', countryName: 'Brasil' },
-            { name: 'Campinas', adminName1: 'São Paulo', countryName: 'Brasil' }
-        ];
-        const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         let results = [];
         let activeIndex = -1;
         let request = 0;
         let controller;
+
+        // Normaliza e valida cada item retornado pela busca de cidades.
+        function normalizeCityOption(place) {
+            if (!place || typeof place !== 'object') return null;
+            const cityId = place.cityId;
+            const name = typeof place.name === 'string' ? place.name.trim() : '';
+            if (typeof cityId !== 'number' || !Number.isSafeInteger(cityId) || cityId <= 0 || !name) {
+                return null;
+            }
+            const region = typeof place.region === 'string'
+                ? place.region.trim()
+                : (typeof place.adminName1 === 'string' ? place.adminName1.trim() : '');
+            const country = typeof place.country === 'string'
+                ? place.country.trim()
+                : (typeof place.countryName === 'string' ? place.countryName.trim() : '');
+            return { cityId, name, region, country };
+        }
 
         function closeSuggestions() {
             suggestionList.hidden = true;
@@ -641,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const place = results[index];
             if (!place) return;
             cityField.value = place.name;
-            selectedCountry = place.countryName;
+            selectedCityId = place.cityId;
             request++;
             controller?.abort();
             closeSuggestions();
@@ -658,7 +637,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         function render(places) {
-            results = places.filter(place => place.name && place.countryName).slice(0, 10);
+            results = (Array.isArray(places) ? places : [])
+                .map(normalizeCityOption)
+                .filter(Boolean)
+                .slice(0, 10);
             suggestionList.replaceChildren();
             activeIndex = -1;
             cityField.removeAttribute('aria-activedescendant');
@@ -668,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.className = 'autocomplete-item';
                 item.setAttribute('role', 'option');
                 item.setAttribute('aria-selected', 'false');
-                item.textContent = [place.name, place.adminName1, place.countryName].filter(Boolean).join(', ');
+                item.textContent = [place.name, place.region, place.country].filter(Boolean).join(', ');
                 item.addEventListener('mousedown', event => event.preventDefault());
                 item.addEventListener('click', () => selectCity(index));
                 suggestionList.appendChild(item);
@@ -678,27 +660,21 @@ document.addEventListener('DOMContentLoaded', () => {
             cityField.setAttribute('aria-expanded', String(open));
             if (status) status.textContent = results.length ? `${results.length} cidades encontradas. Use as setas para navegar.` : 'Nenhuma cidade encontrada.';
         }
+        // Consulta GET /api/locations/cities?q=... ou delega para window.sonarfyCitySearch.
         async function search(query, signal) {
             if (typeof window.sonarfyCitySearch === 'function') return window.sonarfyCitySearch(query, { signal });
-            if (typeof GEONAMES_USERNAME === 'undefined' || !GEONAMES_USERNAME) {
-                return examples.filter(place => normalize(Object.values(place).join(' ')).includes(normalize(query)));
-            }
-            const params = new URLSearchParams({ name_startsWith: query, maxRows: '10', featureClass: 'P', orderby: 'population', lang: 'pt', username: GEONAMES_USERNAME });
-            let response = await fetch(`https://secure.geonames.org/searchJSON?${params}`, { signal });
+            const params = new URLSearchParams({ q: query });
+            const response = await fetch(`${API_BASE_URL}/locations/cities?${params}`, {
+                headers: { Accept: 'application/json' },
+                signal
+            });
             if (!response.ok) throw new Error('City search failed');
-            let data = await response.json();
-            if (!data.geonames?.length) {
-                params.delete('name_startsWith');
-                params.set('q', query);
-                response = await fetch(`https://secure.geonames.org/searchJSON?${params}`, { signal });
-                if (!response.ok) throw new Error('City search failed');
-                data = await response.json();
-            }
-            return data.geonames || [];
+            const data = await response.json();
+            return Array.isArray(data) ? data : [];
         }
         function scheduleSearch() {
             cityField.value = cityField.value.replace(/[^a-zA-ZÀ-ÿ\s.'-]/g, '');
-            selectedCountry = '';
+            selectedCityId = null;
             clearTimeout(geocodeTimeout);
             controller?.abort();
             const current = ++request;
@@ -747,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
             controller?.abort();
             results = [];
             closeSuggestions();
-            selectedCountry = '';
+            selectedCityId = null;
             isPasswordValid = false;
             [reqLength, reqUppercase, reqNumber, reqSpecial].forEach(item => updateChecklistItem(item, false));
             confirmPasswordField.setCustomValidity('');
@@ -886,10 +862,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showEditEmailError("O novo e-mail informado é idêntico ao e-mail atual.");
                 return;
             }
-            if (!currentRegisteredHandle) {
-                showEditEmailError("Não foi possível identificar o usuário para atualização. Por favor, realize o cadastro novamente.");
-                return;
-            }
             if (btnSubmitEditEmail.disabled) return;
 
             const originalBtnHtml = btnSubmitEditEmail.innerHTML;
@@ -909,7 +881,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'PATCH',
                     headers: requestHeaders,
                     body: JSON.stringify({
-                        handle: currentRegisteredHandle,
                         newEmail: newEmail
                     })
                 });

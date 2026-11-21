@@ -19,12 +19,20 @@ const assert = require('node:assert/strict');
                 page.on('pageerror', error => errors.push(error.message));
                 await page.addInitScript(theme => {
                     localStorage.setItem('sonarfy_theme', theme);
-                    window.sonarfyCitySearch = async () => [{ name: 'São Paulo', adminName1: 'São Paulo', countryName: 'Brasil' }];
+                    window.sonarfyCitySearch = async () => [{ cityId: 3448439, name: 'São Paulo', region: 'São Paulo', country: 'Brasil' }];
                 }, theme);
                 await page.clock.install();
-                await page.route('**/auth/register', route => route.fulfill({ status: 201, json: { email: 'usuario@exemplo.com', registrationToken: 'test-registration-token' } }));
+                await page.route('**/auth/register', route => {
+                    const body = route.request().postDataJSON();
+                    assert.equal(body.cityId, 3448439);
+                    assert.equal('city' in body, false);
+                    assert.equal('country' in body, false);
+                    return route.fulfill({ status: 201, json: { email: 'usuario@exemplo.com', registrationToken: 'test-registration-token' } });
+                });
                 await page.route('**/auth/update-pending-email', route => {
                     assert.equal(route.request().headers().authorization, 'Bearer test-registration-token');
+                    const body = route.request().postDataJSON();
+                    assert.deepEqual(Object.keys(body), ['newEmail']);
                     return route.fulfill({ status: 200, body: 'E-mail atualizado.' });
                 });
                 await page.route('**/auth/resend-activation-email?*', route => route.fulfill({ status: resendFails ? 500 : 200, body: resendFails ? 'unavailable' : 'Enviado.' }));
