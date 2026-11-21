@@ -9,7 +9,7 @@ export function mapProfile(dto) {
     return { id: String(p.id), handle: p.handle, displayName: p.displayName, avatar: p.avatarUrl,
         cover: p.coverUrl, bio: p.biography, city: p.location?.city, country: p.location?.country,
         joinedAt: p.joinedAt, followers: statistics.followers, following: statistics.following,
-        isFollowing: viewer.isFollowing, followUncertain: false, editable: false };
+        isFollowing: viewer.isFollowing, followUncertain: false, editable: Boolean(viewer.canEdit) };
 }
 
 // O token é lido a cada operação e nunca entra na URL, nas fixtures ou nas mensagens.
@@ -31,27 +31,30 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
         expire
     });
     // Traduz falhas de transporte e leitura JSON para mensagens seguras, sem expor erros brutos do navegador.
-    async function request(path, method = 'GET') {
+    async function request(path, method = 'GET', { body, expectedStatus = method === 'GET' ? 200 : 204 } = {}) {
         const token = getToken();
         if (!token || (sessionToken && token !== sessionToken)) {
             const error = new Error('Entre novamente para acessar o perfil.'); error.status = 401;
             if (!token) expire();
             throw error;
         }
-        const { response, token: usedToken } = await client.authorizedFetch(path, {
-            method,
-            credentials: 'omit',
-            cache: 'no-store'
-        }, {
+        const init = { method, credentials: 'omit', cache: 'no-store' };
+        if (body !== undefined) {
+            init.headers = { 'Content-Type': 'application/json' };
+            init.body = JSON.stringify(body);
+        }
+        const { response, token: usedToken } = await client.authorizedFetch(path, init, {
             onTokenRefreshed: nextToken => { sessionToken = nextToken; }
         });
         if (response.status !== 401 && getToken() !== usedToken) throw new Error('A sessão mudou. Recarregue o perfil.');
-        if (response.status !== (method === 'GET' ? 200 : 204)) {
+        if (response.status !== expectedStatus) {
             const error = new Error(response.status === 401 ? 'Sessão expirada. Entre novamente.'
-                : response.status === 404 ? 'Perfil indisponível.' : 'Não foi possível concluir. Tente novamente.');
+                : response.status === 404 ? 'Perfil indisponível.'
+                : response.status === 400 || response.status === 422 ? 'Verifique os dados informados (nome até 60 caracteres e bio até 150 caracteres).'
+                : 'Não foi possível concluir. Tente novamente.');
             error.status = response.status; throw error;
         }
-        if (method !== 'GET') return null;
+        if (expectedStatus === 204) return null;
         try { return await response.json(); }
         catch (cause) {
             const error = new Error('Resposta de perfil inválida. Tente novamente.');
@@ -68,6 +71,17 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
             loaded = { profile, session: { userId: me.id }, contentAvailable: false,
                 activities: [], replies: [], collection: [] };
             return loaded;
+        },
+        // Atualiza nome de exibição e biografia via PUT /api/profile/me e reconcilia o ProfileDto retornado.
+        async updateProfile({ displayName, bio }) {
+            if (loaded && !loaded.profile.editable) throw new Error('Sem permissão para editar este perfil.');
+            const payload = {
+                displayName: typeof displayName === 'string' ? displayName.trim() : '',
+                biography: typeof bio === 'string' ? bio : ''
+            };
+            const updated = mapProfile(await request('/profile/me', 'PUT', { body: payload, expectedStatus: 200 }));
+            if (loaded) loaded.profile = updated;
+            return updated;
         },
         async follow(following) {
             if (!loaded || loaded.profile.id === loaded.session.userId) throw new Error('Este é o perfil autenticado.');

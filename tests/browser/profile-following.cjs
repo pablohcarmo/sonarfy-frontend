@@ -29,6 +29,7 @@ const dto = (own, following = false, followers = 3) => ({
                 await context.addInitScript(theme => { localStorage.setItem('sonarfy_theme', theme); if (location.pathname.endsWith('/profile.html')) localStorage.setItem('sonarfy_token', 'browser-test-only'); }, theme);
                 let following = false, followers = 3, mutations = 0, failRead = false, networkError = false, unavailable = false, unauthorized = false;
                 let activeToken = 'browser-test-only', refreshMode = 'fail', refreshCalls = 0;
+                let ownDisplayName = 'Conta atual', ownBio = 'Bio pública', failEditOnce = false, editCalls = 0;
                 await context.route('**/api/auth/refresh', async route => {
                     const req = route.request();
                     if (req.method() === 'OPTIONS') {
@@ -59,6 +60,16 @@ const dto = (own, following = false, followers = 3) => ({
                 });
                 await context.route('**/api/profile/**', async route => {
                     const request = route.request(), pathname = new URL(request.url()).pathname;
+                    if (request.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: {
+                                'Access-Control-Allow-Origin': '*',
+                                'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+                                'Access-Control-Allow-Headers': 'Authorization, Content-Type'
+                            }
+                        });
+                    }
                     if (networkError) return route.abort('failed');
                     const reply = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, ...(body ? { body: JSON.stringify(body) } : {}) });
                     if (unauthorized || request.headers().authorization !== `Bearer ${activeToken}`) return reply(401);
@@ -67,7 +78,24 @@ const dto = (own, following = false, followers = 3) => ({
                         following = request.method() === 'PUT'; followers = following ? 4 : 3;
                         await new Promise(resolve => setTimeout(resolve, 180)); return reply(204);
                     }
-                    if (pathname.endsWith('/me')) return reply(200, dto(true));
+                    if (pathname.endsWith('/me') && request.method() === 'PUT') {
+                        editCalls += 1;
+                        if (failEditOnce) { failEditOnce = false; return reply(400); }
+                        const payload = JSON.parse(request.postData() || '{}');
+                        assert.equal(Object.keys(payload).sort().join(','), 'biography,displayName');
+                        ownDisplayName = payload.displayName;
+                        ownBio = payload.biography;
+                        const updated = dto(true);
+                        updated.identity.displayName = ownDisplayName;
+                        updated.identity.biography = ownBio;
+                        return reply(200, updated);
+                    }
+                    if (pathname.endsWith('/me')) {
+                        const selfDto = dto(true);
+                        selfDto.identity.displayName = ownDisplayName;
+                        selfDto.identity.biography = ownBio;
+                        return reply(200, selfDto);
+                    }
                     if (unavailable) return reply(404);
                     if (failRead) { failRead = false; return reply(500); }
                     return reply(200, dto(false, following, followers));
@@ -98,8 +126,22 @@ const dto = (own, following = false, followers = 3) => ({
                 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
                 await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}.png`), fullPage: true });
                 await page.goto(`${base}/pages/profile.html`); await page.locator('.profile-card').waitFor();
-                assert.equal(await button.count(), 0); assert.equal(await page.locator('[data-action="edit"]').count(), 0);
+                assert.equal(await button.count(), 0); assert.equal(await page.locator('[data-action="edit"]').count(), 1);
                 assert.equal(await page.locator('.profile-navigation [aria-current="page"]').innerText(), 'Perfil');
+                // Edit own profile text: verify draft preserved on 400 and reconciled on 200.
+                failEditOnce = true;
+                await page.locator('[data-action="edit"]').click();
+                await page.locator('#edit-profile-form').waitFor();
+                await page.fill('#display-name', 'Conta Editada 🎵');
+                await page.fill('#profile-bio', 'Nova bio integrada.');
+                await page.click('#save-profile');
+                await page.waitForFunction(() => document.querySelector('#profile-dialog .dialog-status')?.textContent.includes('Verifique os dados'));
+                assert.equal(await page.locator('#display-name').inputValue(), 'Conta Editada 🎵');
+                await page.click('#save-profile');
+                await page.waitForFunction(() => !document.getElementById('profile-dialog').open);
+                assert.equal(editCalls, 2);
+                assert.match(await page.locator('#profile-header').innerText(), /Conta Editada 🎵/);
+                assert.match(await page.locator('#profile-header').innerText(), /Nova bio integrada\./);
                 unavailable = true; await page.goto(`${base}/pages/profile.html?handle=missing`);
                 await page.getByRole('button', { name: 'Tentar novamente' }).waitFor();
                 assert.match(await page.locator('#profile-status').innerText(), /indisponível/); assert.equal(await page.locator('.profile-card').count(), 0);

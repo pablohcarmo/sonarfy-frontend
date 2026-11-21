@@ -16,12 +16,11 @@ consulta GET `/api/profile/me`; com handle consulta também
 GET `/api/profile/by-handle/{handle}`. A identidade autenticada vem de `/me`,
 não de IDs fornecidos pela URL, fixtures ou decodificação do token no navegador.
 
-`js/profile-http.js` mapeia somente `ProfileDto.identity`, `viewer.isFollowing` e
+`js/profile-http.js` mapeia somente `ProfileDto.identity`, `viewer.isFollowing`, `viewer.canEdit` e
 `statistics.followers/following`. Não exibe campos cadastrais privados nem inventa
 contagem de álbuns. Atividades, respostas e coleção mostram indisponibilidade
 explícita; listas vazias no adapter não são apresentadas como ausência de publicações.
-A edição e os uploads permanecem fora desta integração, sem controles demonstrativos
-sobre um perfil real. Os estilos e a sidebar global existentes foram preservados.
+A edição textual do próprio perfil (`PUT /api/profile/me` com `displayName` até 60 pontos de código e `biography` até 150) está integrada quando `viewer.canEdit === true`; uploads de avatar e capa permanecem em issues dedicadas. Os estilos e a sidebar global existentes foram preservados.
 
 O token de acesso existente em `sonarfy_token` é enviado no header Authorization
 Bearer, com credentials=omit e cache=no-store. Não enviar token na URL nem header

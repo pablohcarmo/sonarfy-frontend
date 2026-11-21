@@ -66,15 +66,16 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
         },
         edit() {
             const { profile, session } = store.state.data;
-            if (profile.id !== session?.userId) { notify('Sem permissão para editar este perfil.'); return; }
+            if (profile.id !== session?.userId || profile.editable === false) { notify('Sem permissão para editar este perfil.'); return; }
+            const nameLimit = adapter.demo ? limits.displayName : limits.httpDisplayName;
             const draft = { displayName: profile.displayName, bio: profile.bio || '', cover: profile.cover || '', avatar: profile.avatar || '' };
             const urls = [];
             const files = {};
-            open('Editar Perfil', `<form id="edit-profile-form"><div class="edit-media"><div class="edit-cover">${safeImage(draft.cover) ? `<img src="${safeImage(draft.cover)}" alt="Capa atual">` : waveform()}<label class="media-upload" aria-label="Alterar capa">${icon('camera')}<input name="cover" type="file" aria-label="Alterar capa"></label></div><div class="edit-avatar">${avatar(profile)}<label class="media-upload" aria-label="Alterar avatar">${icon('camera')}<input name="avatar" type="file" aria-label="Alterar avatar"></label></div></div><div class="edit-field"><div><label for="display-name">Nome de exibição</label><output id="name-count" for="display-name">${length(draft.displayName)} / 50</output></div><input id="display-name" name="displayName" value="${e(draft.displayName)}" required maxlength="50"></div><div class="edit-field"><div><label for="profile-bio">Bio</label><output id="bio-count" for="profile-bio">${length(draft.bio)} / 150</output></div><textarea id="profile-bio" name="bio" maxlength="150">${e(draft.bio)}</textarea></div><div class="edit-actions"><button type="button" class="profile-secondary" data-close>Cancelar</button><button class="profile-primary" id="save-profile">Salvar Alterações</button></div></form>`, 'edit-dialog');
+            open('Editar Perfil', `<form id="edit-profile-form"><div class="edit-media"><div class="edit-cover">${safeImage(draft.cover) ? `<img src="${safeImage(draft.cover)}" alt="Capa atual">` : waveform()}<label class="media-upload" aria-label="Alterar capa">${icon('camera')}<input name="cover" type="file" aria-label="Alterar capa"></label></div><div class="edit-avatar">${avatar(profile)}<label class="media-upload" aria-label="Alterar avatar">${icon('camera')}<input name="avatar" type="file" aria-label="Alterar avatar"></label></div></div><div class="edit-field"><div><label for="display-name">Nome de exibição</label><output id="name-count" for="display-name">${length(draft.displayName)} / ${nameLimit}</output></div><input id="display-name" name="displayName" value="${e(draft.displayName)}" required maxlength="${nameLimit}"></div><div class="edit-field"><div><label for="profile-bio">Bio</label><output id="bio-count" for="profile-bio">${length(draft.bio)} / 150</output></div><textarea id="profile-bio" name="bio" maxlength="150">${e(draft.bio)}</textarea></div><div class="edit-actions"><button type="button" class="profile-secondary" data-close>Cancelar</button><button class="profile-primary" id="save-profile">Salvar Alterações</button></div></form>`, 'edit-dialog');
             const form = dialog.querySelector('form');
             let alive = true;
             cleanup = () => { alive = false; urls.forEach(url => URL.revokeObjectURL(url)); };
-            for (const [name, limit, output] of [['displayName', limits.displayName, '#name-count'], ['bio', limits.bio, '#bio-count']]) {
+            for (const [name, limit, output] of [['displayName', nameLimit, '#name-count'], ['bio', limits.bio, '#bio-count']]) {
                 form.elements[name].addEventListener('input', event => {
                     // Count code points consistently with the contract, including pasted Unicode text.
                     const value = Array.from(event.target.value).slice(0, limit).join('');
@@ -104,7 +105,7 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
             form.addEventListener('submit', async event => {
                 event.preventDefault();
                 if (saving) return;
-                try { validateProfile(draft); } catch (error) { status(error.message); return; }
+                try { validateProfile(draft, nameLimit); } catch (error) { status(error.message); return; }
                 saving = true;
                 const controls = [...dialog.querySelectorAll('button, input, textarea')];
                 const previouslyDisabled = controls.filter(control => control.disabled);

@@ -1,9 +1,9 @@
-export const limits = Object.freeze({ displayName: 50, bio: 150, review: 255 });
+export const limits = Object.freeze({ displayName: 50, httpDisplayName: 60, bio: 150, review: 255 });
 export const length = value => Array.from(value || '').length;
 export const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-export function validateProfile({ displayName, bio }) {
+export function validateProfile({ displayName, bio }, maxDisplayName = limits.displayName) {
     if (!displayName?.trim()) throw new Error('Informe o nome de exibição.');
-    if (length(displayName) > limits.displayName) throw new Error('O nome de exibição deve ter até 50 caracteres.');
+    if (length(displayName) > maxDisplayName) throw new Error(`O nome de exibição deve ter até ${maxDisplayName} caracteres.`);
     if (length(bio) > limits.bio) throw new Error('A bio deve ter até 150 caracteres.');
 }
 export function validateReview(text) {
