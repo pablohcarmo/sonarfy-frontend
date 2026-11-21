@@ -35,8 +35,8 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 
 | Tela / Fluxo | Ponto de integração no frontend | Estado atual | Referência esperada no backend |
 | --- | --- | --- | --- |
-| Cadastro / Cidades | `window.sonarfyCitySearch` / `GEONAMES_USERNAME` | Integrável; fallback local limitado | `docs/api/locations.md` e `docs/integrations/locations.md` |
-| Login / Cadastro / Verify | Chamadas HTTP diretas via `js/env.js` | Integrado ao contrato base (refresh/logout HttpOnly pendentes) | `docs/api/authentication.md`, `docs/api/registration.md`, `docs/integrations/authentication.md` |
+| Cadastro / Cidades | `GET /api/locations/cities?q=...` (sobrescrevível via `window.sonarfyCitySearch`) | Integrado ao contrato `CityDto` e envio de `cityId` em `POST /api/auth/register` | `docs/api/locations.md` e `docs/integrations/locations.md` |
+| Login / Cadastro / Verify | Chamadas HTTP diretas via `js/api.js` | Integrado ao contrato base (`cityId` e `PATCH /api/auth/update-pending-email` com `{ newEmail }`; refresh/logout HttpOnly pendentes) | `docs/api/authentication.md`, `docs/api/registration.md`, `docs/integrations/authentication.md` |
 | Conexão Spotify | `window.sonarfySpotifyOAuth` | Fluxo UI e cooldown de 7 dias prontos; OAuth real pendente | `docs/integrations/spotify.md` |
 | Perfil | `js/profile-http.js` / `window.sonarfyProfileAdapter` | Integrado via HTTP para identidade e relacionamentos (seguir/deixar de seguir); publicações e edição pendentes; demonstração explícita em `?demo=true` | `docs/api/profiles.md`, `docs/api/following.md`, `docs/integrations/profile-page.md` e `docs/integrations/following.md` |
 | Feed | `window.sonarfyFeedAdapter` | Modo demonstração local (`js/feed-fixtures.js`) | Contrato de backend ainda não definido |

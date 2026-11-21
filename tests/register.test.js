@@ -50,14 +50,16 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
         };
 
         globalThis.API_BASE_URL = 'http://localhost:8081/api';
-        globalThis.GEONAMES_USERNAME = 'testuser';
 
         globalThis.fetch = vi.fn(async (url, options) => {
-            if (url.includes('geonames.org')) {
+            if (url.includes('/locations/cities')) {
                 return {
                     ok: true,
                     status: 200,
-                    json: async () => ({ geonames: [{ countryName: 'Brazil' }] })
+                    json: async () => ([
+                        { cityId: 3448439, name: 'São Paulo', region: 'São Paulo', country: 'Brasil' },
+                        { cityId: 3467865, name: 'Campinas', region: 'São Paulo', country: 'Brasil' }
+                    ])
                 };
             }
             if (url.includes('/auth/register')) {
@@ -99,19 +101,28 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
         vi.useRealTimers();
     });
 
-    function fillValidForm(email = 'pablo@sonarfy.com') {
+    // Preenche o formulário e seleciona a primeira cidade retornada pela API.
+    async function fillValidForm(email = 'pablo@sonarfy.com', { selectCity = true } = {}) {
         document.getElementById('nameField').value = 'Pablo';
         document.getElementById('surnameField').value = 'Carmo';
         document.getElementById('handleField').value = 'pablo';
         document.getElementById('emailField').value = email;
-        
+
         const passwordField = document.getElementById('passwordField');
         passwordField.value = 'Senha@123';
         passwordField.dispatchEvent(new Event('input'));
-        
+
         document.getElementById('confirmPasswordField').value = 'Senha@123';
         document.getElementById('birthDateField').value = '2000-01-01';
-        document.getElementById('cityField').value = 'São Paulo';
+
+        const cityField = document.getElementById('cityField');
+        cityField.focus();
+        cityField.value = 'São Paulo';
+        cityField.dispatchEvent(new Event('input'));
+        if (selectCity) {
+            await vi.advanceTimersByTimeAsync(350);
+            document.querySelector('#citySuggestions .autocomplete-item').click();
+        }
     }
 
     it('deve inicializar com o checklist de senha em estado inválido', () => {
@@ -160,7 +171,7 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
         const registerForm = document.getElementById('registerForm');
         const errorMessage = document.getElementById('errorMessage');
 
-        fillValidForm();
+        await fillValidForm('pablo@sonarfy.com', { selectCity: false });
         document.getElementById('confirmPasswordField').value = 'OutraSenha@123';
 
         registerForm.dispatchEvent(new Event('submit', { cancelable: true }));
@@ -170,8 +181,38 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
-    it('deve processar cadastro com sucesso, exibir pendingSection e iniciar cooldown de 30s', async () => {
-        fillValidForm('pablo@sonarfy.com');
+    // Valida que o envio exige seleção de cidade da lista e não aceita texto livre.
+    it('deve exigir seleção de cidade válida da lista antes de enviar o cadastro', async () => {
+        await fillValidForm('pablo@sonarfy.com', { selectCity: false });
+
+        document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
+
+        const errorMessage = document.getElementById('errorMessage');
+        expect(errorMessage.style.display).toBe('block');
+        expect(errorMessage.innerText).toContain('Selecione uma cidade válida');
+        const registerCalls = globalThis.fetch.mock.calls.filter(([url]) => url.includes('/auth/register'));
+        expect(registerCalls).toHaveLength(0);
+    });
+
+    // Valida que alterar o campo de cidade após a seleção invalida o cityId selecionado.
+    it('deve invalidar cityId se o usuário editar o campo de cidade após selecionar', async () => {
+        await fillValidForm('pablo@sonarfy.com');
+
+        const cityField = document.getElementById('cityField');
+        cityField.value = 'Cidade Inventada';
+        cityField.dispatchEvent(new Event('input'));
+
+        document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
+
+        const errorMessage = document.getElementById('errorMessage');
+        expect(errorMessage.style.display).toBe('block');
+        expect(errorMessage.innerText).toContain('Selecione uma cidade válida');
+        const registerCalls = globalThis.fetch.mock.calls.filter(([url]) => url.includes('/auth/register'));
+        expect(registerCalls).toHaveLength(0);
+    });
+
+    it('deve processar cadastro com sucesso, enviar cityId sem city/country e iniciar cooldown de 30s', async () => {
+        await fillValidForm('pablo@sonarfy.com');
 
         const registerForm = document.getElementById('registerForm');
         registerForm.dispatchEvent(new Event('submit', { cancelable: true }));
@@ -179,6 +220,25 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
         await vi.waitFor(() => {
             expect(document.getElementById('pendingSection').style.display).toBe('block');
         });
+
+        const cityCalls = globalThis.fetch.mock.calls.filter(([url]) => url.includes('/locations/cities'));
+        expect(cityCalls).toHaveLength(1);
+        expect(cityCalls[0][0]).toBe('http://localhost:8081/api/locations/cities?q=S%C3%A3o+Paulo');
+        expect(globalThis.fetch.mock.calls.some(([url]) => url.includes('geonames.org'))).toBe(false);
+
+        const registerCall = globalThis.fetch.mock.calls.find(([url]) => url.includes('/auth/register'));
+        const submittedBody = JSON.parse(registerCall[1].body);
+        expect(submittedBody).toEqual({
+            name: 'Pablo',
+            surname: 'Carmo',
+            handle: 'pablo',
+            email: 'pablo@sonarfy.com',
+            password: 'Senha@123',
+            birthDate: '2000-01-01',
+            cityId: 3448439
+        });
+        expect(submittedBody).not.toHaveProperty('city');
+        expect(submittedBody).not.toHaveProperty('country');
 
         const registerSection = document.getElementById('registerSection');
         const pendingSection = document.getElementById('pendingSection');
@@ -203,7 +263,7 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
     });
 
     it('não deve abrir o modal de edição de e-mail enquanto o cooldown de 30s estiver ativo', async () => {
-        fillValidForm();
+        await fillValidForm();
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
         await vi.waitFor(() => {
@@ -224,7 +284,7 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
     });
 
     it('deve desbloquear o badge e botão após 30 segundos e permitir abrir o modal', async () => {
-        fillValidForm('teste@sonarfy.com');
+        await fillValidForm('teste@sonarfy.com');
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
         await vi.waitFor(() => {
@@ -253,8 +313,8 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
         expect(newPendingEmailField.value).toBe('teste@sonarfy.com');
     });
 
-    it('deve enviar PATCH com Bearer Token e novo e-mail, e reiniciar cooldown de 30s após sucesso', async () => {
-        fillValidForm('errado@sonarfy.com');
+    it('deve enviar PATCH com Bearer Token e apenas newEmail, e reiniciar cooldown de 30s após sucesso', async () => {
+        await fillValidForm('errado@sonarfy.com');
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
         await vi.waitFor(() => {
@@ -283,7 +343,6 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
                         'Content-Type': 'application/json'
                     }),
                     body: JSON.stringify({
-                        handle: 'pablo',
                         newEmail: 'correto@sonarfy.com'
                     })
                 })
@@ -305,7 +364,7 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
     });
 
     it('deve exibir mensagem apropriada quando backend responder 429 Too Many Requests', async () => {
-        fillValidForm('teste@sonarfy.com');
+        await fillValidForm('teste@sonarfy.com');
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
         await vi.waitFor(() => {
@@ -333,7 +392,7 @@ describe('Fluxo Completo de Cadastro e Retificação de E-mail (register.js)', (
     });
 
     it('deve exibir mensagem apropriada quando backend responder 409 Conflict (e-mail em uso)', async () => {
-        fillValidForm('teste@sonarfy.com');
+        await fillValidForm('teste@sonarfy.com');
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
         await vi.waitFor(() => {

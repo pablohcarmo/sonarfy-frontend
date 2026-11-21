@@ -11,12 +11,16 @@ const fs = require('node:fs');
    const page=await context.newPage(); const errors=[];
    page.on('pageerror', e=>errors.push(e.message));
    await page.addInitScript(theme=>localStorage.setItem('sonarfy_theme',theme),theme);
-   await page.route('**/secure.geonames.org/**',route=>route.fulfill({json:{geonames:[
-    {name:'São Paulo',adminName1:'São Paulo',countryName:'Brasil'},
-    {name:'São Paulo da Assunção de Luanda',countryName:'Angola'},
-    {name:'Guarulhos',adminName1:'São Paulo',countryName:'Brasil'},
-    {name:'Campinas',adminName1:'São Paulo',countryName:'Brasil'}
-   ]}}));
+   let citySearchRequested=false;
+   await page.route('**/api/locations/cities*',route=>{
+    citySearchRequested=true;
+    return route.fulfill({json:[
+     {cityId:3448439,name:'São Paulo',region:'São Paulo',country:'Brasil'},
+     {cityId:2240449,name:'São Paulo da Assunção de Luanda',country:'Angola'},
+     {cityId:3461786,name:'Guarulhos',region:'São Paulo',country:'Brasil'},
+     {cityId:3467865,name:'Campinas',region:'São Paulo',country:'Brasil'}
+    ]});
+   });
    const baseURL=process.env.BASE_URL || 'http://127.0.0.1:4173';
    for(const removedPath of ['pages/cadastro.html', 'preview/confirmation.html']) {
     const removedResponse = await context.request.get(`${baseURL}/${removedPath}`);
@@ -44,6 +48,7 @@ const fs = require('node:fs');
    if(await page.locator('#passwordField').getAttribute('type')!=='text')throw Error('Visibility toggle failed');
    await page.fill('#cityField','São Paulo');
    await page.waitForSelector('#citySuggestions:not([hidden])');
+   if(!citySearchRequested)throw Error('City search did not call GET /api/locations/cities');
    await page.screenshot({path:`${output}/${name}-${width}-${theme}-city.png`,fullPage:true});
    await page.press('#cityField','ArrowDown'); await page.press('#cityField','Enter');
    if(await page.inputValue('#cityField')!=='São Paulo')throw Error('Keyboard selection failed');

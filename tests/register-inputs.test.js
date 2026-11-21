@@ -19,16 +19,15 @@ describe('Sanitização em Tempo Real e Entradas (register.js)', () => {
         document.body.innerHTML = cleanBody;
 
         globalThis.API_BASE_URL = 'http://localhost:8081/api';
-        globalThis.GEONAMES_USERNAME = 'testuser';
 
         mockRegisterResponse = null;
 
         globalThis.fetch = vi.fn(async (url, options) => {
-            if (url.includes('geonames.org')) {
+            if (url.includes('/locations/cities')) {
                 return {
                     ok: true,
                     status: 200,
-                    json: async () => ({ geonames: [{ countryName: 'Brazil' }] })
+                    json: async () => ([{ cityId: 3448439, name: 'São Paulo', region: 'São Paulo', country: 'Brasil' }])
                 };
             }
             if (url.includes('/auth/register')) {
@@ -140,7 +139,7 @@ describe('Sanitização em Tempo Real e Entradas (register.js)', () => {
             })
         };
 
-        // Preenche campos obrigatórios
+        // Preenche campos obrigatórios e seleciona cidade válida
         document.getElementById('nameField').value = 'Pablo';
         document.getElementById('surnameField').value = 'Carmo';
         document.getElementById('handleField').value = 'pablo';
@@ -150,7 +149,12 @@ describe('Sanitização em Tempo Real e Entradas (register.js)', () => {
         passwordField.dispatchEvent(new Event('input'));
         document.getElementById('confirmPasswordField').value = 'Senha@123';
         document.getElementById('birthDateField').value = '2000-01-01';
-        document.getElementById('cityField').value = 'São Paulo';
+        const cityField = document.getElementById('cityField');
+        cityField.focus();
+        cityField.value = 'São Paulo';
+        cityField.dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(350);
+        document.querySelector('#citySuggestions .autocomplete-item').click();
 
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
@@ -173,7 +177,12 @@ describe('Sanitização em Tempo Real e Entradas (register.js)', () => {
         passwordField.dispatchEvent(new Event('input'));
         document.getElementById('confirmPasswordField').value = 'Senha@123';
         document.getElementById('birthDateField').value = '2000-01-01';
-        document.getElementById('cityField').value = 'São Paulo';
+        const cityField = document.getElementById('cityField');
+        cityField.focus();
+        cityField.value = 'São Paulo';
+        cityField.dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(350);
+        document.querySelector('#citySuggestions .autocomplete-item').click();
 
         document.getElementById('registerForm').dispatchEvent(new Event('submit', { cancelable: true }));
 
