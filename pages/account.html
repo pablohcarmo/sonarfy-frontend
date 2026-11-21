@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="../css/profile.css">
     <link rel="stylesheet" href="../css/profile-dialogs.css">
     <link rel="stylesheet" href="../css/account.css">
+    <script src="../js/api.js"></script>
     <script src="../js/login-theme.js"></script>
     <script type="module" src="../js/account.js"></script>
 </head>
@@ -56,7 +57,7 @@
                             <label for="handle-input">Usuário</label>
                             <div class="account-input-box account-handle-box">
                                 <span class="account-handle-prefix" aria-hidden="true">@</span>
-                                <input id="handle-input" name="handle" type="text" autocomplete="username" maxlength="30" aria-describedby="handle-feedback" disabled>
+                                <input id="handle-input" name="handle" type="text" autocomplete="username" maxlength="15" aria-describedby="handle-feedback" disabled>
                             </div>
                             <p id="handle-feedback" class="account-field-feedback" role="status" aria-live="polite"></p>
                         </div>

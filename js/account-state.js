@@ -1,22 +1,19 @@
 import { SPOTIFY_SYNCED_KEY } from './spotify-sync-state.js';
 import { clearAccessToken, logoutSession } from './auth-http.js';
 
-export const HANDLE_PATTERN = /^[a-z0-9._]{3,30}$/;
+export const HANDLE_PATTERN = /^[a-z0-9._-]{1,15}$/;
 
 // Strip leading @ symbols, trim whitespace, and lowercase a handle.
 export function normalizeHandle(raw) {
     return String(raw || '').trim().replace(/^@+/, '').toLowerCase();
 }
 
-// Validate handle syntax rules before checking remote or local availability.
+// Validate handle syntax rules aligned with the backend contract (1 to 15 ASCII chars: letters, digits, _, -, .).
 export function validateHandle(raw) {
     const handle = normalizeHandle(raw);
     if (!handle) return { valid: false, handle, message: 'Informe um nome de usuário.' };
-    if (handle.length < 3 || handle.length > 30) return { valid: false, handle, message: 'O usuário deve ter entre 3 e 30 caracteres.' };
-    if (!HANDLE_PATTERN.test(handle)) return { valid: false, handle, message: 'Use apenas letras minúsculas, números, ponto ou sublinhado.' };
-    if (handle.startsWith('.') || handle.endsWith('.') || handle.includes('..')) {
-        return { valid: false, handle, message: 'O usuário não pode começar, terminar ou repetir pontos consecutivos.' };
-    }
+    if (handle.length > 15) return { valid: false, handle, message: 'O usuário deve ter entre 1 e 15 caracteres.' };
+    if (!HANDLE_PATTERN.test(handle)) return { valid: false, handle, message: 'Use apenas letras sem acento, números, ponto, hífen ou sublinhado.' };
     return { valid: true, handle, message: '' };
 }
 
@@ -129,6 +126,12 @@ export function createAccountState(adapter) {
                 emit();
                 return { available: true, message: '' };
             }
+            if (typeof adapter.checkHandle !== 'function') {
+                state.handleStatus = 'idle';
+                state.handleMessage = '';
+                emit();
+                return { available: true, message: '' };
+            }
             const seq = ++handleSeq;
             state.handleStatus = 'checking';
             state.handleMessage = 'Verificando disponibilidade…';
@@ -171,6 +174,12 @@ export function createAccountState(adapter) {
                 state.handleStatus = 'idle';
                 state.handleMessage = '';
                 return response;
+            } catch (error) {
+                if (error?.status === 409) {
+                    state.handleStatus = 'taken';
+                    state.handleMessage = error.message || 'Este nome de usuário já está em uso.';
+                }
+                throw error;
             } finally {
                 state.saving = false;
                 emit();

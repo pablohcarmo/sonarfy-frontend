@@ -37,9 +37,19 @@ Tokens de alerta destrutivo: `#b42318` (fundo badge `#fef3f2`, texto botão `#ff
 - **Segurança e Credenciais:** card do **Spotify** lê `sonarfy_spotify_synced` (`js/spotify-sync-state.js`), exibindo link `spotify-sync.html?source=account` quando desconectado ou botão `Conectado · Desconectar` quando conectado. **Alterar E-mail** e **Redefinir Senha** acionam timers de cooldown desabilitando os controles durante a contagem.
 - **Gerenciamento da Conta:** **Desativar Conta** abre `<dialog>` informando indisponibilidade temporária e reativação automática no próximo login; **Deletar Conta** abre `<dialog>` destrutivo avisando sobre exclusão irreversível. Ambos aplicam contenção de foco (`containFocus`), fechamento por `Escape`, bloqueio contra cliques duplicados, limpeza de `sonarfy_token` (preservando `sonarfy_theme`) e redirecionamento para `login.html`.
 
-## Adapter e modo demonstração
+## Adapter HTTP e modo demonstração
 
-Sem host, `js/account-fixtures.js` fornece um adapter explícito de demonstração local (`demo: true`) com aviso visível na tela. O host pode definir `window.sonarfyAccountAdapter` antes do módulo `js/account.js`:
+Por padrão, `pages/account.html` utiliza o adapter HTTP real (`js/account-http.js` com `js/auth-http.js`):
+- **Integrado ao backend:**
+  - `GET /api/users/me` (`UserDto`): carrega nome, sobrenome, `@handle`, data de nascimento, cidade, país e e-mail, com renovação single-flight via `POST /api/auth/refresh` em `401`.
+  - `PUT /api/users/me` (`UpdateUserDto` → `UserDto`): envia `name`, `surname`, `handle`, `birthDate` e `cityId` apenas quando uma nova cidade é selecionada; trata `400`, `409` (handle ocupado), `401` e `503`.
+  - `GET /api/locations/cities?q=...` (`CityDto`): busca pública de cidades (sem cabeçalho `Authorization`) com cancelamento via `AbortController` e exibição de região/país.
+- **Ainda indisponível no modo HTTP real (sem simular sucesso):**
+  - Verificação remota dedicada de disponibilidade do `@handle` (a unicidade é validada pelo backend no `PUT /api/users/me` com `409`).
+  - Desativar conta e deletar conta (os modais informam indisponibilidade ao confirmar sem remover `sonarfy_token`).
+  - Troca de e-mail, redefinição de senha e OAuth/desconexão do Spotify (serão integrados em issues dedicadas).
+
+O modo demonstração em memória (`js/account-fixtures.js`, `demo: true`) permanece disponível apenas via `?demo=true` ou injeção explícita de `window.sonarfyAccountAdapter`:
 
 | Método / Propriedade | Contrato proposto de frontend |
 | --- | --- |
