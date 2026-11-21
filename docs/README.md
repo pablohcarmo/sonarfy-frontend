@@ -20,7 +20,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 | --- | --- | --- | --- |
 | Home / Landing | `index.html` | [figma-references.md](figma-references.md#home-index) | `tests/browser/login-home-assets.cjs`, `tests/browser/shared-brand.cjs` |
 | Login | `pages/login.html` | [figma-references.md](figma-references.md#login) | `tests/login.test.js`, `tests/login-theme.test.js`, `tests/browser/login-home-assets.cjs` |
-| Recuperação de Senha | `pages/recuperar-senha.html` | [account-page.md](account-page.md) | `tests/password-flows.test.js`, `tests/browser/password-flows.cjs` |
+| Recuperação de Senha | `pages/reset-password.html` | [account-page.md](account-page.md) | `tests/password-flows.test.js`, `tests/browser/password-flows.cjs` |
 | Confirmação de Troca de E-mail | `pages/confirm-email-change.html` | [account-page.md](account-page.md) | `tests/email-change.test.js`, `tests/browser/email-change.cjs` |
 | Cadastro e Confirmação | `pages/register.html` | [figma-references.md](figma-references.md#cadastro-register), [Confirmação](figma-references.md#confirmacao-email) | `tests/register*.test.js`, `tests/validations.test.js`, `tests/browser/register.cjs`, `tests/browser/confirmation.cjs` |
 | Verificação de Conta | `pages/verify.html` | [figma-references.md](figma-references.md#verify-account) | `tests/verify.test.js`, `tests/browser/shared-brand.cjs` |
@@ -48,6 +48,7 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 
 ## Convenções de Documentação
 
+- Todas as páginas em `pages/` seguem obrigatoriamente nomes em **inglês, minúsculo e `kebab-case`** (ex.: `reset-password.html`, `confirm-email-change.html`, `spotify-sync.html`, `terms.html`, `privacy.html`, `guidelines.html`, `support.html`), alinhados às rotas referenciadas pelo backend (`AuthEmailService`, `EmailChangeDispatcher`).
 - Toda entrega de página, componente compartilhado ou alteração de contrato/adapter deve atualizar a documentação correspondente neste diretório e em [tests/README.md](../tests/README.md).
 - Cada documento de página deve registrar: referências do Figma, tokens/adaptações, contrato de dados ou adapter, limitações conhecidas e resultados de verificação (suíte unitária + Firefox e Microsoft Edge em desktop/mobile e temas claro/escuro).
 - Capturas de tela em `docs/screenshots/` são versionadas apenas para documentação pública (ex.: [README.md](../README.md)); relatórios e capturas descartáveis de execução ficam em `test-results/`, ignorado pelo Git.

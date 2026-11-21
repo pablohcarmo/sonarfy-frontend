@@ -1,6 +1,6 @@
 import { createPasswordClient, extractUrlToken } from './password-http.js';
 
-// Initialize the public password recovery and reset page (pages/recuperar-senha.html).
+// Initialize the public password recovery and reset page (pages/reset-password.html).
 export function initPasswordRecovery({
     doc = typeof document !== 'undefined' ? document : null,
     locationObj = typeof window !== 'undefined' ? window.location : { pathname: '', search: '', hash: '' },
