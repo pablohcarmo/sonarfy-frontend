@@ -41,7 +41,11 @@ anuncia sucesso. O próprio perfil não apresenta botão de seguir.
 
 Sem token ou com 401, remove o token e encaminha para login. Ainda não há renovação
 automática compartilhada no frontend; isso não foi introduzido nesta entrega.
-404 informa perfil indisponível; falha inicial permite tentar carregar novamente.
+404 informa perfil indisponível; falhas HTTP de servidor usam mensagem genérica sem
+classificá-las como falha de conexão; falhas de rede no carregamento exibem
+“Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.”
+sem expor mensagens técnicas do navegador nem recorrer a fixtures, preservando o
+botão “Tentar novamente” que remove o erro anterior ao recuperar o perfil.
 Respostas recebidas após troca de token são descartadas. Alteração de sessão em
 outra aba recarrega a página; reconciliação de um perfil substituído é descartada.
 
@@ -165,16 +169,19 @@ e não integra os commits desta implementação.
 
 ## Validação de relacionamentos — 20/11/2026
 
-- npm test: 14 arquivos / 157 testes passaram, incluindo o adapter HTTP e a reconciliação.
+- npm test: 14 arquivos / 160 testes passaram, incluindo o adapter HTTP, tradução de
+  falhas de rede/JSON sem mensagens técnicas e reconciliação de relacionamentos.
 - tests/browser/profile-following.cjs: Edge 157.0.4341.60 e Firefox 153.0,
   headless, viewports 1440px e 390px (mobile emulado), claro e escuro: oito
   combinações aprovadas. Capturas em test-results/profile-following.
 - As requisições são interceptadas pelo Playwright com respostas simuladas.
   Cobertura: perfil próprio/visitante, dados públicos reais do contrato, ausência
   de fixtures, seguir/deixar de seguir, clique duplo, estado pendente, GET posterior,
-  recuperação após 204 seguido de erro, 404 com retry, 401, foco e drawer mobile.
+  recuperação após 204 seguido de erro, 404 com retry, falha de rede com mensagem
+  amigável e recuperação por “Tentar novamente”, 401, foco e drawer mobile.
 - Não representa validação pela rede contra o backend real, uso de contas reais,
-  teste em celular físico ou CI remoto. A validação manual integrada está pendente.
+  teste em celular físico ou CI remoto. A validação manual integrada do fluxo
+  completo depende do ambiente com backend local ativo.
 
 Roteiro manual: iniciar backend com migração 008 aplicada e servir a raiz do
 frontend por HTTP em uma origem permitida pelo CORS do backend (por padrão,
