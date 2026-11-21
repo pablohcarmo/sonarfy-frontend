@@ -5,6 +5,7 @@ import { icon } from './profile-icons.js';
 import { sidebar, skeleton, globalHeader, globalFooter, emptyState } from './profile-shell.js';
 import { profileHeader, activityFeed, collectionView, socialActions } from './profile-views.js';
 import { sortOptions } from './profile-utils.js';
+import { clearAccessToken, logoutSession } from './auth-http.js';
 
 const adapter = createProfileAdapter();
 document.querySelector('.profile-global-header').innerHTML = globalHeader(adapter.routes?.home);
@@ -77,8 +78,11 @@ async function navigation(key) {
     const handler = adapter.actions?.[key];
     if (handler) { await handler(); return; }
     if (key === 'logout') {
-        localStorage.removeItem('sonarfy_token');
-        window.location.assign('login.html');
+        try { await logoutSession(); } catch {}
+        finally {
+            clearAccessToken();
+            window.location.assign('login.html');
+        }
         return;
     }
     notify(`${({ search: 'Pesquisa', echoes: 'Ecos', logout: 'Saída da conta', review: 'Avaliação de álbuns' })[key] || 'Esta funcionalidade'} ainda não está disponível neste frontend.`);

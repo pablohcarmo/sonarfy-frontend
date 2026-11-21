@@ -105,16 +105,17 @@ node tests/browser/shared-brand.cjs
 
 `tests/login.test.js` valida o contrato de `POST /api/auth/login` (`http://localhost:8080/api`, `credentials: 'include'`, cabeçalho `X-Sonarfy-CSRF: 1`, payload com `rememberMe`, leitura de `accessToken`), fallback da URL local e tratamento de erros (`401`, `403` de CSRF/origem vs conta não ativada, `429` e rede). O script `login-home-assets.cjs` verifica assets, navegação, temas e controles de login/index, e `shared-brand.cjs` verifica as marcas compartilhadas de Home, login, cadastro e Verify; ambos exercitam Firefox e Edge, desktop/mobile e claro/escuro.
 
-### Logout
+### Logout e ciclo de vida de sessão
 
 Referência: [Figma — Logout](../docs/figma-references.md#logout).
 
 ```sh
-npm test -- tests/logout.test.js
+npm test -- tests/auth-http.test.js tests/logout.test.js tests/profile-http.test.js
 node tests/browser/logout.cjs
+node tests/browser/profile-following.cjs
 ```
 
-Verifica renderização da conta conectada (adapter e fallback local), bloqueio de cliques concorrentes, remoção de `sonarfy_token` com preservação de `sonarfy_theme`, resiliência a falha remota, proteção contra open redirect no parâmetro `from`, além de dimensões, foco, SVGs e ausência de overflow no Edge e Firefox (`1440px`/`390px`, claro/escuro).
+`tests/auth-http.test.js` valida `js/auth-http.js` (`POST /api/auth/refresh` com `credentials: 'include'`, `cache: 'no-store'`, `X-Sonarfy-CSRF: 1`, deduplicação concorrente single-flight em `401`, tratamento de `401`/`403`/`5xx` e `POST /api/auth/logout` com limpeza no `finally` em `logout.js`, `account-state.js` e `feed-state.js`). Os scripts de navegador verificam a revogação remota em `pages/logout.html` e a renovação automática de sessão em `pages/profile.html` no Edge e Firefox (`1440px`/`390px`, claro/escuro).
 
 ## Limitações
 

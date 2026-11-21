@@ -1,3 +1,5 @@
+import { createAuthClient, getAccessToken, setAccessToken, clearAccessToken } from './auth-http.js';
+
 // Seleciona somente os campos públicos usados pelo cabeçalho, sem dados cadastrais.
 export function mapProfile(dto) {
     const { identity: p, viewer, statistics } = dto || {};
@@ -12,9 +14,22 @@ export function mapProfile(dto) {
 
 // O token é lido a cada operação e nunca entra na URL, nas fixtures ou nas mensagens.
 export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8080/api',
-    fetcher = (...args) => fetch(...args), getToken = () => localStorage.getItem('sonarfy_token'),
-    expire = () => { localStorage.removeItem('sonarfy_token'); location.assign('login.html'); } } = {}) {
+    fetcher = (...args) => fetch(...args), getToken = () => getAccessToken(),
+    setToken = token => setAccessToken(token),
+    expire = () => { clearAccessToken(); location.assign('login.html'); },
+    authClient } = {}) {
     let loaded, sessionToken, needsRefresh = false;
+    const client = authClient || createAuthClient({
+        baseUrl,
+        fetcher,
+        getToken,
+        setToken: token => {
+            sessionToken = token;
+            setToken(token);
+        },
+        clearToken: () => clearAccessToken(),
+        expire
+    });
     // Traduz falhas de transporte e leitura JSON para mensagens seguras, sem expor erros brutos do navegador.
     async function request(path, method = 'GET') {
         const token = getToken();
@@ -23,17 +38,14 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
             if (!token) expire();
             throw error;
         }
-        let response;
-        try {
-            response = await fetcher(`${baseUrl.replace(/\/$/, '')}${path}`, {
-                method, headers: { Authorization: `Bearer ${token}` }, credentials: 'omit', cache: 'no-store'
-            });
-        } catch (cause) {
-            const error = new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
-            error.cause = cause; throw error;
-        }
-        if (getToken() !== token) throw new Error('A sessão mudou. Recarregue o perfil.');
-        if (response.status === 401) expire();
+        const { response, token: usedToken } = await client.authorizedFetch(path, {
+            method,
+            credentials: 'omit',
+            cache: 'no-store'
+        }, {
+            onTokenRefreshed: nextToken => { sessionToken = nextToken; }
+        });
+        if (response.status !== 401 && getToken() !== usedToken) throw new Error('A sessão mudou. Recarregue o perfil.');
         if (response.status !== (method === 'GET' ? 200 : 204)) {
             const error = new Error(response.status === 401 ? 'Sessão expirada. Entre novamente.'
                 : response.status === 404 ? 'Perfil indisponível.' : 'Não foi possível concluir. Tente novamente.');

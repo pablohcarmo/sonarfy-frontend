@@ -28,12 +28,40 @@ const dto = (own, following = false, followers = 3) => ({
                 const context = await browser.newContext({ viewport: { width, height: 900 } });
                 await context.addInitScript(theme => { localStorage.setItem('sonarfy_theme', theme); if (location.pathname.endsWith('/profile.html')) localStorage.setItem('sonarfy_token', 'browser-test-only'); }, theme);
                 let following = false, followers = 3, mutations = 0, failRead = false, networkError = false, unavailable = false, unauthorized = false;
+                let activeToken = 'browser-test-only', refreshMode = 'fail', refreshCalls = 0;
+                await context.route('**/api/auth/refresh', async route => {
+                    const req = route.request();
+                    if (req.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: {
+                                'Access-Control-Allow-Origin': base,
+                                'Access-Control-Allow-Credentials': 'true',
+                                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                                'Access-Control-Allow-Headers': 'X-Sonarfy-CSRF'
+                            }
+                        });
+                    }
+                    assert.equal(req.method(), 'POST');
+                    assert.equal(req.headers()['x-sonarfy-csrf'], '1');
+                    refreshCalls += 1;
+                    const cors = { 'Access-Control-Allow-Origin': base, 'Access-Control-Allow-Credentials': 'true' };
+                    if (refreshMode === 'ok') {
+                        activeToken = 'browser-refreshed-token';
+                        return route.fulfill({
+                            status: 200,
+                            contentType: 'application/json',
+                            headers: cors,
+                            body: JSON.stringify({ accessToken: activeToken, tokenType: 'Bearer', expiresInSeconds: 900 })
+                        });
+                    }
+                    return route.fulfill({ status: 401, headers: cors });
+                });
                 await context.route('**/api/profile/**', async route => {
                     const request = route.request(), pathname = new URL(request.url()).pathname;
-                    assert.equal(request.headers().authorization, 'Bearer browser-test-only');
                     if (networkError) return route.abort('failed');
                     const reply = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, ...(body ? { body: JSON.stringify(body) } : {}) });
-                    if (unauthorized) return reply(401);
+                    if (unauthorized || request.headers().authorization !== `Bearer ${activeToken}`) return reply(401);
                     if (pathname.endsWith('/following')) {
                         mutations++; assert.equal(request.postData(), null);
                         following = request.method() === 'PUT'; followers = following ? 4 : 3;
@@ -87,7 +115,12 @@ const dto = (own, following = false, followers = 3) => ({
                 assert.equal((await page.locator('#profile-status').innerText()).trim(), '');
                 assert.equal(await page.locator('#profile-demo').isVisible(), false);
                 assert.equal((await page.locator('.profile-statistics').innerText()).replace(/\s+/g, ' '), '3 Seguidores 0 Seguindo');
-                unauthorized = true; await page.reload(); await page.waitForURL('**/login.html');
+                activeToken = 'expired-before-refresh'; refreshMode = 'ok';
+                await page.reload(); await button.waitFor();
+                assert.equal(refreshCalls, 1);
+                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), 'browser-refreshed-token');
+                unauthorized = true; refreshMode = 'fail'; await page.reload(); await page.waitForURL('**/login.html');
+                assert.equal(refreshCalls, 2);
                 assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), null);
                 assert.deepEqual(errors, []); results.push({ browser: name, version: browser.version(), width, theme, passed: true });
                 await context.close();
