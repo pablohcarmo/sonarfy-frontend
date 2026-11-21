@@ -20,7 +20,7 @@ não de IDs fornecidos pela URL, fixtures ou decodificação do token no navegad
 `statistics.followers/following`. Não exibe campos cadastrais privados nem inventa
 contagem de álbuns. Atividades, respostas e coleção mostram indisponibilidade
 explícita; listas vazias no adapter não são apresentadas como ausência de publicações.
-A edição textual do próprio perfil (`PUT /api/profile/me` com `displayName` até 60 pontos de código e `biography` até 150) e o upload/recorte circular de avatar (`POST /api/profile/me/avatar` com `multipart/form-data`, `file` JPEG/PNG estático ≤ 5 MiB / ≤ 16 MP e `cropX`/`cropY`/`cropSize` inteiros em pixels orientados por EXIF) estão integrados quando `viewer.canEdit === true`; upload de capa/wallpaper permanece em issue dedicada. Os estilos e a sidebar global existentes foram preservados.
+A edição textual do próprio perfil (`PUT /api/profile/me` com `displayName` até 60 pontos de código e `biography` até 150), o upload/recorte circular de avatar (`POST /api/profile/me/avatar` com `multipart/form-data`, `file` JPEG/PNG estático ≤ 5 MiB / ≤ 16 MP e `cropX`/`cropY`/`cropSize` inteiros em pixels orientados por EXIF) e o upload de capa/wallpaper (`POST /api/profile/me/wallpaper` com campo único `file` JPEG/PNG estático ≤ 5 MiB / ≤ 16 MP e enquadramento responsivo `object-fit: cover`) estão integrados quando `viewer.canEdit === true`. Os estilos e a sidebar global existentes foram preservados.
 
 O token de acesso existente em `sonarfy_token` é enviado no header Authorization
 Bearer, com credentials=omit e cache=no-store. Não enviar token na URL nem header

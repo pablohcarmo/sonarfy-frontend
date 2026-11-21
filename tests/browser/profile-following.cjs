@@ -29,7 +29,7 @@ const dto = (own, following = false, followers = 3) => ({
                 await context.addInitScript(theme => { localStorage.setItem('sonarfy_theme', theme); if (location.pathname.endsWith('/profile.html')) localStorage.setItem('sonarfy_token', 'browser-test-only'); }, theme);
                 let following = false, followers = 3, mutations = 0, failRead = false, networkError = false, unavailable = false, unauthorized = false;
                 let activeToken = 'browser-test-only', refreshMode = 'fail', refreshCalls = 0;
-                let ownDisplayName = 'Conta atual', ownBio = 'Bio pública', ownAvatarUrl = null, failEditOnce = false, editCalls = 0, avatarCalls = 0, failAvatarOnce = false;
+                let ownDisplayName = 'Conta atual', ownBio = 'Bio pública', ownAvatarUrl = null, ownCoverUrl = null, failEditOnce = false, editCalls = 0, avatarCalls = 0, failAvatarOnce = false, wallpaperCalls = 0, failWallpaperOnce = false;
                 const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC', 'base64');
                 await context.route('**/api/auth/refresh', async route => {
                     const req = route.request();
@@ -93,6 +93,22 @@ const dto = (own, following = false, followers = 3) => ({
                         updated.identity.displayName = ownDisplayName;
                         updated.identity.biography = ownBio;
                         updated.identity.avatarUrl = ownAvatarUrl;
+                        updated.identity.coverUrl = ownCoverUrl;
+                        return reply(200, updated);
+                    }
+                    if (pathname.endsWith('/me/wallpaper') && request.method() === 'POST') {
+                        wallpaperCalls += 1;
+                        assert.match(request.headers()['content-type'] || '', /^multipart\/form-data; boundary=/);
+                        const raw = request.postDataBuffer()?.toString('latin1') || '';
+                        assert.match(raw, /name="file"/);
+                        assert.doesNotMatch(raw, /name="cropX"/);
+                        if (failWallpaperOnce) { failWallpaperOnce = false; return reply(503); }
+                        ownCoverUrl = `${base}/assets/images/sonarfy-symbol.png`;
+                        const updated = dto(true);
+                        updated.identity.displayName = ownDisplayName;
+                        updated.identity.biography = ownBio;
+                        updated.identity.avatarUrl = ownAvatarUrl;
+                        updated.identity.coverUrl = ownCoverUrl;
                         return reply(200, updated);
                     }
                     if (pathname.endsWith('/me') && request.method() === 'PUT') {
@@ -106,6 +122,7 @@ const dto = (own, following = false, followers = 3) => ({
                         updated.identity.displayName = ownDisplayName;
                         updated.identity.biography = ownBio;
                         updated.identity.avatarUrl = ownAvatarUrl;
+                        updated.identity.coverUrl = ownCoverUrl;
                         return reply(200, updated);
                     }
                     if (pathname.endsWith('/me')) {
@@ -113,6 +130,7 @@ const dto = (own, following = false, followers = 3) => ({
                         selfDto.identity.displayName = ownDisplayName;
                         selfDto.identity.biography = ownBio;
                         selfDto.identity.avatarUrl = ownAvatarUrl;
+                        selfDto.identity.coverUrl = ownCoverUrl;
                         return reply(200, selfDto);
                     }
                     if (unavailable) return reply(404);
@@ -178,6 +196,22 @@ const dto = (own, following = false, followers = 3) => ({
                 await page.waitForFunction(() => !document.getElementById('profile-dialog').open);
                 assert.equal(avatarCalls, 2);
                 assert.equal(await page.locator('#profile-header .profile-avatar img').getAttribute('src'), `${base}/assets/images/sonarfy-symbol.png`);
+                // Upload wallpaper: 503 preserves current cover, retry 200 reconciles coverUrl with responsive framing.
+                failWallpaperOnce = true;
+                await page.locator('[data-action="edit"]').click();
+                await page.locator('#edit-profile-form').waitFor();
+                await page.locator('#edit-profile-form input[name="cover"]').setInputFiles({
+                    name: 'capa.png', mimeType: 'image/png', buffer: tinyPng
+                });
+                await page.click('#save-profile');
+                await page.waitForFunction(() => document.querySelector('#profile-dialog .dialog-status')?.textContent.includes('indisponível'));
+                assert.equal(wallpaperCalls, 1);
+                await page.click('#save-profile');
+                await page.waitForFunction(() => !document.getElementById('profile-dialog').open);
+                assert.equal(wallpaperCalls, 2);
+                assert.equal(await page.locator('#profile-header .profile-cover-image').getAttribute('src'), `${base}/assets/images/sonarfy-symbol.png`);
+                assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#profile-header .profile-cover-image')).objectFit), 'cover');
+                assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
                 unavailable = true; await page.goto(`${base}/pages/profile.html?handle=missing`);
                 await page.getByRole('button', { name: 'Tentar novamente' }).waitFor();
                 assert.match(await page.locator('#profile-status').innerText(), /indisponível/); assert.equal(await page.locator('.profile-card').count(), 0);
