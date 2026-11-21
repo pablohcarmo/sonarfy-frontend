@@ -1,9 +1,10 @@
 ﻿import { describe, it, expect, vi } from 'vitest';
 import { createHttpProfileAdapter, mapProfile } from '../js/profile-http.js';
 import { createProfileState } from '../js/profile-state.js';
-const dto = (id = 2, isFollowing = false, followers = 0) => ({
-    identity: { id, handle: id === 1 ? 'me' : 'other', displayName: 'Nome público', location: { city: 'Cidade' } },
-    viewer: { isSelf: id === 1, isFollowing }, statistics: { followers, following: 3 }, email: 'private@example.invalid'
+const dto = (id = 2, isFollowing = false, followers = 0, overrides = {}) => ({
+    identity: { id, handle: id === 1 ? 'me' : 'other', displayName: 'Nome público', location: { city: 'Cidade' }, ...overrides.identity },
+    viewer: { isSelf: id === 1, canEdit: id === 1, isFollowing, ...overrides.viewer },
+    statistics: { followers, following: 3, ...overrides.statistics }, email: 'private@example.invalid'
 });
 const json = value => new Response(JSON.stringify(value), { status: 200 });
 function setup() {
@@ -134,5 +135,35 @@ describe('perfil HTTP e relacionamentos', () => {
             expect.objectContaining({ method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'X-Sonarfy-CSRF': '1' } })
         ]);
         expect(fetcher.mock.calls[2][1].headers.Authorization).toBe('Bearer refreshed-access');
+    });
+    // Respeita viewer.canEdit e atualiza nome e biografia via PUT /api/profile/me sem enviar mídia.
+    it('edita nome e biografia via PUT /api/profile/me e respeita viewer.canEdit', async () => {
+        const { adapter, fetcher } = setup();
+        fetcher
+            .mockResolvedValueOnce(json(dto(1)))
+            .mockResolvedValueOnce(json(dto(1, false, 0, {
+                identity: { displayName: 'DJ 123 🎵', biography: 'Nova bio', avatarUrl: 'https://cdn.example/a.png' }
+            })))
+            .mockResolvedValueOnce(new Response(null, { status: 400 }))
+            .mockResolvedValueOnce(new Response(null, { status: 422 }))
+            .mockResolvedValueOnce(new Response(null, { status: 500 }));
+
+        const loaded = await adapter.load('');
+        expect(loaded.profile.editable).toBe(true);
+
+        const updated = await adapter.updateProfile({ displayName: '  DJ 123 🎵  ', bio: 'Nova bio', avatar: 'ignored' });
+        expect(updated).toMatchObject({ displayName: 'DJ 123 🎵', bio: 'Nova bio', avatar: 'https://cdn.example/a.png', editable: true });
+        expect(fetcher.mock.calls[1]).toEqual([
+            'https://api.example.invalid/api/profile/me',
+            expect.objectContaining({
+                method: 'PUT',
+                headers: expect.objectContaining({ Authorization: 'Bearer test-access', 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ displayName: 'DJ 123 🎵', biography: 'Nova bio' })
+            })
+        ]);
+
+        await expect(adapter.updateProfile({ displayName: 'X', bio: '' })).rejects.toMatchObject({ status: 400 });
+        await expect(adapter.updateProfile({ displayName: 'X', bio: '' })).rejects.toMatchObject({ status: 422 });
+        await expect(adapter.updateProfile({ displayName: 'X', bio: '' })).rejects.toMatchObject({ status: 500 });
     });
 });

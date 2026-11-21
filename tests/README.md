@@ -30,11 +30,12 @@ Integrações simuladas, estados cobertos e limitações estão em
 ### Perfil e relacionamentos HTTP
 
 `node tests/browser/profile-following.cjs` intercepta o HTTP da API sem alterar
-contas ou bancos reais. Edge `157.0.4341.60` e Firefox `153.0` passaram nas oito
-combinações `1440px`/`390px` e claro/escuro, cobrindo pendência, clique repetido,
-`204` seguido de `GET`, reconciliação incerta sem nova mutação, `404`/retry,
-falha de rede no carregamento com mensagem amigável e recuperação por retry,
-`401`/login, perfil próprio, foco e drawer. Capturas e relatório:
+contas ou bancos reais, cobrindo relacionamentos (pendência, clique repetido,
+`204` seguido de `GET`, reconciliação incerta sem nova mutação), edição textual
+do próprio perfil (`PUT /api/profile/me`, preservação de rascunho em `400`,
+ausência de controle de edição em perfil de terceiros), `404`/retry, falha de
+rede, renovação em `401`/login, foco e drawer nas oito combinações
+`1440px`/`390px` e claro/escuro em Microsoft Edge e Firefox. Capturas e relatório:
 `test-results/profile-following`. A regressão visual em `profile.cjs` solicita
 `?demo=true` explicitamente. Mobile emulado/headless; execução automatizada
 contra backend real e CI remoto não realizadas nesta entrega.
