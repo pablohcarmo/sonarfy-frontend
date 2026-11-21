@@ -60,10 +60,71 @@ async function loadedAssets(page) {
                 }, theme);
 
                 const prefix = `${name}-${width}-${theme}`;
+                let accountState = {
+                    id: 7,
+                    name: 'Ana',
+                    surname: 'Ribeiro',
+                    handle: 'ana_ribeiro',
+                    email: 'ana@sonarfy.com',
+                    city: 'São Paulo',
+                    country: 'Brasil',
+                    birthDate: '1999-08-15',
+                    active: true
+                };
+                let lastPutBody = null;
+                await context.route('**/api/locations/cities**', async route => {
+                    const req = route.request();
+                    assert.equal(req.headers().authorization, undefined, 'Public city search must not send Bearer');
+                    const q = new URL(req.url()).searchParams.get('q') || '';
+                    const list = q.toLowerCase().includes('lisb')
+                        ? [{ cityId: 2267057, name: 'Lisboa', region: 'Lisboa', country: 'Portugal' }]
+                        : [];
+                    await route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        headers: { 'Access-Control-Allow-Origin': '*' },
+                        body: JSON.stringify(list)
+                    });
+                });
+                await context.route('**/api/users/me', async route => {
+                    const req = route.request();
+                    if (req.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: {
+                                'Access-Control-Allow-Origin': '*',
+                                'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+                                'Access-Control-Allow-Headers': 'Authorization, Content-Type'
+                            }
+                        });
+                    }
+                    assert.equal(req.headers().authorization, 'Bearer test-token');
+                    const cors = { 'Access-Control-Allow-Origin': '*' };
+                    if (req.method() === 'GET') {
+                        return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(accountState) });
+                    }
+                    if (req.method() === 'PUT') {
+                        lastPutBody = JSON.parse(req.postData() || '{}');
+                        if (lastPutBody.handle === 'lucas_vinyl') {
+                            return route.fulfill({ status: 409, headers: cors });
+                        }
+                        accountState = {
+                            ...accountState,
+                            name: lastPutBody.name,
+                            surname: lastPutBody.surname,
+                            handle: lastPutBody.handle.toLowerCase(),
+                            birthDate: lastPutBody.birthDate,
+                            ...(lastPutBody.cityId === 2267057 ? { city: 'Lisboa', country: 'Portugal' } : {})
+                        };
+                        return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(accountState) });
+                    }
+                });
+
                 await page.goto(`${base}/pages/account.html`);
-                await page.locator('#first-name').waitFor();
+                await page.waitForFunction(() => document.getElementById('first-name')?.value === 'Ana');
                 await page.evaluate(() => document.fonts.ready);
 
+                assert.equal(await page.locator('#account-demo').isVisible(), false);
                 assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
                 assert.equal((await page.locator('.site-header').boundingBox()).height, width === 1440 ? 88 : 80);
                 assert(await page.locator('.profile-footer').evaluate(el => el === document.body.lastElementChild));
@@ -82,18 +143,15 @@ async function loadedAssets(page) {
                     await page.waitForFunction(() => !document.getElementById('profile-drawer').open);
                 }
 
-                // Edit mode + handle availability + city/country update + save.
+                // Edit mode + 409 conflict on taken handle + city autocomplete (/locations/cities) + PUT /users/me.
                 await page.click('#edit-account-btn');
                 assert.equal(await page.locator('#handle-input').isDisabled(), false);
                 assert.equal(await page.locator('#country-input').isDisabled(), true);
                 await page.fill('#handle-input', 'lucas_vinyl');
-                await page.locator('#handle-input').blur();
+                await page.click('#save-account-btn');
                 await page.locator('#handle-feedback.is-error').waitFor();
-                assert.equal(await page.locator('#save-account-btn').isDisabled(), true);
 
                 await page.fill('#handle-input', 'ana_nova');
-                await page.locator('#handle-input').blur();
-                await page.locator('#handle-feedback.is-success').waitFor();
                 await page.fill('#city-input', 'Lisboa');
                 await page.locator('#city-suggestions button').first().click();
                 assert.equal(await page.locator('#country-input').inputValue(), 'Portugal');
@@ -103,29 +161,35 @@ async function loadedAssets(page) {
                 await page.click('#save-account-btn');
                 await page.locator('#account-dialog[open]').waitFor();
                 assert((await page.locator('#account-dialog').textContent()).includes('Sucesso'));
+                assert.equal(lastPutBody.cityId, 2267057);
+                assert.equal(lastPutBody.handle, 'ana_nova');
                 await page.click('#account-dialog [data-close]');
                 await page.waitForFunction(() => !document.getElementById('account-dialog').open);
 
-                // Deactivate modal open + Escape close.
+                // Deactivate and delete modals must NOT simulate success in HTTP mode.
                 await page.click('#deactivate-account-btn');
                 await page.locator('#account-dialog[open]').waitFor();
                 assert((await page.locator('#account-dialog').textContent()).includes('Desativar sua conta?'));
                 await loadedAssets(page);
                 await page.screenshot({ path: `${output}/${prefix}-deactivate.png` });
+                await page.click('#account-dialog [data-confirm]');
+                await page.waitForFunction(() => document.querySelector('#account-dialog .account-dialog-status')?.textContent.includes('não está disponível'));
+                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), 'test-token');
                 await page.keyboard.press('Escape');
                 await page.waitForFunction(() => !document.getElementById('account-dialog').open);
 
-                // Delete modal open + confirm -> clears sonarfy_token and redirects to login.html.
+                // Delete modal in HTTP mode reports unavailability without clearing token.
                 await page.click('#delete-account-btn');
                 await page.locator('#account-dialog[open]').waitFor();
                 assert((await page.locator('#account-dialog').textContent()).includes('Deletar conta permanentemente?'));
                 await loadedAssets(page);
                 await page.screenshot({ path: `${output}/${prefix}-delete.png` });
-                await Promise.all([
-                    page.waitForURL(/\/pages\/login\.html$/),
-                    page.click('#account-dialog [data-confirm]')
-                ]);
-                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), null);
+                await page.click('#account-dialog [data-confirm]');
+                await page.waitForFunction(() => document.querySelector('#account-dialog .account-dialog-status')?.textContent.includes('não está disponível'));
+                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), 'test-token');
+                await page.keyboard.press('Escape');
+                await page.waitForFunction(() => !document.getElementById('account-dialog').open);
+
                 assert.deepEqual(errors, [], `No page errors for ${prefix}`);
 
                 results.push({ browser: name, version: browser.version(), width, theme, assets, passed: true });

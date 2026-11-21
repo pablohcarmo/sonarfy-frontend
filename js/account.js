@@ -1,9 +1,17 @@
 import { createAccountAdapter } from './account-fixtures.js';
+import { createHttpAccountAdapter } from './account-http.js';
 import { createAccountState, logoutAccount, normalizeHandle } from './account-state.js';
 import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
 import { escapeHTML as e } from './profile-utils.js';
+
+// Resolve the host adapter, explicit demo mode (?demo=true), or default HTTP adapter.
+export function resolveAccountAdapter(integration = globalThis.sonarfyAccountAdapter) {
+    if (integration) return integration;
+    const isDemo = typeof location !== 'undefined' && new URLSearchParams(location.search).get('demo') === 'true';
+    return isDemo ? createAccountAdapter() : createHttpAccountAdapter();
+}
 
 // Render a themed SVG pair from assets/icons/account.
 function accountIcon(lightFile, darkFile, size, alt = '') {
@@ -14,7 +22,7 @@ function accountIcon(lightFile, darkFile, size, alt = '') {
 }
 
 // Mount the Settings / Account page controller and bind all UI interactions.
-export function mountAccount(adapter = createAccountAdapter(), options = {}) {
+export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
     const navigate = options.navigate || (url => { location.href = url; });
     const store = createAccountState(adapter);
     const { state } = store;
@@ -66,6 +74,7 @@ export function mountAccount(adapter = createAccountAdapter(), options = {}) {
     let dialogBusy = false;
     let handleDebounce = null;
     let cityDebounce = null;
+    let cityAbort = null;
     const activeTimers = new Map();
 
     // Announce status messages in the page-level live region.
@@ -286,14 +295,19 @@ export function mountAccount(adapter = createAccountAdapter(), options = {}) {
         if (!state.editing || typeof adapter.searchCities !== 'function') return;
         selectedCityId = null;
         clearTimeout(cityDebounce);
+        cityAbort?.abort();
         const query = cityInput.value.trim();
         if (query.length < 2) { closeCities(); return; }
         cityDebounce = setTimeout(async () => {
+            cityAbort = new AbortController();
             try {
-                const results = await adapter.searchCities(query);
+                const results = await adapter.searchCities(query, { signal: cityAbort.signal });
                 if (!state.editing || cityInput.value.trim() !== query) return;
                 if (!results?.length) { closeCities(); return; }
-                cityList.innerHTML = results.map((city, idx) => `<li role="option"><button type="button" data-city-idx="${idx}">${e(city.name)}<span>${e(city.countryName || '')}</span></button></li>`).join('');
+                cityList.innerHTML = results.map((city, idx) => {
+                    const meta = [city.adminName1, city.countryName].filter(Boolean).join(', ');
+                    return `<li role="option"><button type="button" data-city-idx="${idx}">${e(city.name)}<span>${e(meta)}</span></button></li>`;
+                }).join('');
                 cityList.hidden = false;
                 cityInput.setAttribute('aria-expanded', 'true');
                 cityList.querySelectorAll('button').forEach((btn, idx) => {
@@ -306,8 +320,8 @@ export function mountAccount(adapter = createAccountAdapter(), options = {}) {
                         cityInput.focus();
                     });
                 });
-            } catch {
-                closeCities();
+            } catch (error) {
+                if (error?.name !== 'AbortError') closeCities();
             }
         }, 180);
     });
@@ -316,6 +330,12 @@ export function mountAccount(adapter = createAccountAdapter(), options = {}) {
         event.preventDefault();
         notify('');
         clearTimeout(handleDebounce);
+        const cityChanged = cityInput.value.trim() !== String(state.account?.city || '').trim();
+        if (!adapter.demo && cityChanged && !selectedCityId) {
+            notify('Selecione uma cidade da lista de sugestões para alterar sua localização.');
+            cityInput.focus();
+            return;
+        }
         try {
             const response = await store.savePersonalInfo({
                 firstName: firstNameInput.value,
@@ -436,6 +456,7 @@ export function mountAccount(adapter = createAccountAdapter(), options = {}) {
         destroy() {
             clearTimeout(handleDebounce);
             clearTimeout(cityDebounce);
+            cityAbort?.abort();
             activeTimers.forEach(timer => clearInterval(timer));
             activeTimers.clear();
             unsubscribe();

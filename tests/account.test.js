@@ -43,14 +43,15 @@ afterEach(() => {
 });
 
 describe('account: handle validation and adapter selection', () => {
-    // Verify handle normalization and syntax constraints.
+    // Verify handle normalization and syntax constraints aligned with backend contract (1..15 ASCII chars).
     it('normalizes and validates handle rules', () => {
         expect(normalizeHandle(' @Ana_Ribeiro ')).toBe('ana_ribeiro');
         expect(validateHandle('ana_ribeiro').valid).toBe(true);
-        expect(validateHandle('ab').valid).toBe(false);
-        expect(validateHandle('ana..ribeiro').valid).toBe(false);
-        expect(validateHandle('.ana').valid).toBe(false);
+        expect(validateHandle('ana-9.ok').valid).toBe(true);
+        expect(validateHandle('').valid).toBe(false);
+        expect(validateHandle('handle_com_mais_de_15').valid).toBe(false);
         expect(validateHandle('ana!@#').valid).toBe(false);
+        expect(validateHandle('ana ribeiro').valid).toBe(false);
     });
 
     // Verify host adapter override and default demo adapter fallback.

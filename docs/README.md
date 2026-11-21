@@ -40,7 +40,7 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 | Conexão Spotify | `window.sonarfySpotifyOAuth` | Fluxo UI e cooldown de 7 dias prontos; OAuth real pendente | `docs/integrations/spotify.md` |
 | Perfil | `js/profile-http.js` / `window.sonarfyProfileAdapter` | Integrado via HTTP para identidade e relacionamentos (seguir/deixar de seguir); publicações e edição pendentes; demonstração explícita em `?demo=true` | `docs/api/profiles.md`, `docs/api/following.md`, `docs/integrations/profile-page.md` e `docs/integrations/following.md` |
 | Feed | `window.sonarfyFeedAdapter` | Modo demonstração local (`js/feed-fixtures.js`) | Contrato de backend ainda não definido |
-| Configurações da Conta | `window.sonarfyAccountAdapter` | Modo demonstração local (`js/account-fixtures.js`) | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `email-change.md`, `password-change.md` |
+| Configurações da Conta | `js/account-http.js` / `window.sonarfyAccountAdapter` | Integrado via HTTP para `GET/PUT /api/users/me` e `GET /api/locations/cities`; desativar/deletar conta, e-mail, senha e Spotify ainda indisponíveis em HTTP; modo demonstração explícito em `?demo=true` | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `docs/api/locations.md` |
 
 ---
 
