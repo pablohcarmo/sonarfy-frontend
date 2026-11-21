@@ -127,6 +127,15 @@ node tests/browser/password-flows.cjs
 
 Valida `pages/recuperar-senha.html` (`POST /api/auth/forgot-password` com resposta uniforme e `POST /api/auth/reset-password` redirecionando para `login.html?reset=true`) e o fluxo autenticado em `pages/account.html` (`POST /api/users/me/password-change-request` e `PUT /api/users/me/password` via fragmento `#password-change-token=...` limpo com `replaceState` e limpeza de `sonarfy_token`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
 
+### Troca de e-mail autenticada
+
+```sh
+npm test -- tests/email-change.test.js
+node tests/browser/email-change.cjs
+```
+
+Valida o modal de solicitação em `pages/account.html` (`POST /api/users/me/email-change-request`, `202`/`400`/`401`/`404`/`409`/`429`) e a página de confirmação explícita `pages/confirm-email-change.html#token=...` (`POST /api/auth/email-change-confirmation` com limpeza do fragmento via `replaceState` e limpeza de `sonarfy_token`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
+
 ## Limitações
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.
