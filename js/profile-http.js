@@ -15,6 +15,7 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
     fetcher = (...args) => fetch(...args), getToken = () => localStorage.getItem('sonarfy_token'),
     expire = () => { localStorage.removeItem('sonarfy_token'); location.assign('login.html'); } } = {}) {
     let loaded, sessionToken, needsRefresh = false;
+    // Traduz falhas de transporte e leitura JSON para mensagens seguras, sem expor erros brutos do navegador.
     async function request(path, method = 'GET') {
         const token = getToken();
         if (!token || (sessionToken && token !== sessionToken)) {
@@ -22,9 +23,15 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
             if (!token) expire();
             throw error;
         }
-        const response = await fetcher(`${baseUrl.replace(/\/$/, '')}${path}`, {
-            method, headers: { Authorization: `Bearer ${token}` }, credentials: 'omit', cache: 'no-store'
-        });
+        let response;
+        try {
+            response = await fetcher(`${baseUrl.replace(/\/$/, '')}${path}`, {
+                method, headers: { Authorization: `Bearer ${token}` }, credentials: 'omit', cache: 'no-store'
+            });
+        } catch (cause) {
+            const error = new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+            error.cause = cause; throw error;
+        }
         if (getToken() !== token) throw new Error('A sessão mudou. Recarregue o perfil.');
         if (response.status === 401) expire();
         if (response.status !== (method === 'GET' ? 200 : 204)) {
@@ -32,7 +39,12 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
                 : response.status === 404 ? 'Perfil indisponível.' : 'Não foi possível concluir. Tente novamente.');
             error.status = response.status; throw error;
         }
-        return method === 'GET' ? response.json() : null;
+        if (method !== 'GET') return null;
+        try { return await response.json(); }
+        catch (cause) {
+            const error = new Error('Resposta de perfil inválida. Tente novamente.');
+            error.cause = cause; throw error;
+        }
     }
     const read = handle => request(`/profile/by-handle/${encodeURIComponent(handle)}`);
     return {

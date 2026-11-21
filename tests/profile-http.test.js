@@ -48,9 +48,37 @@ describe('perfil HTTP e relacionamentos', () => {
         expect(fetcher.mock.calls.slice(2).map(([, request]) => request.method)).toEqual(['PUT', 'GET', 'GET']);
         expect(store.state.data.profile).toMatchObject({ isFollowing: true, followers: 1, followUncertain: false });
     });
-    it.each([401, 404, 500])('trata HTTP %s sem fallback para demonstração', async status => {
-        const { adapter, fetcher, expire } = setup(); fetcher.mockResolvedValueOnce(new Response(null, { status }));
-        await expect(adapter.load('')).rejects.toMatchObject({ status }); expect(expire).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
+    it.each([
+        [401, 'Sessão expirada. Entre novamente.'],
+        [404, 'Perfil indisponível.'],
+        [500, 'Não foi possível concluir. Tente novamente.']
+    ])('trata HTTP %s sem fallback para demonstração', async (status, message) => {
+        const { adapter, fetcher, expire } = setup(); fetcher.mockResolvedValueOnce(new Response('raw server error', { status }));
+        await expect(adapter.load('')).rejects.toMatchObject({ status, message });
+        expect(expire).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
+        expect(adapter.demo).toBe(false);
+    });
+    // Falhas de transporte de diferentes navegadores exibem a mesma mensagem amigável e permitem recuperação.
+    it.each([
+        new TypeError('NetworkError when attempting to fetch resource.'),
+        new TypeError('Failed to fetch')
+    ])('traduz falha de rede no carregamento sem expor erro técnico e recupera depois', async networkError => {
+        const { adapter, fetcher, expire } = setup();
+        fetcher.mockRejectedValueOnce(networkError);
+        await expect(adapter.load('other')).rejects.toMatchObject({
+            message: 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+        });
+        expect(expire).not.toHaveBeenCalled();
+        expect(adapter.demo).toBe(false);
+        fetcher.mockResolvedValueOnce(json(dto(1))).mockResolvedValueOnce(json(dto(2, true, 4)));
+        const recovered = await adapter.load('other');
+        expect(recovered.profile).toMatchObject({ id: '2', isFollowing: true, followers: 4 });
+    });
+    // Resposta 200 com JSON corrompido não expõe SyntaxError técnico do navegador.
+    it('traduz erro de leitura JSON sem expor detalhes técnicos', async () => {
+        const { adapter, fetcher } = setup();
+        fetcher.mockResolvedValueOnce(new Response('{invalid', { status: 200 }));
+        await expect(adapter.load('')).rejects.toThrow('Resposta de perfil inválida. Tente novamente.');
     });
     it('descarta resposta recebida depois de troca da sessão', async () => {
         const { adapter, fetcher, changeToken } = setup();

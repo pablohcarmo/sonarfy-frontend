@@ -33,6 +33,7 @@ Integrações simuladas, estados cobertos e limitações estão em
 contas ou bancos reais. Edge `157.0.4341.60` e Firefox `153.0` passaram nas oito
 combinações `1440px`/`390px` e claro/escuro, cobrindo pendência, clique repetido,
 `204` seguido de `GET`, reconciliação incerta sem nova mutação, `404`/retry,
+falha de rede no carregamento com mensagem amigável e recuperação por retry,
 `401`/login, perfil próprio, foco e drawer. Capturas e relatório:
 `test-results/profile-following`. A regressão visual em `profile.cjs` solicita
 `?demo=true` explicitamente. Mobile emulado/headless; execução automatizada

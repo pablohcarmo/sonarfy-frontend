@@ -27,10 +27,11 @@ const dto = (own, following = false, followers = 3) => ({
             for (const width of [1440, 390]) for (const theme of ['light', 'dark']) {
                 const context = await browser.newContext({ viewport: { width, height: 900 } });
                 await context.addInitScript(theme => { localStorage.setItem('sonarfy_theme', theme); if (location.pathname.endsWith('/profile.html')) localStorage.setItem('sonarfy_token', 'browser-test-only'); }, theme);
-                let following = false, followers = 3, mutations = 0, failRead = false, unavailable = false, unauthorized = false;
+                let following = false, followers = 3, mutations = 0, failRead = false, networkError = false, unavailable = false, unauthorized = false;
                 await context.route('**/api/profile/**', async route => {
                     const request = route.request(), pathname = new URL(request.url()).pathname;
                     assert.equal(request.headers().authorization, 'Bearer browser-test-only');
+                    if (networkError) return route.abort('failed');
                     const reply = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, ...(body ? { body: JSON.stringify(body) } : {}) });
                     if (unauthorized) return reply(401);
                     if (pathname.endsWith('/following')) {
@@ -75,6 +76,17 @@ const dto = (own, following = false, followers = 3) => ({
                 await page.getByRole('button', { name: 'Tentar novamente' }).waitFor();
                 assert.match(await page.locator('#profile-status').innerText(), /indisponível/); assert.equal(await page.locator('.profile-card').count(), 0);
                 unavailable = false; await page.getByRole('button', { name: 'Tentar novamente' }).click(); await button.waitFor();
+                networkError = true; await page.goto(`${base}/pages/profile.html?handle=other`);
+                await page.getByRole('button', { name: 'Tentar novamente' }).waitFor();
+                const networkStatus = await page.locator('#profile-status').innerText();
+                assert.match(networkStatus, /Não foi possível conectar ao servidor\. Verifique sua conexão e tente novamente\./);
+                assert.doesNotMatch(networkStatus, /NetworkError|Failed to fetch|TypeError/i);
+                assert.equal(await page.locator('.profile-card').count(), 0);
+                assert.equal(await page.locator('#profile-demo').isVisible(), false);
+                networkError = false; await page.getByRole('button', { name: 'Tentar novamente' }).click(); await button.waitFor();
+                assert.equal((await page.locator('#profile-status').innerText()).trim(), '');
+                assert.equal(await page.locator('#profile-demo').isVisible(), false);
+                assert.equal((await page.locator('.profile-statistics').innerText()).replace(/\s+/g, ' '), '3 Seguidores 0 Seguindo');
                 unauthorized = true; await page.reload(); await page.waitForURL('**/login.html');
                 assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), null);
                 assert.deepEqual(errors, []); results.push({ browser: name, version: browser.version(), width, theme, passed: true });
