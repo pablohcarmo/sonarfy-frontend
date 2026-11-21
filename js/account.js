@@ -256,6 +256,46 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         );
     }
 
+    // Open the authenticated email change request modal collecting newEmail and currentPassword.
+    function openEmailChangeDialog() {
+        openDialog(
+            `<div class="account-dialog-content">
+                <div class="account-dialog-top">
+                    <span class="account-dialog-badge" aria-hidden="true">${accountIcon('lock-light', 'lock-dark', 24)}</span>
+                    <button type="button" class="account-dialog-close" data-close aria-label="Fechar">${accountIcon('close-light', 'close-dark', 20)}</button>
+                </div>
+                <h2 id="account-dialog-title" class="account-dialog-title">Alterar endereço de e-mail</h2>
+                <p class="account-dialog-text">Informe o novo e-mail e sua senha atual. Enviaremos um link de confirmação para o novo endereço.</p>
+                <form id="email-change-form" class="account-section" novalidate>
+                    <div class="account-field">
+                        <label for="email-change-new">Novo e-mail</label>
+                        <div class="account-input-box is-editable">
+                            <input id="email-change-new" name="newEmail" type="email" maxlength="150" autocomplete="email" required>
+                        </div>
+                    </div>
+                    <div class="account-field">
+                        <label for="email-change-password">Senha atual</label>
+                        <div class="account-input-box is-editable">
+                            <input id="email-change-password" name="currentPassword" type="password" autocomplete="current-password" required>
+                        </div>
+                    </div>
+                    <p class="account-dialog-status" role="alert" aria-live="polite"></p>
+                    <div class="account-dialog-actions">
+                        <button type="button" class="account-btn-secondary" data-close>Cancelar</button>
+                        <button type="button" class="account-btn-primary" data-confirm>Enviar confirmação</button>
+                    </div>
+                </form>
+            </div>`,
+            async () => {
+                const newEmail = dialog.querySelector('#email-change-new')?.value || '';
+                const currentPassword = dialog.querySelector('#email-change-password')?.value || '';
+                const result = await adapter.requestEmailChange({ newEmail, currentPassword });
+                startCooldown('email', result?.cooldownSeconds || 30, emailBtn, emailTimerEl);
+                notify(result?.message || 'Enviamos as instruções para alteração do seu e-mail.');
+            }
+        );
+    }
+
     // Open the authenticated password change modal when arriving with #password-change-token=...
     function openPasswordChangeDialog(initialToken) {
         let authToken = initialToken;
@@ -419,6 +459,10 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
     on(emailBtn, 'click', async () => {
         if (emailBtn.disabled) return;
         notify('');
+        if (!adapter.demo) {
+            openEmailChangeDialog();
+            return;
+        }
         emailBtn.disabled = true;
         try {
             const result = await adapter.requestEmailChange();
