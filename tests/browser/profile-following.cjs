@@ -29,7 +29,8 @@ const dto = (own, following = false, followers = 3) => ({
                 await context.addInitScript(theme => { localStorage.setItem('sonarfy_theme', theme); if (location.pathname.endsWith('/profile.html')) localStorage.setItem('sonarfy_token', 'browser-test-only'); }, theme);
                 let following = false, followers = 3, mutations = 0, failRead = false, networkError = false, unavailable = false, unauthorized = false;
                 let activeToken = 'browser-test-only', refreshMode = 'fail', refreshCalls = 0;
-                let ownDisplayName = 'Conta atual', ownBio = 'Bio pública', failEditOnce = false, editCalls = 0;
+                let ownDisplayName = 'Conta atual', ownBio = 'Bio pública', ownAvatarUrl = null, failEditOnce = false, editCalls = 0, avatarCalls = 0, failAvatarOnce = false;
+                const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAAEklEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC', 'base64');
                 await context.route('**/api/auth/refresh', async route => {
                     const req = route.request();
                     if (req.method() === 'OPTIONS') {
@@ -65,7 +66,7 @@ const dto = (own, following = false, followers = 3) => ({
                             status: 200,
                             headers: {
                                 'Access-Control-Allow-Origin': '*',
-                                'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+                                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                                 'Access-Control-Allow-Headers': 'Authorization, Content-Type'
                             }
                         });
@@ -78,6 +79,22 @@ const dto = (own, following = false, followers = 3) => ({
                         following = request.method() === 'PUT'; followers = following ? 4 : 3;
                         await new Promise(resolve => setTimeout(resolve, 180)); return reply(204);
                     }
+                    if (pathname.endsWith('/me/avatar') && request.method() === 'POST') {
+                        avatarCalls += 1;
+                        assert.match(request.headers()['content-type'] || '', /^multipart\/form-data; boundary=/);
+                        const raw = request.postDataBuffer()?.toString('latin1') || '';
+                        assert.match(raw, /name="file"/);
+                        assert.match(raw, /name="cropX"/);
+                        assert.match(raw, /name="cropY"/);
+                        assert.match(raw, /name="cropSize"/);
+                        if (failAvatarOnce) { failAvatarOnce = false; return reply(503); }
+                        ownAvatarUrl = `${base}/assets/images/sonarfy-symbol.png`;
+                        const updated = dto(true);
+                        updated.identity.displayName = ownDisplayName;
+                        updated.identity.biography = ownBio;
+                        updated.identity.avatarUrl = ownAvatarUrl;
+                        return reply(200, updated);
+                    }
                     if (pathname.endsWith('/me') && request.method() === 'PUT') {
                         editCalls += 1;
                         if (failEditOnce) { failEditOnce = false; return reply(400); }
@@ -88,12 +105,14 @@ const dto = (own, following = false, followers = 3) => ({
                         const updated = dto(true);
                         updated.identity.displayName = ownDisplayName;
                         updated.identity.biography = ownBio;
+                        updated.identity.avatarUrl = ownAvatarUrl;
                         return reply(200, updated);
                     }
                     if (pathname.endsWith('/me')) {
                         const selfDto = dto(true);
                         selfDto.identity.displayName = ownDisplayName;
                         selfDto.identity.biography = ownBio;
+                        selfDto.identity.avatarUrl = ownAvatarUrl;
                         return reply(200, selfDto);
                     }
                     if (unavailable) return reply(404);
@@ -142,6 +161,23 @@ const dto = (own, following = false, followers = 3) => ({
                 assert.equal(editCalls, 2);
                 assert.match(await page.locator('#profile-header').innerText(), /Conta Editada 🎵/);
                 assert.match(await page.locator('#profile-header').innerText(), /Nova bio integrada\./);
+                // Upload avatar with circular crop preview: 503 preserves current avatar, retry 200 reconciles avatarUrl.
+                failAvatarOnce = true;
+                await page.locator('[data-action="edit"]').click();
+                await page.locator('#edit-profile-form').waitFor();
+                await page.locator('#edit-profile-form input[name="avatar"]').setInputFiles({
+                    name: 'avatar.png', mimeType: 'image/png', buffer: tinyPng
+                });
+                await page.locator('#avatar-crop-panel').waitFor({ state: 'visible' });
+                await page.locator('#avatar-zoom').fill('1.5');
+                await page.locator('#avatar-zoom').dispatchEvent('input');
+                await page.click('#save-profile');
+                await page.waitForFunction(() => document.querySelector('#profile-dialog .dialog-status')?.textContent.includes('indisponível'));
+                assert.equal(avatarCalls, 1);
+                await page.click('#save-profile');
+                await page.waitForFunction(() => !document.getElementById('profile-dialog').open);
+                assert.equal(avatarCalls, 2);
+                assert.equal(await page.locator('#profile-header .profile-avatar img').getAttribute('src'), `${base}/assets/images/sonarfy-symbol.png`);
                 unavailable = true; await page.goto(`${base}/pages/profile.html?handle=missing`);
                 await page.getByRole('button', { name: 'Tentar novamente' }).waitFor();
                 assert.match(await page.locator('#profile-status').innerText(), /indisponível/); assert.equal(await page.locator('.profile-card').count(), 0);
