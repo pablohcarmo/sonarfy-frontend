@@ -36,6 +36,7 @@ Sempre que gerar a descrição/mensagem de um Pull Request, use a estrutura abai
 - Não inclua seção ou contagem de tamanho do diff na mensagem; esse controle é somente interno.
 - Inclua “Integração e contratos” somente quando houver alterações em adapters, rotas ou contratos com o backend. Caso contrário, omita a seção, sem escrever “Nenhuma” ou “N/A”.
 - Inclua “Issue relacionada” somente quando existir uma issue relacionada. Caso contrário, omita a seção, sem escrever “N/A”.
+- Ao criar PRs no GitHub (`gh pr create` / `gh pr edit`), adicione por padrão: labels `documentation`, `frontend` e `enhancement`; assignee `pablohcarmo`; projeto `Sonarfy`.
 
 ```markdown
 ## Contexto e objetivo
