@@ -72,6 +72,34 @@ async function loadedAssets(page) {
                     active: true
                 };
                 let lastPutBody = null;
+                let spotifyStatus = 'CONNECTED';
+                let spotifyDisconnectCalls = 0;
+                await context.route('**/api/spotify/connection', async route => {
+                    const req = route.request();
+                    if (req.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: {
+                                'Access-Control-Allow-Origin': '*',
+                                'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
+                                'Access-Control-Allow-Headers': 'Authorization'
+                            }
+                        });
+                    }
+                    assert.equal(req.headers().authorization, 'Bearer test-token');
+                    const cors = { 'Access-Control-Allow-Origin': '*' };
+                    if (req.method() === 'DELETE') {
+                        spotifyDisconnectCalls += 1;
+                        spotifyStatus = 'DISCONNECTED';
+                        return route.fulfill({ status: 204, headers: cors });
+                    }
+                    return route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        headers: cors,
+                        body: JSON.stringify({ status: spotifyStatus, connectedAt: spotifyStatus === 'CONNECTED' ? '2026-11-10T03:00:00Z' : null })
+                    });
+                });
                 await context.route('**/api/locations/cities**', async route => {
                     const req = route.request();
                     assert.equal(req.headers().authorization, undefined, 'Public city search must not send Bearer');
@@ -165,6 +193,13 @@ async function loadedAssets(page) {
                 assert.equal(lastPutBody.handle, 'ana_nova');
                 await page.click('#account-dialog [data-close]');
                 await page.waitForFunction(() => !document.getElementById('account-dialog').open);
+
+                // Verify Spotify connected state and DELETE /api/spotify/connection disconnect flow.
+                await page.locator('#spotify-disconnect-btn').waitFor();
+                await page.click('#spotify-disconnect-btn');
+                await page.locator('#spotify-sync-link').waitFor();
+                assert.equal(spotifyDisconnectCalls, 1);
+                assert.match(await page.locator('#account-status').innerText(), /painel de aplicativos conectados/);
 
                 // Deactivate and delete modals must NOT simulate success in HTTP mode.
                 await page.click('#deactivate-account-btn');

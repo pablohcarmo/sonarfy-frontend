@@ -43,8 +43,8 @@ contra backend real e CI remoto não realizadas nesta entrega.
 
 ### Configurações da Conta
 
-`npm test` inclui `tests/account.test.js` e `tests/account-http.test.js` em Vitest + Happy DOM.
-`node tests/browser/account.cjs` inicia seu próprio servidor e verifica `pages/account.html` em modo HTTP real (interceptando `GET/PUT /api/users/me` e `GET /api/locations/cities`) no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo sidebar/drawer com **Configurações** ativo, modo de edição, conflito `409` de `@handle`, autocomplete de cidade/país com `cityId`, modais `<dialog>` de sucesso e indisponibilidade de desativar/deletar sem simular sucesso, carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/account/`. Contrato e resultados: [Configurações da Conta](../docs/account-page.md).
+`npm test` inclui `tests/account.test.js`, `tests/account-http.test.js`, `tests/spotify-sync.test.js` e `tests/spotify-http.test.js` em Vitest + Happy DOM.
+`node tests/browser/account.cjs` e `node tests/browser/spotify-sync.cjs` iniciam seus próprios servidores e verificam `pages/account.html` e `pages/spotify-sync.html` em modo HTTP real (interceptando `GET/PUT /api/users/me`, `GET /api/locations/cities`, `POST /api/spotify/authorization` e `GET/DELETE /api/spotify/connection`) no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo sidebar/drawer com **Configurações** ativo, modo de edição, conflito `409` de `@handle`, autocomplete de cidade/país com `cityId`, fluxo OAuth do Spotify, retorno `?spotify=...`, desconexão com aviso de revogação, modais `<dialog>` de sucesso e indisponibilidade de desativar/deletar sem simular sucesso, carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/account/` e `test-results/spotify-sync/`. Contrato e resultados: [Configurações da Conta](../docs/account-page.md).
 
 ### Feed
 

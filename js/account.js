@@ -1,6 +1,7 @@
 import { createAccountAdapter } from './account-fixtures.js';
 import { createHttpAccountAdapter } from './account-http.js';
 import { createAccountState, logoutAccount, normalizeHandle } from './account-state.js';
+import { readSpotifyCallbackOutcome } from './spotify-http.js';
 import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
@@ -149,11 +150,15 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         if (!editing) closeCities();
 
         if (account) {
-            if (account.spotifyConnected) {
+            const spotifyStatus = account.spotifyStatus || (account.spotifyConnected ? 'CONNECTED' : 'DISCONNECTED');
+            const syncHref = adapter.routes?.spotifySync || 'spotify-sync.html?source=account';
+            if (spotifyStatus === 'CONNECTED') {
                 spotifyDesc.textContent = 'Sua conta do Spotify está conectada ao Sonarfy.';
                 spotifySlot.innerHTML = `<button id="spotify-disconnect-btn" type="button" class="account-btn-spotify"${state.pendingAction === 'spotify' ? ' disabled' : ''}>Conectado · Desconectar</button>`;
+            } else if (spotifyStatus === 'REAUTHORIZATION_REQUIRED') {
+                spotifyDesc.textContent = 'Sua autorização do Spotify expirou. Reconecte para continuar usando a integração.';
+                spotifySlot.innerHTML = `<a id="spotify-sync-link" class="account-btn-spotify" href="${e(syncHref)}">Reconectar Spotify</a>`;
             } else {
-                const syncHref = adapter.routes?.spotifySync || 'spotify-sync.html?source=account';
                 spotifyDesc.textContent = 'Conecte sua conta para personalizar sua experiência.';
                 spotifySlot.innerHTML = `<a id="spotify-sync-link" class="account-btn-spotify" href="${e(syncHref)}">Sincronizar com Spotify</a>`;
             }
@@ -408,7 +413,11 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         }
         if (target.id === 'spotify-disconnect-btn') {
             notify('');
-            store.disconnectSpotify().catch(error => notify(error.message || 'Não foi possível desconectar o Spotify.'));
+            store.disconnectSpotify()
+                .then(result => {
+                    if (result?.message) notify(result.message);
+                })
+                .catch(error => notify(error.message || 'Não foi possível desconectar o Spotify.'));
         }
         if (target.dataset.navigation) {
             handleNavigation(target.dataset.navigation);
@@ -440,9 +449,12 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         menuTrigger.focus();
     });
 
+    const spotifyCallback = readSpotifyCallbackOutcome(options.location, options.history);
+
     const ready = store.load().then(account => {
         populateForm(account);
         render();
+        if (spotifyCallback) notify(spotifyCallback.message);
         return account;
     }).catch(error => {
         notify(error.message || 'Não foi possível carregar as configurações.');

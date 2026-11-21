@@ -191,7 +191,11 @@ export function createAccountState(adapter) {
             emit();
             try {
                 const result = await adapter.disconnectSpotify();
-                if (state.account) state.account.spotifyConnected = Boolean(result?.spotifyConnected);
+                if (state.account) {
+                    state.account.spotifyConnected = Boolean(result?.spotifyConnected);
+                    state.account.spotifyStatus = result?.spotifyStatus || (state.account.spotifyConnected ? 'CONNECTED' : 'DISCONNECTED');
+                    state.account.spotifyConnectedAt = result?.spotifyConnectedAt ?? null;
+                }
                 return result;
             } finally {
                 state.pendingAction = null;

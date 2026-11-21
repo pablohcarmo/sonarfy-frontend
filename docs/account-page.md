@@ -44,10 +44,11 @@ Por padrão, `pages/account.html` utiliza o adapter HTTP real (`js/account-http.
   - `GET /api/users/me` (`UserDto`): carrega nome, sobrenome, `@handle`, data de nascimento, cidade, país e e-mail, com renovação single-flight via `POST /api/auth/refresh` em `401`.
   - `PUT /api/users/me` (`UpdateUserDto` → `UserDto`): envia `name`, `surname`, `handle`, `birthDate` e `cityId` apenas quando uma nova cidade é selecionada; trata `400`, `409` (handle ocupado), `401` e `503`.
   - `GET /api/locations/cities?q=...` (`CityDto`): busca pública de cidades (sem cabeçalho `Authorization`) com cancelamento via `AbortController` e exibição de região/país.
+  - `GET /api/spotify/connection` e `DELETE /api/spotify/connection`: exibe `CONNECTED`, `DISCONNECTED` e `REAUTHORIZATION_REQUIRED`, trata retorno `?spotify=connected|denied|invalid_state|error` limpando o query param da URL e exibe aviso de revogação no painel do Spotify ao desconectar.
 - **Ainda indisponível no modo HTTP real (sem simular sucesso):**
   - Verificação remota dedicada de disponibilidade do `@handle` (a unicidade é validada pelo backend no `PUT /api/users/me` com `409`).
   - Desativar conta e deletar conta (os modais informam indisponibilidade ao confirmar sem remover `sonarfy_token`).
-  - Troca de e-mail, redefinição de senha e OAuth/desconexão do Spotify (serão integrados em issues dedicadas).
+  - Troca de e-mail e redefinição de senha (serão integrados em issues dedicadas).
 
 O modo demonstração em memória (`js/account-fixtures.js`, `demo: true`) permanece disponível apenas via `?demo=true` ou injeção explícita de `window.sonarfyAccountAdapter`:
 
