@@ -1,5 +1,6 @@
 import { createAuthClient, getAccessToken, setAccessToken, clearAccessToken, resolveApiBaseUrl } from './auth-http.js';
 import { createSpotifyClient } from './spotify-http.js';
+import { createPasswordClient } from './password-http.js';
 
 // Map backend UserDto and optional Spotify connection snapshot to the Account page state.
 export function mapUserDto(dto, spotify = null) {
@@ -60,6 +61,7 @@ export function createHttpAccountAdapter({
         expire
     });
     const spotifyClient = createSpotifyClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
+    const passwordClient = createPasswordClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
     let lastSpotify = { status: 'DISCONNECTED', connectedAt: null };
 
     const unavailable = feature => async () => {
@@ -220,7 +222,14 @@ export function createHttpAccountAdapter({
             };
         },
         requestEmailChange: unavailable('Alteração de e-mail'),
-        requestPasswordReset: unavailable('Redefinição de senha'),
+        // Request authenticated password change email via POST /api/users/me/password-change-request.
+        async requestPasswordReset() {
+            return passwordClient.requestPasswordChange();
+        },
+        // Complete authenticated password change via PUT /api/users/me/password.
+        async changePassword(payload) {
+            return passwordClient.changePassword(payload);
+        },
         deactivateAccount: unavailable('Desativação de conta'),
         deleteAccount: unavailable('Exclusão permanente de conta')
     };

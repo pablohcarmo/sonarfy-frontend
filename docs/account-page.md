@@ -45,10 +45,11 @@ Por padrão, `pages/account.html` utiliza o adapter HTTP real (`js/account-http.
   - `PUT /api/users/me` (`UpdateUserDto` → `UserDto`): envia `name`, `surname`, `handle`, `birthDate` e `cityId` apenas quando uma nova cidade é selecionada; trata `400`, `409` (handle ocupado), `401` e `503`.
   - `GET /api/locations/cities?q=...` (`CityDto`): busca pública de cidades (sem cabeçalho `Authorization`) com cancelamento via `AbortController` e exibição de região/país.
   - `GET /api/spotify/connection` e `DELETE /api/spotify/connection`: exibe `CONNECTED`, `DISCONNECTED` e `REAUTHORIZATION_REQUIRED`, trata retorno `?spotify=connected|denied|invalid_state|error` limpando o query param da URL e exibe aviso de revogação no painel do Spotify ao desconectar.
+  - `POST /api/users/me/password-change-request` e `PUT /api/users/me/password`: o botão **Redefinir Senha** solicita o link autenticado (respeitando cooldown/429); abrir `pages/account.html#password-change-token=...` extrai o token em memória, limpa o fragmento da URL, exibe o modal de confirmação de nova senha e, em `200`, limpa `sonarfy_token` e redireciona para `login.html?reset=true`.
 - **Ainda indisponível no modo HTTP real (sem simular sucesso):**
   - Verificação remota dedicada de disponibilidade do `@handle` (a unicidade é validada pelo backend no `PUT /api/users/me` com `409`).
   - Desativar conta e deletar conta (os modais informam indisponibilidade ao confirmar sem remover `sonarfy_token`).
-  - Troca de e-mail e redefinição de senha (serão integrados em issues dedicadas).
+  - Troca de e-mail (será integrada na issue #41).
 
 O modo demonstração em memória (`js/account-fixtures.js`, `demo: true`) permanece disponível apenas via `?demo=true` ou injeção explícita de `window.sonarfyAccountAdapter`:
 

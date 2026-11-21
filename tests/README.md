@@ -118,6 +118,15 @@ node tests/browser/profile-following.cjs
 
 `tests/auth-http.test.js` valida `js/auth-http.js` (`POST /api/auth/refresh` com `credentials: 'include'`, `cache: 'no-store'`, `X-Sonarfy-CSRF: 1`, deduplicação concorrente single-flight em `401`, tratamento de `401`/`403`/`5xx` e `POST /api/auth/logout` com limpeza no `finally` em `logout.js`, `account-state.js` e `feed-state.js`). Os scripts de navegador verificam a revogação remota em `pages/logout.html` e a renovação automática de sessão em `pages/profile.html` no Edge e Firefox (`1440px`/`390px`, claro/escuro).
 
+### Recuperação e troca de senha
+
+```sh
+npm test -- tests/password-flows.test.js
+node tests/browser/password-flows.cjs
+```
+
+Valida `pages/recuperar-senha.html` (`POST /api/auth/forgot-password` com resposta uniforme e `POST /api/auth/reset-password` redirecionando para `login.html?reset=true`) e o fluxo autenticado em `pages/account.html` (`POST /api/users/me/password-change-request` e `PUT /api/users/me/password` via fragmento `#password-change-token=...` limpo com `replaceState` e limpeza de `sonarfy_token`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
+
 ## Limitações
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.
