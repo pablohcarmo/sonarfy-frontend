@@ -87,11 +87,12 @@ Os endpoints são simulados, sem envio de e-mails reais. Para conferir manualmen
 ### Login e Home
 
 ```sh
+npm test -- tests/login.test.js
 node tests/browser/login-home-assets.cjs
 node tests/browser/shared-brand.cjs
 ```
 
-O primeiro script verifica assets, navegação, temas e controles de login/index. O segundo verifica as marcas compartilhadas de Home, login, cadastro e Verify. Ambos exercitam Firefox e Edge, desktop/mobile e claro/escuro.
+`tests/login.test.js` valida o contrato de `POST /api/auth/login` (`http://localhost:8080/api`, `credentials: 'include'`, cabeçalho `X-Sonarfy-CSRF: 1`, payload com `rememberMe`, leitura de `accessToken`), fallback da URL local e tratamento de erros (`401`, `403` de CSRF/origem vs conta não ativada, `429` e rede). O script `login-home-assets.cjs` verifica assets, navegação, temas e controles de login/index, e `shared-brand.cjs` verifica as marcas compartilhadas de Home, login, cadastro e Verify; ambos exercitam Firefox e Edge, desktop/mobile e claro/escuro.
 
 ### Logout
 

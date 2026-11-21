@@ -23,7 +23,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         const cleanBody = (bodyMatch ? bodyMatch[1] : htmlContent).replace(/<script[\s\S]*?<\/script>/gi, '');
         document.body.innerHTML = cleanBody;
 
-        globalThis.API_BASE_URL = 'http://localhost:8081/api';
+        globalThis.API_BASE_URL = 'http://localhost:8080/api';
         globalThis.fetch = vi.fn(async (url, options) => {
             if (typeof backendHandler === 'function') {
                 return backendHandler(url, options);
@@ -123,7 +123,7 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         backendHandler = () => ({
             ok: true,
             status: 200,
-            text: async () => JSON.stringify({ token: 'mocked-jwt-token-xyz' })
+            text: async () => JSON.stringify({ accessToken: 'mocked-jwt-token-xyz', tokenType: 'Bearer', expiresInSeconds: 900 })
         });
 
         loginForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
@@ -135,16 +135,52 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         });
 
         expect(globalThis.fetch).toHaveBeenCalledWith(
-            'http://localhost:8081/api/auth/login',
+            'http://localhost:8080/api/auth/login',
             expect.objectContaining({
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Sonarfy-CSRF': '1'
+                },
                 body: JSON.stringify({
                     login: 'pablo@sonarfy.com',
-                    password: 'MinhaSenha@123'
+                    password: 'MinhaSenha@123',
+                    rememberMe: true
                 })
             })
         );
+    });
+
+    // Valida o fallback de porta 8080 e rememberMe=false quando API_BASE_URL não está definido.
+    it('deve usar fallback http://localhost:8080/api e enviar rememberMe false quando desmarcado', async () => {
+        delete globalThis.API_BASE_URL;
+        loadScript();
+
+        document.getElementById('loginField').value = 'pablo';
+        document.getElementById('passwordField').value = 'MinhaSenha@123';
+        document.getElementById('rememberMeCheckbox').checked = false;
+
+        document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+        await vi.waitFor(() => {
+            expect(globalThis.fetch).toHaveBeenCalledWith(
+                'http://localhost:8080/api/auth/login',
+                expect.objectContaining({
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Sonarfy-CSRF': '1'
+                    },
+                    body: JSON.stringify({
+                        login: 'pablo',
+                        password: 'MinhaSenha@123',
+                        rememberMe: false
+                    })
+                })
+            );
+        });
     });
 
     it('deve priorizar o onboarding mesmo com parâmetro redirect local', async () => {
@@ -189,6 +225,29 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
             expect(errorMessage.style.display).toBe('block');
             expect(errorMessage.innerHTML).toContain('E-mail, usuário ou senha inválidos.');
             expect(btnSubmitLogin.disabled).toBe(false);
+        });
+    });
+
+    // Diferencia bloqueio CSRF/origem (403 sem indicação de conta inativa) do aviso de ativação.
+    it('deve exibir erro de verificação de segurança para status 403 sem indicação de conta não ativada', async () => {
+        loadScript();
+
+        document.getElementById('loginField').value = 'pablo@sonarfy.com';
+        document.getElementById('passwordField').value = 'Senha@123';
+
+        backendHandler = () => ({
+            ok: false,
+            status: 403,
+            text: async () => ''
+        });
+
+        document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+        await vi.waitFor(() => {
+            const errorMessage = document.getElementById('errorMessage');
+            expect(errorMessage.style.display).toBe('block');
+            expect(errorMessage.textContent).toContain('bloqueada pela verificação de segurança');
+            expect(errorMessage.innerHTML).not.toContain('verify.html');
         });
     });
 
