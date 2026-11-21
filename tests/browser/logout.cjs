@@ -111,12 +111,38 @@ function startServer(root = process.cwd()) {
                         await page.locator('#btnCancelLogout').click();
                         await page.waitForURL('**/pages/profile.html');
 
-                        // Return to logout page and verify confirm clears token while preserving theme.
+                        // Return to logout page and verify confirm calls POST /api/auth/logout and clears token while preserving theme.
+                        let logoutCalls = 0;
+                        await context.route('**/api/auth/logout', async route => {
+                            const req = route.request();
+                            if (req.method() === 'OPTIONS') {
+                                return route.fulfill({
+                                    status: 200,
+                                    headers: {
+                                        'Access-Control-Allow-Origin': baseUrl,
+                                        'Access-Control-Allow-Credentials': 'true',
+                                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                                        'Access-Control-Allow-Headers': 'X-Sonarfy-CSRF'
+                                    }
+                                });
+                            }
+                            assert.equal(req.method(), 'POST');
+                            assert.equal(req.headers()['x-sonarfy-csrf'], '1');
+                            logoutCalls += 1;
+                            await route.fulfill({
+                                status: 204,
+                                headers: {
+                                    'Access-Control-Allow-Origin': baseUrl,
+                                    'Access-Control-Allow-Credentials': 'true'
+                                }
+                            });
+                        });
                         await page.goto(`${baseUrl}/pages/logout.html?from=https://evil.com`);
                         await page.evaluate(() => localStorage.setItem('sonarfy_token', 'browser-demo-token'));
                         assert.equal(await page.locator('#btnCancelLogout').getAttribute('href'), 'feed.html');
                         await page.locator('#btnConfirmLogout').click();
                         await page.waitForURL('**/pages/login.html');
+                        assert.equal(logoutCalls, 1);
                         assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), null);
                         assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_theme')), theme);
 

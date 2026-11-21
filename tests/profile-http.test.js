@@ -8,9 +8,15 @@ const dto = (id = 2, isFollowing = false, followers = 0) => ({
 const json = value => new Response(JSON.stringify(value), { status: 200 });
 function setup() {
     const fetcher = vi.fn(), expire = vi.fn(); let token = 'test-access';
-    const adapter = createHttpProfileAdapter({ baseUrl: 'https://api.example.invalid/api/', fetcher, expire, getToken: () => token });
+    const adapter = createHttpProfileAdapter({
+        baseUrl: 'https://api.example.invalid/api/',
+        fetcher,
+        expire,
+        getToken: () => token,
+        setToken: next => { token = next; }
+    });
     const load = async () => { fetcher.mockResolvedValueOnce(json(dto(1))).mockResolvedValueOnce(json(dto())); return adapter.load('other'); };
-    return { adapter, fetcher, expire, load, changeToken: () => { token = 'new-session'; } };
+    return { adapter, fetcher, expire, load, changeToken: () => { token = 'new-session'; }, getToken: () => token };
 }
 
 describe('perfil HTTP e relacionamentos', () => {
@@ -111,5 +117,22 @@ describe('perfil HTTP e relacionamentos', () => {
         release(new Response(null, { status: 204 })); await pending;
         expect(store.state.data).toBe(replacement); expect(store.state.pending.size).toBe(0);
         expect(fetcher.mock.calls.filter(([, r]) => r.method === 'PUT')).toHaveLength(1);
+    });
+    // Renova accessToken via POST /api/auth/refresh em 401 e conclui carregamento sem expirar sessão.
+    it('renova sessão em 401 via refresh e repete a requisição uma única vez', async () => {
+        const { adapter, fetcher, expire, getToken } = setup();
+        fetcher
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(json({ accessToken: 'refreshed-access', tokenType: 'Bearer', expiresInSeconds: 900 }))
+            .mockResolvedValueOnce(json(dto(1)));
+        const data = await adapter.load('');
+        expect(data.profile.id).toBe('1');
+        expect(getToken()).toBe('refreshed-access');
+        expect(expire).not.toHaveBeenCalled();
+        expect(fetcher.mock.calls[1]).toEqual([
+            'https://api.example.invalid/api/auth/refresh',
+            expect.objectContaining({ method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'X-Sonarfy-CSRF': '1' } })
+        ]);
+        expect(fetcher.mock.calls[2][1].headers.Authorization).toBe('Bearer refreshed-access');
     });
 });

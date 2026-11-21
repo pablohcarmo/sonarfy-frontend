@@ -60,16 +60,30 @@ describe('Logout Page (js/logout.js)', () => {
     });
 
     // Remove sonarfy_token from storage while strictly preserving sonarfy_theme on confirm.
-    it('removes sonarfy_token and preserves sonarfy_theme before redirecting to login.html', async () => {
+    it('calls POST /api/auth/logout, removes sonarfy_token and preserves sonarfy_theme before redirecting to login.html', async () => {
         localStorage.setItem('sonarfy_token', 'token-local');
         sessionStorage.setItem('sonarfy_token', 'token-session');
         localStorage.setItem('sonarfy_theme', 'dark');
         const navigate = vi.fn();
+        const fetcher = vi.fn(async () => new Response(null, { status: 204 }));
 
-        await initLogoutPage({ document, location: { search: '' }, adapter: null, navigate });
+        await initLogoutPage({
+            document,
+            location: { search: '' },
+            adapter: null,
+            navigate,
+            baseUrl: 'https://api.example.invalid/api',
+            fetcher
+        });
         document.getElementById('btnConfirmLogout').click();
-        await Promise.resolve();
+        await new Promise(resolve => setTimeout(resolve, 0));
 
+        expect(fetcher).toHaveBeenCalledExactlyOnceWith('https://api.example.invalid/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            headers: { 'X-Sonarfy-CSRF': '1' }
+        });
         expect(localStorage.getItem('sonarfy_token')).toBeNull();
         expect(sessionStorage.getItem('sonarfy_token')).toBeNull();
         expect(localStorage.getItem('sonarfy_theme')).toBe('dark');

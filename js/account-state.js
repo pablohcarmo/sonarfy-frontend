@@ -1,4 +1,5 @@
 import { SPOTIFY_SYNCED_KEY } from './spotify-sync-state.js';
+import { clearAccessToken, logoutSession } from './auth-http.js';
 
 export const HANDLE_PATTERN = /^[a-z0-9._]{3,30}$/;
 
@@ -48,14 +49,22 @@ export function clearSessionCredentials(storage = localStorage, removeSpotify = 
     } catch {}
 }
 
-// Execute account logout via optional host hook after clearing local credentials.
-export async function logoutAccount(adapter, navigate = url => { location.href = url; }) {
-    clearSessionCredentials();
-    const destination = adapter.routes?.login || 'login.html';
-    if (adapter.actions?.logout) {
-        try { await adapter.actions.logout(); } catch {}
+// Execute account logout via host hook or POST /api/auth/logout and always clear local credentials.
+export async function logoutAccount(adapter = {}, navigate = url => { location.href = url; }, options) {
+    const destination = adapter?.routes?.login || 'login.html';
+    try {
+        if (adapter?.actions?.logout) {
+            await adapter.actions.logout();
+        } else {
+            await logoutSession(options);
+        }
+    } catch {
+        // Local cleanup and redirect proceed even when remote revocation fails.
+    } finally {
+        clearSessionCredentials();
+        clearAccessToken();
+        navigate(destination);
     }
-    navigate(destination);
 }
 
 // Manage account state, edit mode, handle availability checks, and mutations.

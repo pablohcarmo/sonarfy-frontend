@@ -1,4 +1,5 @@
 import { validateReview } from './profile-utils.js';
+import { clearAccessToken, logoutSession } from './auth-http.js';
 
 export const feedTabs = ['following', 'for-you'];
 export const normalizeTab = tab => feedTabs.includes(tab) ? tab : 'following';
@@ -52,9 +53,23 @@ export function createFeedState(adapter) {
     };
 }
 
-export async function logout(adapter, navigate = url => window.location.assign(url)) {
-    // Clear the frontend credential even when the host handles remote revocation.
-    localStorage.removeItem('sonarfy_token');
-    if (adapter.actions?.logout) await adapter.actions.logout();
-    else navigate('login.html');
+// Revoke the server session via host hook or POST /api/auth/logout and clear local credentials.
+export async function logout(adapter = {}, navigate = url => window.location.assign(url), options) {
+    if (adapter?.actions?.logout) {
+        clearAccessToken();
+        try {
+            await adapter.actions.logout();
+        } finally {
+            clearAccessToken();
+        }
+        return;
+    }
+    try {
+        await logoutSession(options);
+    } catch {
+        // Local cleanup and redirect proceed even when remote revocation fails.
+    } finally {
+        clearAccessToken();
+        navigate(adapter?.routes?.login || 'login.html');
+    }
 }

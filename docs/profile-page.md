@@ -39,8 +39,11 @@ Atualizar estado; esse próximo clique apenas consulta o perfil, sem enviar uma
 nova mutação ou inverter uma operação cujo resultado seja incerto. Em falha não
 anuncia sucesso. O próprio perfil não apresenta botão de seguir.
 
-Sem token ou com 401, remove o token e encaminha para login. Ainda não há renovação
-automática compartilhada no frontend; isso não foi introduzido nesta entrega.
+Sem token inicial, remove a credencial e encaminha para login sem enviar requisição.
+Em `401` com token presente, `js/auth-http.js` tenta uma única renovação via
+`POST /api/auth/refresh` (`credentials: 'include'`, `cache: 'no-store'`, `X-Sonarfy-CSRF: 1`)
+com deduplicação concorrente (single-flight) e repete a requisição uma única vez; se o
+refresh ou o retry falhar, limpa o token e encaminha para `login.html`.
 404 informa perfil indisponível; falhas HTTP de servidor usam mensagem genérica sem
 classificá-las como falha de conexão; falhas de rede no carregamento exibem
 “Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.”
@@ -78,8 +81,9 @@ o conjunto filtrado/ordenado e a contagem correta; não deve ordenar somente a
 página atual como se ela representasse a coleção completa. A interface não inventa
 um protocolo de paginação enquanto esse contrato não existir.
 
-Login já grava `sonarfy_token`; Sair abre a confirmação existente e, ao confirmar,
-remove essa credencial e navega ao login.
+Login já grava `sonarfy_token`; Sair abre `pages/logout.html` e, ao confirmar (ou via
+ações diretas de logout na sidebar), chama `POST /api/auth/logout` com `credentials: 'include'`
+e `X-Sonarfy-CSRF: 1`, remove `sonarfy_token` no `finally` e navega ao login.
 O host pode substituir essa ação para revogação remota. Home e Configurações usam
 as páginas existentes. Pesquisa, Ecos, Avaliar Álbum, comentários e álbum usam
 handlers configuráveis; sem eles, mostram feedback de indisponibilidade. Ecos não

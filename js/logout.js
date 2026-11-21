@@ -1,4 +1,5 @@
 import { createFixtures } from './profile-fixtures.js';
+import { clearAccessToken, logoutSession } from './auth-http.js';
 
 const DEFAULT_AVATAR = '../assets/icons/profile/avatar.svg';
 const INTERNAL_BASE = 'https://sonarfy.local/pages/';
@@ -41,12 +42,7 @@ function normalizeRelativePath(candidate) {
 
 // Remove sonarfy_token from web storages while preserving sonarfy_theme.
 export function clearSessionToken(storages = getDefaultStorages()) {
-    for (const storage of storages) {
-        if (!storage) continue;
-        try {
-            storage.removeItem('sonarfy_token');
-        } catch {}
-    }
+    clearAccessToken(storages);
 }
 
 function getDefaultStorages() {
@@ -127,9 +123,13 @@ export async function initLogoutPage(options = {}) {
             ? adapter.logout
             : typeof adapter?.actions?.logout === 'function'
                 ? adapter.actions.logout
-                : null;
+                : () => logoutSession({
+                    baseUrl: options.baseUrl,
+                    fetcher: options.fetcher,
+                    clearToken: () => clearSessionToken(storages)
+                });
         try {
-            if (remoteLogout) await remoteLogout();
+            await remoteLogout();
         } catch {
             // Local session cleanup and redirect still proceed if remote revocation fails.
         } finally {
