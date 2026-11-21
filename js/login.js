@@ -130,11 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
             clearMessages();
 
             try {
-                const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8081/api';
+                const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8080/api';
+                const rememberMe = Boolean(rememberMeCheckbox && rememberMeCheckbox.checked);
                 const response = await fetch(`${baseUrl}/auth/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ login, password })
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Sonarfy-CSRF': '1'
+                    },
+                    body: JSON.stringify({ login, password, rememberMe })
                 });
 
                 let responseData = null;
@@ -162,27 +167,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const rawLower = ((responseData?.message || responseData?.error || rawText) + '').toLowerCase();
-
-                    // Caso 1: Conta pendente de ativação
-                    if (
-                        response.status === 403 ||
+                    const isUnverifiedAccount =
                         rawLower.includes('not verified') ||
                         rawLower.includes('unverified') ||
                         rawLower.includes('não ativada') ||
                         rawLower.includes('inativa') ||
-                        rawLower.includes('ativação pendente')
-                    ) {
+                        rawLower.includes('ativação pendente');
+
+                    // Caso 1: Conta pendente de ativação (somente quando indicado na resposta)
+                    if (isUnverifiedAccount) {
                         showError('Sua conta ainda não foi ativada. <a href="verify.html">Clique aqui para reenviar o link de confirmação</a>.', true);
                     }
-                    // Caso 2: Excesso de requisições / Rate Limit
+                    // Caso 2: Bloqueio de segurança (CSRF ou origem não permitida)
+                    else if (response.status === 403) {
+                        showError('Requisição de login bloqueada pela verificação de segurança. Verifique o endereço de acesso e tente novamente.');
+                    }
+                    // Caso 3: Excesso de requisições / Rate Limit
                     else if (response.status === 429) {
                         showError('Muitas tentativas de login. Por favor, aguarde alguns instantes antes de tentar novamente.');
                     }
-                    // Caso 3: Credenciais inválidas (401 / 400)
+                    // Caso 4: Credenciais inválidas (401 / 400)
                     else if (response.status === 401 || response.status === 400) {
                         showError('E-mail, usuário ou senha inválidos.');
                     }
-                    // Caso 4: Erro interno ou genérico do servidor
+                    // Caso 5: Erro interno ou genérico do servidor
                     else {
                         const serverMsg = responseData?.message || responseData?.error;
                         showError(serverMsg || 'Não foi possível realizar o login no momento. Tente novamente mais tarde.');

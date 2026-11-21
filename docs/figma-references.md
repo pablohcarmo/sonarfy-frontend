@@ -107,6 +107,8 @@ Inter: heading 700, 32px/1.2 desktop and 28px/1.2 mobile; description 400, 15px/
 
 Card: maximum 480px, 32px desktop padding; mobile outer margins/padding 24px, producing a 342px card at 390px. Sections and credentials use 24px gaps; labels use 8px gaps. Card radius 16px, controls 8px, checkbox 4px. No card shadow exists in these frames. Inset borders preserve Figma's content dimensions. Header height is 88px desktop / 80px mobile; footer minimum height 168px, top padding 32px, bottom padding 40px, gap 12px.
 
+Contrato de autenticação (`js/login.js` e `js/api.js`): envia `POST /api/auth/login` para `API_BASE_URL` (local `http://localhost:8080/api`) com `credentials: 'include'`, cabeçalho obrigatório `X-Sonarfy-CSRF: 1` e payload `{ login, password, rememberMe }`. Em `200`, lê `accessToken` (ou `token`) e o navegador gerencia o cookie `HttpOnly` `sonarfy_refresh`. Respostas `401` representam credenciais inválidas ou conta inativa/não verificada de forma genérica; respostas `403` sem indicação de conta pendente exibem erro de verificação de segurança/origem. Em desenvolvimento HTTP local, a origem do frontend precisa constar em `AUTH_ALLOWED_ORIGINS` (padrão `http://localhost:63342,http://localhost:8080`, sem misturar `localhost` e `127.0.0.1`) e o cookie de refresh exige `AUTH_REFRESH_COOKIE_SECURE=false` no backend. Limitações atuais: o access token segue persistido em `localStorage` (`sonarfy_token`) e a renovação automática (`POST /api/auth/refresh`) e revogação remota (`POST /api/auth/logout`) ainda não foram integradas.
+
 
 
 <a id="cadastro-register"></a>
