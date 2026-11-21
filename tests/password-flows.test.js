@@ -5,7 +5,7 @@ import { initPasswordRecovery } from '../js/password-recovery.js';
 import { createHttpAccountAdapter } from '../js/account-http.js';
 import { mountAccount } from '../js/account.js';
 
-const recoveryHtml = readFileSync('pages/recuperar-senha.html', 'utf8');
+const recoveryHtml = readFileSync('pages/reset-password.html', 'utf8');
 const accountHtml = readFileSync('pages/account.html', 'utf8');
 
 describe('password-flows: recuperação pública e troca autenticada', () => {
@@ -33,9 +33,9 @@ describe('password-flows: recuperação pública e troca autenticada', () => {
 
         const replaceState2 = vi.fn();
         expect(extractUrlToken('token', {
-            pathname: '/pages/recuperar-senha.html', search: '?token=reset-xyz', hash: ''
+            pathname: '/pages/reset-password.html', search: '?token=reset-xyz', hash: ''
         }, { replaceState: replaceState2 })).toBe('reset-xyz');
-        expect(replaceState2).toHaveBeenCalledWith(null, '', '/pages/recuperar-senha.html');
+        expect(replaceState2).toHaveBeenCalledWith(null, '', '/pages/reset-password.html');
     });
 
     // Solicita recuperação em POST /api/auth/forgot-password com mensagem uniforme sem enumeração.
@@ -61,8 +61,8 @@ describe('password-flows: recuperação pública e troca autenticada', () => {
         await expect(client.requestForgotPassword('b@c.com')).rejects.toMatchObject({ status: 400 });
     });
 
-    // Redefine senha em recuperar-senha.html via POST /api/auth/reset-password e redireciona para login.html?reset=true.
-    it('conclui POST /api/auth/reset-password em recuperar-senha.html e redireciona para login.html?reset=true', async () => {
+    // Redefine senha em reset-password.html via POST /api/auth/reset-password e redireciona para login.html?reset=true.
+    it('conclui POST /api/auth/reset-password em reset-password.html e redireciona para login.html?reset=true', async () => {
         document.body.innerHTML = recoveryHtml.match(/<body>([\s\S]*)<\/body>/i)[1];
         const fetcher = vi.fn().mockResolvedValueOnce(new Response('Password reset successfully.', { status: 200 }));
         const navigate = vi.fn();
@@ -71,14 +71,14 @@ describe('password-flows: recuperação pública e troca autenticada', () => {
 
         const ctrl = initPasswordRecovery({
             doc: document,
-            locationObj: { pathname: '/pages/recuperar-senha.html', search: '?token=reset-123', hash: '' },
+            locationObj: { pathname: '/pages/reset-password.html', search: '?token=reset-123', hash: '' },
             historyObj: { replaceState },
             navigate,
             passwordClient
         });
 
         expect(ctrl.isResetMode).toBe(true);
-        expect(replaceState).toHaveBeenCalledWith(null, '', '/pages/recuperar-senha.html');
+        expect(replaceState).toHaveBeenCalledWith(null, '', '/pages/reset-password.html');
         document.getElementById('newPassword').value = 'NovaSenha@2026';
         document.getElementById('confirmNewPassword').value = 'NovaSenha@2026';
         document.getElementById('resetPasswordForm').dispatchEvent(new Event('submit', { cancelable: true }));

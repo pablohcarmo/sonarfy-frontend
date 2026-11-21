@@ -55,13 +55,13 @@ function renderFooter() {
     const footerHTML = `
         <footer>
             <div class="footer-links">
-                <a href="/pages/termos.html">Termos</a>
+                <a href="/pages/terms.html">Termos</a>
                 <span class="separator">&middot;</span>
-                <a href="/pages/privacidade.html">Privacidade</a>
+                <a href="/pages/privacy.html">Privacidade</a>
                 <span class="separator">&middot;</span>
-                <a href="/pages/regulamentos.html">Regulamentos do programa</a>
+                <a href="/pages/guidelines.html">Diretrizes</a>
                 <span class="separator">&middot;</span>
-                <a href="/pages/apoio.html">Apoie o Sonarfy</a>
+                <a href="/pages/support.html">Apoie o Sonarfy</a>
             </div>
             <div class="copyright">
                 &copy; 2026 Sonarfy. Criado por Pablo H. Carmo.

@@ -89,8 +89,8 @@ const server = http.createServer((req, res) => {
 
                 // 1. Login -> Esqueci minha senha -> forgot-password.
                 await page.goto(`${base}/pages/login.html`);
-                await page.click('a[href="recuperar-senha.html"]');
-                await page.waitForURL('**/pages/recuperar-senha.html');
+                await page.click('a[href="reset-password.html"]');
+                await page.waitForURL('**/pages/reset-password.html');
                 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
                 await page.fill('#recoveryEmail', 'ana@sonarfy.com');
                 await page.click('#btnForgotSubmit');
@@ -98,7 +98,7 @@ const server = http.createServer((req, res) => {
                 assert.equal(forgotCalls, 1);
 
                 // 2. Public reset-password via ?token=... -> redirects to login.html?reset=true.
-                await page.goto(`${base}/pages/recuperar-senha.html?token=browser-reset-tok`);
+                await page.goto(`${base}/pages/reset-password.html?token=browser-reset-tok`);
                 await page.locator('#resetPasswordForm').waitFor({ state: 'visible' });
                 assert.equal(new URL(page.url()).searchParams.has('token'), false);
                 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);

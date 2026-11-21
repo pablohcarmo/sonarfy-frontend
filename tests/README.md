@@ -125,7 +125,7 @@ npm test -- tests/password-flows.test.js
 node tests/browser/password-flows.cjs
 ```
 
-Valida `pages/recuperar-senha.html` (`POST /api/auth/forgot-password` com resposta uniforme e `POST /api/auth/reset-password` redirecionando para `login.html?reset=true`) e o fluxo autenticado em `pages/account.html` (`POST /api/users/me/password-change-request` e `PUT /api/users/me/password` via fragmento `#password-change-token=...` limpo com `replaceState` e limpeza de `sonarfy_token`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
+Valida `pages/reset-password.html` (`POST /api/auth/forgot-password` com resposta uniforme e `POST /api/auth/reset-password` redirecionando para `login.html?reset=true`) e o fluxo autenticado em `pages/account.html` (`POST /api/users/me/password-change-request` e `PUT /api/users/me/password` via fragmento `#password-change-token=...` limpo com `replaceState` e limpeza de `sonarfy_token`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
 
 ### Troca de e-mail autenticada
 
