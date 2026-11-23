@@ -59,13 +59,25 @@ describe('Logout Page (js/logout.js)', () => {
         expect(document.getElementById('logoutUserAvatar').getAttribute('src')).toBe('../assets/images/sonarfy-symbol.png');
     });
 
-    // Remove sonarfy_token from storage while strictly preserving sonarfy_theme on confirm.
-    it('calls POST /api/auth/logout, removes sonarfy_token and preserves sonarfy_theme before redirecting to login.html', async () => {
+    // Fetch profile summary via GET /api/profile/me and revoke session via POST /api/auth/logout.
+    it('loads GET /api/profile/me, calls POST /api/auth/logout, removes sonarfy_token and preserves sonarfy_theme', async () => {
         localStorage.setItem('sonarfy_token', 'token-local');
         sessionStorage.setItem('sonarfy_token', 'token-session');
         localStorage.setItem('sonarfy_theme', 'dark');
         const navigate = vi.fn();
-        const fetcher = vi.fn(async () => new Response(null, { status: 204 }));
+        const fetcher = vi.fn(async (url) => {
+            if (url === 'https://api.example.invalid/api/profile/me') {
+                return new Response(JSON.stringify({
+                    identity: {
+                        id: 1,
+                        handle: 'marina_som',
+                        displayName: 'Marina Costa',
+                        avatarUrl: null
+                    }
+                }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            }
+            return new Response(null, { status: 204 });
+        });
 
         await initLogoutPage({
             document,
@@ -75,10 +87,20 @@ describe('Logout Page (js/logout.js)', () => {
             baseUrl: 'https://api.example.invalid/api',
             fetcher
         });
+        expect(document.getElementById('logoutUserName').textContent).toBe('Marina Costa');
+        expect(document.getElementById('logoutUserHandle').textContent).toBe('@marina_som');
+
         document.getElementById('btnConfirmLogout').click();
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(fetcher).toHaveBeenCalledExactlyOnceWith('https://api.example.invalid/api/auth/logout', {
+        expect(fetcher).toHaveBeenCalledTimes(2);
+        expect(fetcher).toHaveBeenNthCalledWith(1, 'https://api.example.invalid/api/profile/me', expect.objectContaining({
+            method: 'GET',
+            credentials: 'omit',
+            cache: 'no-store',
+            headers: { Authorization: 'Bearer token-local' }
+        }));
+        expect(fetcher).toHaveBeenNthCalledWith(2, 'https://api.example.invalid/api/auth/logout', {
             method: 'POST',
             credentials: 'include',
             cache: 'no-store',
@@ -87,6 +109,62 @@ describe('Logout Page (js/logout.js)', () => {
         expect(localStorage.getItem('sonarfy_token')).toBeNull();
         expect(sessionStorage.getItem('sonarfy_token')).toBeNull();
         expect(localStorage.getItem('sonarfy_theme')).toBe('dark');
+        expect(navigate).toHaveBeenCalledWith('login.html');
+    });
+
+    // Allow logout confirmation even when GET /api/profile/me fails with 401/network error.
+    it('still allows POST /api/auth/logout when GET /api/profile/me fails', async () => {
+        localStorage.setItem('sonarfy_token', 'expired-token');
+        const navigate = vi.fn();
+        const fetcher = vi.fn(async (url) => {
+            if (url === 'https://api.example.invalid/api/profile/me') {
+                throw new Error('Network error');
+            }
+            return new Response(null, { status: 204 });
+        });
+
+        await initLogoutPage({
+            document,
+            location: { search: '' },
+            adapter: null,
+            navigate,
+            baseUrl: 'https://api.example.invalid/api',
+            fetcher
+        });
+        expect(document.getElementById('logoutUserName').textContent).toBe('Display Name');
+
+        document.getElementById('btnConfirmLogout').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(fetcher).toHaveBeenNthCalledWith(2, 'https://api.example.invalid/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            headers: { 'X-Sonarfy-CSRF': '1' }
+        });
+        expect(localStorage.getItem('sonarfy_token')).toBeNull();
+        expect(navigate).toHaveBeenCalledWith('login.html');
+    });
+
+    // Skip remote HTTP calls when ?demo=true is explicitly active.
+    it('uses demo fixtures without HTTP calls when ?demo=true is set', async () => {
+        localStorage.setItem('sonarfy_token', 'demo-token');
+        const navigate = vi.fn();
+        const fetcher = vi.fn();
+
+        await initLogoutPage({
+            document,
+            location: { search: '?demo=true' },
+            adapter: null,
+            navigate,
+            baseUrl: 'https://api.example.invalid/api',
+            fetcher
+        });
+        document.getElementById('btnConfirmLogout').click();
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(fetcher).not.toHaveBeenCalled();
+        expect(localStorage.getItem('sonarfy_token')).toBeNull();
         expect(navigate).toHaveBeenCalledWith('login.html');
     });
 
@@ -101,7 +179,8 @@ describe('Logout Page (js/logout.js)', () => {
             document,
             location: { search: '' },
             adapter: { logout: remoteLogout },
-            navigate
+            navigate,
+            fetcher: vi.fn(async () => new Response(null, { status: 401 }))
         });
 
         const btn = document.getElementById('btnConfirmLogout');
@@ -135,7 +214,8 @@ describe('Logout Page (js/logout.js)', () => {
             document,
             location: { search: '' },
             adapter: { actions: { logout: remoteLogout } },
-            navigate
+            navigate,
+            fetcher: vi.fn(async () => new Response(null, { status: 401 }))
         });
 
         document.getElementById('btnConfirmLogout').click();

@@ -22,6 +22,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 | --- | --- | --- | --- |
 | Home / Landing | `index.html` | [figma-references.md](figma-references.md#home-index) | `tests/browser/login-home-assets.cjs`, `tests/browser/shared-brand.cjs` |
 | Login | `pages/login.html` | [figma-references.md](figma-references.md#login) | `tests/login.test.js`, `tests/login-theme.test.js`, `tests/browser/login-home-assets.cjs` |
+| Logout | `pages/logout.html` | [figma-references.md](figma-references.md#logout) | `tests/logout.test.js`, `tests/auth-http.test.js`, `tests/browser/logout.cjs` |
 | Recuperação de Senha | `pages/reset-password.html` | [account-page.md](account-page.md) | `tests/password-flows.test.js`, `tests/browser/password-flows.cjs` |
 | Confirmação de Troca de E-mail | `pages/confirm-email-change.html` | [account-page.md](account-page.md) | `tests/email-change.test.js`, `tests/browser/email-change.cjs` |
 | Cadastro e Confirmação | `pages/register.html` | [figma-references.md](figma-references.md#cadastro-register), [Confirmação](figma-references.md#confirmacao-email) | `tests/register*.test.js`, `tests/validations.test.js`, `tests/browser/register.cjs`, `tests/browser/confirmation.cjs` |

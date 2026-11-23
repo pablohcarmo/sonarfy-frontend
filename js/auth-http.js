@@ -50,6 +50,26 @@ export function clearAccessToken(storages = getDefaultStorages()) {
     }
 }
 
+// Serialize refresh and logout across same-origin contexts when Web Locks is available.
+function withSessionLock(task) {
+    if (typeof navigator !== 'undefined' && typeof navigator.locks?.request === 'function') {
+        try {
+            return navigator.locks.request('sonarfy_auth_session', task);
+        } catch {}
+    }
+    return task();
+}
+
+// Notify other same-origin tabs that the session was logged out.
+function broadcastLogout() {
+    if (typeof BroadcastChannel !== 'function') return;
+    try {
+        const channel = new BroadcastChannel('sonarfy_auth');
+        channel.postMessage({ type: 'logout' });
+        channel.close();
+    } catch {}
+}
+
 // Build a normalized error with an optional HTTP status and original cause.
 function createHttpError(message, status, cause) {
     const error = new Error(message);
@@ -78,7 +98,7 @@ export function createAuthClient({
     function refreshSession() {
         if (inFlightRefresh) return inFlightRefresh;
         const url = `${resolveApiBaseUrl(baseUrl)}/auth/refresh`;
-        inFlightRefresh = (async () => {
+        inFlightRefresh = withSessionLock(async () => {
             let response;
             try {
                 response = await fetcher(url, {
@@ -119,7 +139,7 @@ export function createAuthClient({
             }
             setToken(nextToken);
             return nextToken;
-        })().finally(() => {
+        }).finally(() => {
             inFlightRefresh = null;
         });
         return inFlightRefresh;
@@ -128,20 +148,23 @@ export function createAuthClient({
     // Revoke the server-side refresh session via POST /api/auth/logout and always clear local token.
     async function logoutSession() {
         const url = `${resolveApiBaseUrl(baseUrl)}/auth/logout`;
-        try {
-            const response = await fetcher(url, {
-                method: 'POST',
-                credentials: 'include',
-                cache: 'no-store',
-                headers: { 'X-Sonarfy-CSRF': '1' }
-            });
-            return {
-                ok: response?.status === 204,
-                status: response?.status ?? 0
-            };
-        } finally {
-            clearToken();
-        }
+        return withSessionLock(async () => {
+            try {
+                const response = await fetcher(url, {
+                    method: 'POST',
+                    credentials: 'include',
+                    cache: 'no-store',
+                    headers: { 'X-Sonarfy-CSRF': '1' }
+                });
+                return {
+                    ok: response?.status === 204,
+                    status: response?.status ?? 0
+                };
+            } finally {
+                clearToken();
+                broadcastLogout();
+            }
+        });
     }
 
     // Send a Bearer-authenticated request with a single refresh-and-retry attempt on HTTP 401.
