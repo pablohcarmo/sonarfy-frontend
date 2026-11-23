@@ -9,6 +9,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 - **[Referências do Figma](figma-references.md)** — Links, nós inspecionados, tokens de tema e especificações das telas Home, Login, Cadastro, Confirmação de e-mail, Verify Account e Spotify Sync.
 - **[Perfis Sonarfy](profile-page.md)** — Perfil e relacionamentos via HTTP, contrato de `window.sonarfyProfileAdapter`, demonstração explícita, referências do Figma (`Profile Page` e `Profile Page (Friend)`), verificação e limitações.
 - **[Feed Sonarfy](feed-page.md)** — Contrato de `window.sonarfyFeedAdapter`, cache/reconciliação por aba, reutilização do shell compartilhado, referências do Figma (`Feed Page`) e verificação.
+- **[Ecos Sonarfy](ecos-page.md)** — Contrato de `window.sonarfyEcosAdapter`, limite de 50 reproduções, estados (Populated, Empty/Spotify desconectado, Skeleton Loading, Error), referências do Figma (`Ecos Page`) e verificação.
 - **[Configurações da Conta](account-page.md)** — Contrato de `window.sonarfyAccountAdapter`, edição de `@handle` com disponibilidade, autocomplete de cidade/país, Spotify, cooldowns, popups de desativação/exclusão e verificação.
 - **[Guia de Testes](../tests/README.md)** — Execução da suíte Vitest/Happy DOM (`npm test`) e dos scripts de verificação em navegador (`tests/browser/*.cjs`).
 
@@ -28,6 +29,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 | Configurações da Conta | `pages/account.html` | [account-page.md](account-page.md) | `tests/account.test.js`, `tests/browser/account.cjs` |
 | Perfil (próprio e visitante) | `pages/profile.html` | [profile-page.md](profile-page.md) | `tests/profile.test.js`, `tests/profile-http.test.js`, `tests/browser/profile.cjs`, `tests/browser/profile-states.cjs`, `tests/browser/profile-following.cjs` |
 | Feed da Comunidade | `pages/feed.html` | [feed-page.md](feed-page.md) | `tests/feed.test.js`, `tests/browser/feed.cjs` |
+| Ecos (Reproduções Spotify) | `pages/ecos.html` | [ecos-page.md](ecos-page.md) | `tests/ecos.test.js`, `tests/browser/ecos.cjs` |
 
 ---
 

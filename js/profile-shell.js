@@ -1,7 +1,7 @@
 import { icon } from './profile-icons.js';
 import { escapeHTML as e } from './profile-utils.js';
 const items = [
-    ['home', 'Home', 'feed.html'], ['search', 'Pesquisar'], ['echoes', 'Ecos'],
+    ['home', 'Home', 'feed.html'], ['search', 'Pesquisar'], ['echoes', 'Ecos', 'ecos.html'],
     ['notifications', 'Notificações'], ['profile', 'Perfil', 'profile.html'],
     ['settings', 'Configurações', 'account.html'], ['logout', 'Sair']
 ];
@@ -14,7 +14,7 @@ export function logoutRoute() {
 export function sidebar(own, routes = {}, activeItem = own ? 'profile' : null) {
     return `<nav class="profile-navigation" aria-label="Navegação principal">${items.map(([key, label, route]) => {
         const active = key === activeItem;
-        const iconKey = active && key === 'profile' ? 'activeProfile' : active && key === 'home' ? 'activeHome' : active && key === 'settings' ? 'activeSettings' : key;
+        const iconKey = active && key === 'profile' ? 'activeProfile' : active && key === 'home' ? 'activeHome' : active && key === 'echoes' ? 'activeEchoes' : active && key === 'settings' ? 'activeSettings' : key;
         const content = `${icon(iconKey)}<span>${label}</span>`;
         // Only known local routes or host-configured routes become links.
         const href = routes[key] || (key === 'logout' ? logoutRoute() : route);
