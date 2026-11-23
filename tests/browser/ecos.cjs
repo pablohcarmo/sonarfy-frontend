@@ -82,6 +82,11 @@ async function visibleFocus(page) {
                                 }
                                 return createEcosFixtures();
                             },
+                            async loadAlbumListens(spotifyId) {
+                                const { createEcosFixtures } = await import('/js/ecos-fixtures.js');
+                                const fixtures = createEcosFixtures();
+                                return { items: fixtures.listensByAlbum[spotifyId] || [], nextCursor: null, sync: fixtures.sync };
+                            },
                             async refresh() {
                                 const { createEcosFixtures } = await import('/js/ecos-fixtures.js');
                                 return createEcosFixtures();
@@ -90,12 +95,12 @@ async function visibleFocus(page) {
                     }, theme);
 
                     const prefix = `${name}-${width}-${theme}`;
-                    await page.goto(`${base}/pages/ecos.html`);
+                    await page.goto(`${base}/pages/echoes.html?demo=true`);
                     await page.locator('.eco-row').first().waitFor();
                     await page.evaluate(() => document.fonts.ready);
 
                     assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
-                    assert.equal(await page.locator('.eco-row').count(), 50);
+                    assert.equal(await page.locator('.eco-row').count(), 4);
                     assert.equal((await page.locator('.site-header').boundingBox()).height, width === 1440 ? 88 : 80);
                     assert.equal((await page.locator('.eco-row').first().boundingBox()).width, width === 1440 ? 1080 : 358);
                     assert.equal((await page.locator('.eco-cover').first().boundingBox()).width, width === 1440 ? 64 : 52);
@@ -107,9 +112,18 @@ async function visibleFocus(page) {
                     await noOverflow(page, width);
                     await page.screenshot({ path: `${output}/${prefix}-populated.png`, fullPage: false });
 
-                    // Keyboard focus & album unavailability feedback
+                    // Keyboard focus, accordion expand/collapse, lazy listen loading, absence of "♪", and album unavailability feedback
                     await page.keyboard.press('Tab');
                     await visibleFocus(page);
+                    assert.equal(await page.locator('.eco-row [data-toggle-album]').first().getAttribute('aria-expanded'), 'false');
+                    assert.equal(await page.locator('.eco-details-panel').count(), 0);
+                    assert.equal((await page.locator('#ecos-content').textContent()).includes('♪'), false);
+                    await page.locator('.eco-row [data-toggle-album]').first().focus();
+                    await page.keyboard.press('Enter');
+                    await page.locator('.eco-row .eco-tracks').first().waitFor();
+                    assert.equal(await page.locator('.eco-row [data-toggle-album]').first().getAttribute('aria-expanded'), 'true');
+                    await page.keyboard.press('Enter');
+                    assert.equal(await page.locator('.eco-row [data-toggle-album]').first().getAttribute('aria-expanded'), 'false');
                     await page.locator('.eco-rate-btn').first().click();
                     assert.match(await page.locator('#ecos-status').textContent(), /avaliação de álbum/i);
 
@@ -124,7 +138,7 @@ async function visibleFocus(page) {
                     }
 
                     // Loading skeleton + reduced-motion
-                    await page.goto(`${base}/pages/ecos.html?scenario=loading`);
+                    await page.goto(`${base}/pages/echoes.html?scenario=loading`);
                     await page.locator('.ecos-skeleton-list').waitFor();
                     assert.equal(await page.locator('.ecos-skeleton-list').getAttribute('aria-busy'), 'true');
                     assert.equal(await page.locator('.ecos-skeleton-block').first().evaluate(el => getComputedStyle(el).animationName), 'none');
@@ -133,14 +147,14 @@ async function visibleFocus(page) {
                     await page.locator('.eco-row').first().waitFor();
 
                     // Empty / Spotify Not Connected state
-                    await page.goto(`${base}/pages/ecos.html?scenario=empty`);
+                    await page.goto(`${base}/pages/echoes.html?scenario=empty`);
                     await page.locator('.ecos-empty').waitFor();
-                    assert.equal(await page.locator('.ecos-connect-cta').getAttribute('href'), 'spotify-sync.html?source=ecos');
+                    assert.equal(await page.locator('.ecos-connect-cta').getAttribute('href'), 'spotify-sync.html?source=echoes');
                     await noOverflow(page, width);
                     await page.screenshot({ path: `${output}/${prefix}-empty.png`, fullPage: false });
 
                     // Error + Retry state
-                    await page.goto(`${base}/pages/ecos.html?scenario=error`);
+                    await page.goto(`${base}/pages/echoes.html?scenario=error`);
                     await page.locator('.ecos-error-card').waitFor();
                     await noOverflow(page, width);
                     await page.locator('[data-retry]').click();

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createEcosAdapter, createEcosFixtures } from '../js/ecos-fixtures.js';
-import { ECOS_MAX_ITEMS, createEcosState, ecoTimestamp, logout, validateEcos } from '../js/ecos-state.js';
+import { createEcosState, ecoTimestamp, logout, validateEcos } from '../js/ecos-state.js';
 import { sidebar } from '../js/profile-shell.js';
 import { mountEcos } from '../js/ecos.js';
 
@@ -21,30 +21,21 @@ afterEach(() => {
 });
 
 function mount(adapter) {
-    history.replaceState(null, '', '/pages/ecos.html');
-    const html = readFileSync('pages/ecos.html', 'utf8');
+    history.replaceState(null, '', '/pages/echoes.html');
+    const html = readFileSync('pages/echoes.html', 'utf8');
     document.body.innerHTML = html.split('<body class="ecos-page">')[1].split('</body>')[0];
     mounted = mountEcos(adapter);
     return mounted;
 }
 
-describe('ecos: fixtures, cap, timestamps, and sidebar', () => {
-    it('caps validated payloads at 50 items and generates 50 demo fixtures', () => {
+describe('ecos: fixtures, validation, timestamps, and sidebar', () => {
+    it('validates grouped album summaries without fabricating missing fields', () => {
         const fixtures = createEcosFixtures();
         expect(fixtures.connected).toBe(true);
-        expect(fixtures.items).toHaveLength(ECOS_MAX_ITEMS);
-
-        const oversized = {
-            connected: true,
-            items: Array.from({ length: 65 }, (_, i) => ({
-                ...fixtures.items[0],
-                id: `eco-extra-${i}`,
-                isPlaying: i === 0
-            }))
-        };
-        const validated = validateEcos(oversized);
-        expect(validated.items).toHaveLength(50);
-        expect(validated.items[49].id).toBe('eco-extra-49');
+        expect(fixtures.items.length).toBeGreaterThan(0);
+        const validated = validateEcos(fixtures);
+        expect(validated.items[0].album.spotifyId).toBe('album-bad');
+        expect(validated.items[0].listenCount).toBe(3);
     });
 
     it('formats live playback, < 24h relative minutes/hours, and >= 24h Mês Dia dates', () => {
@@ -56,20 +47,20 @@ describe('ecos: fixtures, cap, timestamps, and sidebar', () => {
         expect(ecoTimestamp(new Date(now - 3 * 86400000).toISOString(), { now })).toBe('Nov 20');
     });
 
-    it('wires Ecos active in ecos.html and linked from other pages via shared sidebar', () => {
+    it('wires Ecos active in echoes.html and linked from other pages via shared sidebar', () => {
         document.body.innerHTML = sidebar(false, {}, 'echoes');
         const active = document.querySelector('[aria-current="page"]');
-        expect(active.getAttribute('href')).toBe('ecos.html');
+        expect(active.getAttribute('href')).toBe('echoes.html');
         expect(active.textContent).toBe('Ecos');
         expect(active.querySelector('img').getAttribute('src')).toContain('assets/icons/ecos/active-ecos.svg');
 
         document.body.innerHTML = sidebar(false, {}, 'home');
         const ecosLink = [...document.querySelectorAll('.profile-navigation a')].find(a => a.textContent === 'Ecos');
-        expect(ecosLink.getAttribute('href')).toBe('ecos.html');
+        expect(ecosLink.getAttribute('href')).toBe('echoes.html');
     });
 
     it('uses host adapter when provided and falls back to demo fixtures otherwise', async () => {
-        const host = { load: vi.fn(), refresh: vi.fn() };
+        const host = { load: vi.fn(), sync: vi.fn() };
         expect(createEcosAdapter(host)).toBe(host);
         window.sonarfyEcosAdapter = host;
         expect(createEcosAdapter()).toBe(host);
@@ -78,19 +69,21 @@ describe('ecos: fixtures, cap, timestamps, and sidebar', () => {
         const demo = createEcosAdapter(null);
         expect(demo.demo).toBe(true);
         const data = await demo.load();
-        expect(data.items).toHaveLength(50);
+        expect(data.items.length).toBe(4);
+        const listens = await demo.loadAlbumListens('album-bad');
+        expect(listens.items).toHaveLength(3);
     });
 });
 
 describe('ecos: states, concurrency lock, navigation, and logout', () => {
-    it('renders populated, not-connected, error/retry states, and enforces refresh concurrency lock', async () => {
+    it('renders populated, not-connected, error/retry states, and enforces sync concurrency lock', async () => {
         const initial = deferred();
         const refreshDeferred = deferred();
         const adapter = {
             load: vi.fn()
                 .mockImplementationOnce(() => initial.promise)
                 .mockResolvedValueOnce({ connected: false, items: [] })
-                .mockRejectedValueOnce(new Error('Falha ao sincronizar Spotify')),
+                .mockResolvedValueOnce({ connected: false, items: [] }),
             refresh: vi.fn(() => refreshDeferred.promise)
         };
 
@@ -100,8 +93,11 @@ describe('ecos: states, concurrency lock, navigation, and logout', () => {
 
         initial.resolve(createEcosFixtures());
         await app.ready;
-        expect(document.querySelectorAll('.eco-row')).toHaveLength(50);
-        expect(document.querySelector('#ecos-sync-pill').textContent).toContain('Conectado · 50 recentes');
+        expect(document.querySelectorAll('.eco-row')).toHaveLength(4);
+        expect(document.querySelector('#ecos-sync-pill').textContent).toContain('Conectado · Sincronizar');
+        expect(document.querySelector('#ecos-content').textContent).not.toContain('♪');
+        expect(document.querySelector('.eco-row [data-toggle-album]').getAttribute('aria-expanded')).toBe('false');
+        expect(document.querySelector('.eco-details-panel')).toBeNull();
 
         // Trigger concurrent refreshes; only one adapter.refresh() call should fire.
         const firstRefresh = app.store.refresh();
@@ -112,20 +108,20 @@ describe('ecos: states, concurrency lock, navigation, and logout', () => {
         await Promise.all([firstRefresh, secondRefresh]);
         expect(document.querySelector('[data-refresh]').disabled).toBe(false);
 
-        // Not connected state
+        // Not connected empty state
         await app.store.load();
         const cta = document.querySelector('.ecos-connect-cta');
         expect(cta).not.toBeNull();
-        expect(cta.getAttribute('href')).toBe('spotify-sync.html?source=ecos');
+        expect(cta.getAttribute('href')).toBe('spotify-sync.html?source=echoes');
 
-        // Error state when no cached data is present (reset via fresh state)
+        // Error state when no cached data is present
         const errorState = createEcosState({ load: vi.fn().mockRejectedValue(new Error('Erro de rede')) });
         await errorState.load();
         expect(errorState.state.status).toBe('error');
         expect(errorState.state.error).toBe('Erro de rede');
     });
 
-    it('routes album clicks to host action or shows unavailability feedback, and updates timestamps every minute', async () => {
+    it('routes album clicks to host action and updates timestamps every minute', async () => {
         vi.useFakeTimers();
         const now = new Date(2026, 10, 23, 12, 0).getTime();
         vi.setSystemTime(now);
@@ -135,13 +131,13 @@ describe('ecos: states, concurrency lock, navigation, and logout', () => {
                 connected: true,
                 items: [
                     {
-                        id: 'eco-1',
-                        album: { id: 'alb-1', title: 'Neon Horizons', artist: 'Synth Collective' },
-                        trackName: 'Midnight Drive',
-                        playedAt: new Date(now - 18 * 60000).toISOString(),
-                        isPlaying: false
+                        album: { spotifyId: 'alb-1', name: 'Neon Horizons', coverUrl: null },
+                        lastPlayedAt: new Date(now - 18 * 60000).toISOString(),
+                        listenCount: 1
                     }
-                ]
+                ],
+                nextCursor: null,
+                sync: {}
             }),
             actions: { album: onAlbum }
         };

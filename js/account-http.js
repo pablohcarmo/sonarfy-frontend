@@ -22,6 +22,7 @@ export function mapUserDto(dto, spotify = null) {
         email: dto.email,
         spotifyStatus,
         spotifyConnected: spotifyStatus === 'CONNECTED',
+        recentListensAuthorized: spotifyStatus === 'CONNECTED' && Boolean(spotify?.recentListensAuthorized),
         spotifyConnectedAt: spotify?.connectedAt ?? null
     };
 }
@@ -64,7 +65,7 @@ export function createHttpAccountAdapter({
     const spotifyClient = createSpotifyClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
     const passwordClient = createPasswordClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
     const emailChangeClient = createEmailChangeClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
-    let lastSpotify = { status: 'DISCONNECTED', connectedAt: null };
+    let lastSpotify = { status: 'DISCONNECTED', connectedAt: null, recentListensAuthorized: false };
 
     const unavailable = feature => async () => {
         throw new Error(`${feature} ainda não está disponível no backend.`);
@@ -106,9 +107,13 @@ export function createHttpAccountAdapter({
             }
             try {
                 const conn = await spotifyClient.getConnection();
-                lastSpotify = { status: conn.status, connectedAt: conn.connectedAt };
+                lastSpotify = {
+                    status: conn.status,
+                    connectedAt: conn.connectedAt,
+                    recentListensAuthorized: Boolean(conn.recentListensAuthorized)
+                };
             } catch {
-                lastSpotify = { status: 'DISCONNECTED', connectedAt: null };
+                lastSpotify = { status: 'DISCONNECTED', connectedAt: null, recentListensAuthorized: false };
             }
             return { account: mapUserDto(dto, lastSpotify) };
         },

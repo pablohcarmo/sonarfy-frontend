@@ -158,8 +158,9 @@ export function createSpotifyClient({
                 throw new Error('Resposta de conexão do Spotify inválida.');
             }
             const connectedAt = typeof payload.connectedAt === 'string' ? payload.connectedAt : null;
+            const recentListensAuthorized = status === 'CONNECTED' && payload.recentListensAuthorized === true;
             syncLocalSpotifyMarker(status, storage);
-            return { status, connectedAt, spotifyConnected: status === 'CONNECTED' };
+            return { status, connectedAt, spotifyConnected: status === 'CONNECTED', recentListensAuthorized };
         },
 
         // Disconnect the Spotify integration idempotently via DELETE /api/spotify/connection.
@@ -184,6 +185,7 @@ export function createSpotifyClient({
                 status: 'DISCONNECTED',
                 connectedAt: null,
                 spotifyConnected: false,
+                recentListensAuthorized: false,
                 message: SPOTIFY_DISCONNECT_NOTICE
             };
         }

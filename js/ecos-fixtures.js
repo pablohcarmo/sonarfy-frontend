@@ -1,69 +1,139 @@
-// Explicit local demo fixtures for Ecos; no backend endpoints or Spotify OAuth tokens are called.
-const featuredEcos = [
-    ['neon-horizons', 'Neon Horizons', 'Synth Collective', 'Midnight Drive', '#6366f1', 'NH', 0, true],
-    ['velvet-echoes', 'Velvet Echoes', 'Luna & The Waves', 'Static Rain', '#ec4899', 'VE', 18 * 60000, false],
-    ['solaris', 'Solaris', 'Aether', 'Golden Hour', '#f59e0b', 'SO', 3 * 3600000, false],
-    ['concrete-jungle', 'Concrete Jungle', 'Metro Beats', 'Subway Pulse', '#10b981', 'CJ', 9 * 3600000, false],
-    ['glass-gardens', 'Glass Gardens', 'Clara Vance', 'Morning Dew', '#3b82f6', 'GG', 2 * 86400000, false],
-    ['analog-dreams', 'Analog Dreams', 'Tape Loop', 'Cassette 84', '#8b5cf6', 'AD', 3 * 86400000, false]
-];
-
-const extraAlbums = [
-    ['Horizonte Azul', 'Marina Costa', 'Maré Alta', '#0ea5e9'],
-    ['Noite em Copacabana', 'Lucas Andrade', 'Brisa Urbana', '#14b8a6'],
-    ['Sinal Analógico', 'Rafael Mendes', 'Frequência 92', '#f97316'],
-    ['Cidade Submersa', 'Beatriz Lima', 'Luz de Néon', '#6366f1'],
-    ['Prisma Solar', 'Vento Norte', 'Espectro', '#eab308']
-];
-
-// Generate up to 50 deterministic recent Spotify plays for demonstration mode.
-export function createEcosFixtures(now = Date.now()) {
-    const items = [];
-    for (let i = 0; i < 50; i += 1) {
-        if (i < featuredEcos.length) {
-            const [id, title, artist, trackName, color, mark, offsetMs, isPlaying] = featuredEcos[i];
-            items.push({
-                id: `eco-${i + 1}`,
-                album: { id, title, artist, color, mark },
-                trackName,
-                playedAt: new Date(now - offsetMs).toISOString(),
-                isPlaying
-            });
-            continue;
-        }
-        const [title, artist, trackName, color] = extraAlbums[(i - featuredEcos.length) % extraAlbums.length];
-        const cycle = Math.floor((i - featuredEcos.length) / extraAlbums.length) + 1;
-        items.push({
-            id: `eco-${i + 1}`,
-            album: {
-                id: `demo-album-${i + 1}`,
-                title: `${title} · Vol. ${cycle}`,
-                artist,
-                color,
-                mark: title.slice(0, 2).toUpperCase()
-            },
-            trackName: `${trackName} (${cycle})`,
-            playedAt: new Date(now - (3 + i) * 86400000).toISOString(),
-            isPlaying: false
-        });
+// Explicit local demo fixtures aligned with /api/echoes/albums and /api/echoes/albums/{spotifyId}/listens.
+const demoAlbums = [
+    {
+        spotifyId: 'album-bad',
+        name: 'Bad (Remastered)',
+        artist: 'Michael Jackson',
+        color: '#6366f1',
+        mark: 'BA',
+        tracks: [
+            { id: '103', trackName: 'Bad - 2012 Remaster', durationMs: 247000, offsetMs: 18 * 60000 },
+            { id: '102', trackName: 'Smooth Criminal - 2012 Remaster', durationMs: 257000, offsetMs: 2 * 86400000 },
+            { id: '101', trackName: 'Bad - 2012 Remaster', durationMs: 247000, offsetMs: 2 * 86400000 + 300000 }
+        ]
+    },
+    {
+        spotifyId: 'album-dark-side',
+        name: 'The Dark Side of the Moon',
+        artist: 'Pink Floyd',
+        color: '#1f2937',
+        mark: 'DS',
+        tracks: [
+            { id: '203', trackName: 'Time', durationMs: 413000, offsetMs: 3 * 3600000 },
+            { id: '202', trackName: 'Money', durationMs: 382000, offsetMs: 3 * 3600000 + 420000 },
+            { id: '201', trackName: 'Breathe (In the Air)', durationMs: 169000, offsetMs: 3 * 3600000 + 840000 }
+        ]
+    },
+    {
+        spotifyId: 'album-neon',
+        name: 'Neon Horizons',
+        artist: 'Synth Collective',
+        color: '#ec4899',
+        mark: 'NH',
+        tracks: [
+            { id: '302', trackName: 'Midnight Drive', durationMs: 215000, offsetMs: 9 * 3600000 },
+            { id: '301', trackName: 'Neon Rain', durationMs: 198000, offsetMs: 9 * 3600000 + 240000 }
+        ]
+    },
+    {
+        spotifyId: 'album-solaris',
+        name: 'Solaris',
+        artist: 'Aether',
+        color: '#f59e0b',
+        mark: 'SO',
+        tracks: [
+            { id: '401', trackName: 'Golden Hour', durationMs: 224000, offsetMs: 86400000 }
+        ]
     }
+];
+
+// Generate demo album summaries and per-album listen histories matching the backend contract.
+export function createEcosFixtures(now = Date.now()) {
+    const items = demoAlbums.map(entry => ({
+        album: {
+            spotifyId: entry.spotifyId,
+            id: entry.spotifyId,
+            name: entry.name,
+            title: entry.name,
+            color: entry.color,
+            mark: entry.mark,
+            coverUrl: null
+        },
+        lastPlayedAt: new Date(now - entry.tracks[0].offsetMs).toISOString(),
+        listenCount: entry.tracks.length
+    }));
+
+    const listensByAlbum = {};
+    for (const entry of demoAlbums) {
+        listensByAlbum[entry.spotifyId] = entry.tracks.map(track => ({
+            id: track.id,
+            playedAt: new Date(now - track.offsetMs).toISOString(),
+            isPlaying: false,
+            trackName: track.trackName,
+            track: {
+                spotifyId: `track-${track.id}`,
+                name: track.trackName,
+                durationMs: track.durationMs,
+                explicit: false
+            },
+            artists: [{ spotifyId: `artist-${entry.spotifyId}`, name: entry.artist }],
+            album: {
+                spotifyId: entry.spotifyId,
+                id: entry.spotifyId,
+                name: entry.name,
+                title: entry.name,
+                coverUrl: null
+            }
+        }));
+    }
+
     return {
         connected: true,
-        items
+        connection: { status: 'CONNECTED', connectedAt: new Date(now - 7 * 86400000).toISOString(), recentListensAuthorized: true },
+        items,
+        nextCursor: null,
+        sync: { lastSucceededAt: new Date(now).toISOString(), historyStartsAt: new Date(now - 3 * 86400000).toISOString(), nextAllowedAt: null },
+        listensByAlbum
     };
 }
 
 // Resolve the host-provided adapter or fall back to explicit local demonstration fixtures.
 export function createEcosAdapter(integration = window.sonarfyEcosAdapter) {
     if (integration) return integration;
-    const wait = () => new Promise(resolve => setTimeout(resolve, 180));
-    const load = async () => {
-        await wait();
-        return structuredClone(createEcosFixtures());
-    };
+    const wait = () => new Promise(resolve => setTimeout(resolve, 120));
+    const fixtures = createEcosFixtures();
     return {
         demo: true,
-        load,
-        refresh: load
+        async load() {
+            await wait();
+            return structuredClone({
+                connected: fixtures.connected,
+                connection: fixtures.connection,
+                items: fixtures.items,
+                nextCursor: fixtures.nextCursor,
+                sync: fixtures.sync
+            });
+        },
+        async loadAlbumListens(spotifyId) {
+            await wait();
+            return structuredClone({
+                items: fixtures.listensByAlbum[spotifyId] || [],
+                nextCursor: null,
+                sync: fixtures.sync
+            });
+        },
+        async sync() {
+            await wait();
+            return {
+                fetched: 9,
+                imported: 0,
+                alreadyKnown: 9,
+                skipped: 0,
+                complete: true,
+                possibleGap: false,
+                newestPlayedAt: fixtures.items[0]?.lastPlayedAt || null,
+                syncedAt: new Date().toISOString()
+            };
+        }
     };
 }

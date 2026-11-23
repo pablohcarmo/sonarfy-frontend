@@ -1,7 +1,7 @@
 import { icon } from './profile-icons.js';
 import { escapeHTML as e } from './profile-utils.js';
 const items = [
-    ['home', 'Home', 'feed.html'], ['search', 'Pesquisar'], ['echoes', 'Ecos', 'ecos.html'],
+    ['home', 'Home', 'feed.html'], ['search', 'Pesquisar'], ['echoes', 'Ecos', 'echoes.html'],
     ['notifications', 'Notificações'], ['profile', 'Perfil', 'profile.html'],
     ['settings', 'Configurações', 'account.html'], ['logout', 'Sair']
 ];

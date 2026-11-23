@@ -153,7 +153,10 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         if (account) {
             const spotifyStatus = account.spotifyStatus || (account.spotifyConnected ? 'CONNECTED' : 'DISCONNECTED');
             const syncHref = adapter.routes?.spotifySync || 'spotify-sync.html?source=account';
-            if (spotifyStatus === 'CONNECTED') {
+            if (spotifyStatus === 'CONNECTED' && account.recentListensAuthorized === false) {
+                spotifyDesc.textContent = 'Sua conta do Spotify está conectada, mas sem permissão para escutas recentes (Ecos). Reconecte para autorizar.';
+                spotifySlot.innerHTML = `<a id="spotify-sync-link" class="account-btn-spotify" href="${e(syncHref)}">Reconectar Spotify</a>`;
+            } else if (spotifyStatus === 'CONNECTED') {
                 spotifyDesc.textContent = 'Sua conta do Spotify está conectada ao Sonarfy.';
                 spotifySlot.innerHTML = `<button id="spotify-disconnect-btn" type="button" class="account-btn-spotify"${state.pendingAction === 'spotify' ? ' disabled' : ''}>Conectado · Desconectar</button>`;
             } else if (spotifyStatus === 'REAUTHORIZATION_REQUIRED') {

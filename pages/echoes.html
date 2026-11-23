@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Ecos – Sonarfy</title>
+    <link rel="icon" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="../css/profile-dialogs.css">
+    <link rel="stylesheet" href="../css/ecos.css">
+    <script src="../js/api.js"></script>
+    <script src="../js/login-theme.js"></script>
+    <script type="module" src="../js/ecos.js"></script>
+</head>
+<body class="ecos-page">
+    <a class="skip-link" href="#ecos-main">Ir para os ecos</a>
+    <header class="site-header profile-global-header"></header>
+    <div class="profile-layout ecos-layout">
+        <aside id="profile-sidebar" class="profile-sidebar" aria-label="Menu principal"></aside>
+        <main id="ecos-main" class="profile-main ecos-main" tabindex="-1">
+            <header class="ecos-header">
+                <div class="ecos-title-group">
+                    <h1>Ecos</h1>
+                    <p>Músicas que você realmente ouviu recentemente no Spotify — o histórico acumula apenas as reproduções recentes sincronizadas pelo Sonarfy.</p>
+                </div>
+                <div id="ecos-sync-pill" class="ecos-status-pill" aria-live="polite"></div>
+            </header>
+            <p id="ecos-demo" class="profile-notice" hidden>Demonstração local · reproduções simuladas para visualização.</p>
+            <div id="ecos-banner" class="ecos-banner" hidden></div>
+            <p id="ecos-status" class="profile-status" role="status" aria-live="polite"></p>
+            <section id="ecos-content" aria-label="Reproduções recentes"></section>
+        </main>
+    </div>
+    <dialog id="profile-drawer" class="profile-drawer" aria-label="Menu principal"></dialog>
+    <footer class="site-footer profile-footer"></footer>
+</body>
+</html>
