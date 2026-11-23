@@ -5,6 +5,9 @@ Este documento reúne os links, frames e especificações visuais do Sonarfy, or
 Feed: [nós, componentes, adapter e verificação](feed-page.md), referência
 [Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862).
 
+Ecos: [nós, componentes, adapter e verificação](ecos-page.md), referência
+[Ecos Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=543-2).
+
 Configurações da Conta: [nós, componentes, adapter, modais e verificação](account-page.md), referência
 [Settings Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=427-31281).
 

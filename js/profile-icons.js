@@ -1,7 +1,7 @@
 // Original Figma SVGs are kept intact; theme variants preserve their original geometry.
 const icons = {
     activeHome: ['active-home','active-home'],
-    home: ['home-light','home-dark'], search: ['search-light','search-dark'], echoes: ['echoes-light','echoes-dark'],
+    home: ['home-light','home-dark'], search: ['search-light','search-dark'], echoes: ['echoes-light','echoes-dark'], activeEchoes: ['ecos/active-ecos','ecos/active-ecos'],
     notifications: ['notifications-light','notifications-dark'], profile: ['profile-light','profile-dark'], activeProfile: ['active-profile-light','active-profile-light'],
     settings: ['settings-light','settings-dark'], activeSettings: ['active-settings','active-settings'], logout: ['logout-light','logout-dark'], menu: ['menu-light','menu-dark'],
     edit: ['edit-light','edit-dark'], share: ['share-light','share-dark'], disc: ['disc-light','disc-dark'],
@@ -14,6 +14,6 @@ const icons = {
 };
 export function icon(name) {
     const [light, dark] = icons[name];
-    const img = (file, theme) => `<img class="${theme}" src="../assets/icons/profile/${file}.svg" alt="" aria-hidden="true">`;
+    const img = (file, theme) => `<img class="${theme}" src="../assets/icons/${file.includes('/') ? file : `profile/${file}`}.svg" alt="" aria-hidden="true">`;
     return `<span class="profile-icon" aria-hidden="true">${light === dark ? img(light, '') : img(light, 'theme-light-only') + img(dark, 'theme-dark-only')}</span>`;
 }
