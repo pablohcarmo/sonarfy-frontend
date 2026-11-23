@@ -149,7 +149,12 @@ async function visibleFocus(page) {
                     // Empty / Spotify Not Connected state
                     await page.goto(`${base}/pages/echoes.html?scenario=empty`);
                     await page.locator('.ecos-empty').waitFor();
+                    assert.equal(await page.locator('#ecos-sync-pill').textContent(), 'Desconectado');
+                    assert.equal(await page.locator('#ecos-sync-pill [data-refresh]').count(), 0);
+                    assert.equal(await page.locator('.ecos-empty-logo').getAttribute('src'), '../assets/icons/spotify-sync/spotify.svg');
+                    assert.equal(await page.locator('.ecos-cta-icon').getAttribute('src'), '../assets/icons/spotify-sync/spotify-button.svg');
                     assert.equal(await page.locator('.ecos-connect-cta').getAttribute('href'), 'spotify-sync.html?source=echoes');
+                    await loadedAssets(page);
                     await noOverflow(page, width);
                     await page.screenshot({ path: `${output}/${prefix}-empty.png`, fullPage: false });
 

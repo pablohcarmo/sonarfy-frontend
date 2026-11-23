@@ -114,7 +114,11 @@
 }
 
 .ecos-status-dot.is-disconnected {
-    background: var(--ecos-muted);
+    background: #8c8d90;
+}
+
+.ecos-status-pill.is-disconnected {
+    color: var(--ecos-muted);
 }
 
 .ecos-refresh-btn {
@@ -470,16 +474,11 @@
     text-align: center;
 }
 
-.ecos-empty-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 999px;
-    background: rgba(30, 215, 96, 0.15);
-    color: #1ed760;
-    font-size: 24px;
-    font-weight: 700;
-    display: grid;
-    place-items: center;
+.ecos-empty-logo {
+    display: block;
+    width: 64px;
+    height: 64px;
+    flex: none;
 }
 
 .ecos-empty h2,
@@ -504,7 +503,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     padding: 12px 24px;
+    border: 0;
     border-radius: 999px;
     background: #1ed760;
     color: #111214;
@@ -512,6 +513,12 @@
     line-height: 20px;
     font-weight: 700;
     text-decoration: none;
+    cursor: pointer;
+}
+
+.ecos-cta-icon {
+    display: block;
+    flex: none;
 }
 
 .ecos-connect-cta:hover {

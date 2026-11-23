@@ -110,6 +110,12 @@ describe('ecos: states, concurrency lock, navigation, and logout', () => {
 
         // Not connected empty state
         await app.store.load();
+        const pillText = document.querySelector('#ecos-sync-pill').textContent;
+        expect(pillText).toBe('Desconectado');
+        expect(pillText).not.toContain('Conectado');
+        expect(document.querySelector('#ecos-sync-pill [data-refresh]')).toBeNull();
+        expect(document.querySelector('.ecos-empty-logo').getAttribute('src')).toContain('assets/icons/spotify-sync/spotify.svg');
+        expect(document.querySelector('.ecos-cta-icon').getAttribute('src')).toContain('assets/icons/spotify-sync/spotify-button.svg');
         const cta = document.querySelector('.ecos-connect-cta');
         expect(cta).not.toBeNull();
         expect(cta.getAttribute('href')).toBe('spotify-sync.html?source=echoes');
