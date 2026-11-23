@@ -10,8 +10,10 @@ export function initSpotifySync({
     spotifyClient,
     locationObj = typeof window !== 'undefined' ? window.location : { search: '', pathname: '', hash: '' },
     historyObj = typeof window !== 'undefined' ? window.history : null,
-    manual = new URLSearchParams(locationObj.search || '').get('source') === 'account'
+    source = new URLSearchParams(locationObj.search || '').get('source'),
+    manual = source === 'account' || source === 'echoes'
 } = {}) {
+    const returnDestination = source === 'echoes' ? 'echoes.html' : 'profile.html';
     const connect = root.getElementById('spotify-connect');
     const skip = root.getElementById('spotify-skip');
     const error = root.getElementById('spotify-error');
@@ -37,6 +39,10 @@ export function initSpotifySync({
         showMessage(callbackOutcome.message, callbackOutcome.isError);
         client.getConnection().then(connection => {
             if (callbackOutcome.outcome === 'connected' && connection.status === 'CONNECTED') {
+                if (connection.recentListensAuthorized === false) {
+                    showMessage('Conta conectada, mas sem permissão para escutas recentes. Tente conectar novamente para habilitar Ecos.', true);
+                    return;
+                }
                 showMessage(callbackOutcome.message, false);
             }
         }).catch(() => {});
@@ -45,7 +51,7 @@ export function initSpotifySync({
     skip.addEventListener('click', () => {
         try {
             skipSpotifySync(storage);
-            navigate('profile.html');
+            navigate(returnDestination);
         } catch {
             showMessage('Não foi possível salvar sua preferência. Permita o armazenamento neste navegador e tente novamente.');
         }

@@ -29,7 +29,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 | Configurações da Conta | `pages/account.html` | [account-page.md](account-page.md) | `tests/account.test.js`, `tests/browser/account.cjs` |
 | Perfil (próprio e visitante) | `pages/profile.html` | [profile-page.md](profile-page.md) | `tests/profile.test.js`, `tests/profile-http.test.js`, `tests/browser/profile.cjs`, `tests/browser/profile-states.cjs`, `tests/browser/profile-following.cjs` |
 | Feed da Comunidade | `pages/feed.html` | [feed-page.md](feed-page.md) | `tests/feed.test.js`, `tests/browser/feed.cjs` |
-| Ecos (Reproduções Spotify) | `pages/ecos.html` | [ecos-page.md](ecos-page.md) | `tests/ecos.test.js`, `tests/browser/ecos.cjs` |
+| Ecos (Reproduções Spotify) | `pages/echoes.html` | [ecos-page.md](ecos-page.md) | `tests/ecos.test.js`, `tests/echoes-http.test.js`, `tests/browser/ecos.cjs` |
 
 ---
 
@@ -41,9 +41,10 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 | --- | --- | --- | --- |
 | Cadastro / Cidades | `GET /api/locations/cities?q=...` (sobrescrevível via `window.sonarfyCitySearch`) | Integrado ao contrato `CityDto` e envio de `cityId` em `POST /api/auth/register` | `docs/api/locations.md` e `docs/integrations/locations.md` |
 | Login / Sessão / Cadastro / Verify | Chamadas HTTP via `js/api.js` e `js/auth-http.js` | Integrado ao contrato base (`cityId`, `PATCH /api/auth/update-pending-email` com `{ newEmail }`, renovação single-flight via `POST /api/auth/refresh` e revogação via `POST /api/auth/logout` com cookie `HttpOnly` e `X-Sonarfy-CSRF: 1`) | `docs/api/authentication.md`, `docs/api/registration.md`, `docs/integrations/authentication.md` |
-| Conexão Spotify | `js/spotify-http.js` / `window.sonarfySpotifyOAuth` | Integrado via HTTP (`POST /api/spotify/authorization`, `GET/DELETE /api/spotify/connection` e tratamento de `?spotify=connected\|denied\|invalid_state\|error`) mantendo cooldown de 7 dias ao pular | `docs/integrations/spotify.md` |
+| Conexão Spotify | `js/spotify-http.js` / `window.sonarfySpotifyOAuth` | Integrado via HTTP (`POST /api/spotify/authorization`, `GET/DELETE /api/spotify/connection` com `recentListensAuthorized` e tratamento de `?spotify=connected\|denied\|invalid_state\|error`) mantendo cooldown de 7 dias ao pular | `docs/integrations/spotify.md` |
 | Perfil | `js/profile-http.js` / `window.sonarfyProfileAdapter` | Integrado via HTTP para identidade, edição textual (`PUT /api/profile/me`), upload/recorte de avatar (`POST /api/profile/me/avatar`), upload de capa (`POST /api/profile/me/wallpaper`) e relacionamentos (seguir/deixar de seguir); publicações pendentes; demonstração explícita em `?demo=true` | `docs/api/profiles.md`, `docs/api/profile-avatar.md`, `docs/api/profile-wallpaper.md`, `docs/api/following.md`, `docs/integrations/profile-page.md`, `docs/integrations/profile-media.md` e `docs/integrations/following.md` |
 | Feed | `window.sonarfyFeedAdapter` | Modo demonstração local (`js/feed-fixtures.js`) | Contrato de backend ainda não definido |
+| Ecos | `js/echoes-http.js` / `window.sonarfyEcosAdapter` | Integrado ao contrato HTTP (`GET /api/echoes/albums`, `GET /api/echoes/albums/{spotifyId}/listens`, `POST /api/echoes/sync`, `GET /api/spotify/connection`); modo demonstração explícito em `?demo=true`; endpoints validados localmente com mocks | `docs/api/echoes.md`, `docs/integrations/echoes.md` |
 | Configurações da Conta | `js/account-http.js` / `window.sonarfyAccountAdapter` | Integrado via HTTP para `GET/PUT /api/users/me`, `GET /api/locations/cities`, `GET/DELETE /api/spotify/connection`, recuperação/troca de senha e troca de e-mail (`POST /api/users/me/email-change-request`, `POST /api/auth/email-change-confirmation`); desativar/deletar conta ainda indisponíveis em HTTP; modo demonstração explícito em `?demo=true` | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `docs/api/locations.md`, `docs/integrations/spotify.md`, `docs/api/passwords.md`, `docs/integrations/password-change.md`, `docs/api/email-changes.md`, `docs/integrations/email-change.md` |
 
 ---

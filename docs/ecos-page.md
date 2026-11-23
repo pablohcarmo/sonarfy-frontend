@@ -1,6 +1,6 @@
 # Ecos Sonarfy
 
-Sirva a raiz do repositório e abra `pages/ecos.html`. Implementação em HTML5 semântico, CSS3 e módulos ES nativos, sem frameworks ou dependências de produção novas. O tema reutiliza `sonarfy_theme` e `js/login-theme.js`.
+Sirva a raiz do repositório e abra `pages/echoes.html` (ou `pages/echoes.html?demo=true` para modo demonstração local). Implementação em HTML5 semântico, CSS3 e módulos ES nativos, sem frameworks ou dependências de produção novas. O tema reutiliza `sonarfy_theme` e `js/login-theme.js`.
 
 ## Figma e componentes
 
@@ -16,7 +16,8 @@ Arquivo `kgOOkp9lzghCJtlBpSQtIj`, página [Ecos Page](https://www.figma.com/desi
 | Mobile / Loading (Skeleton) | `543:467` | `543:1149` |
 | Mobile / Drawer | `543:543` | `543:1225` |
 
-Metadados da página (`543:2`) e contextos de alta fidelidade (`543:3`, `543:140`, `543:220`, `543:336`, `543:543`, `543:685`, `543:822`, `543:1018`) foram recuperados via MCP.
+Metadados da página (`543:2`) e contextos de alta fidelidade (`543:3` / grupo `558:614`, `543:140`, `543:220`, `543:336` / grupo `558:701`, `543:543`, `543:685` / grupo `558:851`, `543:822`, `543:1018` / grupo `558:938`) foram recuperados via MCP, além dos screenshots de `543:3` e `543:685`.
+As linhas de reprodução não utilizam o símbolo `"♪"` e iniciam recolhidas (`aria-expanded="false"`, indicador `▸`), expandindo sob demanda (`▾`, divisor `1px` e lista de faixas alinhada à direita da capa no desktop e à largura total no mobile) sem interferir no botão independente `Avaliar`.
 Reutilizados: `css/login.css`, `js/login-theme.js`, `js/profile-shell.js` (`Header / Global`, `Sidebar / Global`, `Footer / Global`), `js/profile-dialogs.js` (contenção de foco do drawer mobile), `js/profile-icons.js`, `assets/logos/` e `assets/icons/shared/`.
 Novos SVGs extraídos localmente sem edição em `assets/icons/ecos/`:
 - `assets/icons/ecos/active-ecos.svg` (ícone ativo de Ecos na sidebar/drawer, `#27A9F5`)
@@ -24,31 +25,21 @@ Novos SVGs extraídos localmente sem edição em `assets/icons/ecos/`:
 
 Não existem URLs temporárias do Figma no runtime.
 
-## Adapter e regras de negócio
+## Adapter, integração HTTP e regras de negócio
 
-Não há contrato de API de Ecos/reproduções recentes implementado neste repositório. O host pode definir `window.sonarfyEcosAdapter` **antes** do módulo `js/ecos.js`; caso contrário, `js/ecos-fixtures.js` fornece 50 reproduções locais em modo demonstração explícito.
+Por padrão, `pages/echoes.html` usa `createHttpEchoesAdapter` (`js/echoes-http.js`) integrado ao backend (`GET /api/echoes/albums?limit=20&cursor=...`, `GET /api/echoes/albums/{spotifyId}/listens?limit=20&cursor=...`, `POST /api/echoes/sync` e `GET /api/spotify/connection`). O host ainda pode definir `window.sonarfyEcosAdapter` **antes** de `js/ecos.js`, ou usar `?demo=true` para carregar fixtures locais em `js/ecos-fixtures.js`.
 
-| Método/propriedade | Contrato proposto de frontend |
-| --- | --- |
-| `load()` | Promise de `{ connected: boolean, items: EcoItem[] }` |
-| `refresh()` | Promise de `{ connected: boolean, items: EcoItem[] }` (opcional; faz fallback para `load()`) |
-| `routes` | URLs opcionais `home`, `search`, `echoes`, `profile`, `settings`, `album`, `login` |
-| `actions` | Handlers opcionais `album(albumId)`, `search`, `notifications`, `review`, `logout` |
-
-Cada `EcoItem` contém `id`, `album: { id, title, artist, cover?, color?, mark? }`, `trackName` (ou `track`), `playedAt` (ISO 8601) e `isPlaying` (booleano).
-
-Regras implementadas em `js/ecos-state.js` e `js/ecos.js`:
-- **Limite de 50 itens**: `ECOS_MAX_ITEMS = 50`; `validateEcos` trunca listas maiores que 50 itens.
-- **Timestamps**: `"Ouvindo agora"` quando `isPlaying === true`; relativo `< 24h` em minutos (`18m`) ou horas (`3h`); e `Mês Dia` (`Nov 20`) a partir de `24h`, atualizado a cada minuto sem reconstruir controles.
-- **Estados**: **Populated** (até 50 linhas album-first com capa `64×64px` desktop / `52×52px` mobile, título, artista, `♪ Faixa ouvida: "..."`, timestamp e ação `Avaliar`), **Empty / Spotify Not Connected** (`"Conecte seu Spotify"` com link para `spotify-sync.html?source=ecos`), **Skeleton Loading** (`aria-busy="true"`, animação desligada em `prefers-reduced-motion`), e **Error + "Tentar novamente"**.
-- **Concorrência de atualização**: `createEcosState` bloqueia chamadas concorrentes de `load()` / `refresh()` enquanto uma requisição está em andamento e preserva os dados já carregados em caso de erro no refresh.
-- **Navegação de álbum e saída**: clicar na linha ou em `Avaliar` chama `actions.album(albumId)` ou navega para `routes.album`, exibindo feedback de indisponibilidade quando não há handler/página configurada. Sair remove `sonarfy_token` mesmo quando a revogação remota falha.
-- **Sidebar compartilhada**: `"Ecos"` foi conectado à rota `ecos.html` em `js/profile-shell.js`, tornando o link ativo em `feed.html`, `profile.html`, `account.html` e `ecos.html` (com `aria-current="page"` em `ecos.html`).
+- **Escopo de escutas recentes (`GET /api/spotify/connection`)**: lê `recentListensAuthorized`; quando `status === "CONNECTED"` e `recentListensAuthorized === false`, orienta a reconexão via `spotify-sync.html?source=echoes` (ou `?source=account` em Configurações).
+- **Listagem de álbuns distintos (`GET /api/echoes/albums?limit=20&cursor=<opaco>`)**: exibe um único card por `album.spotifyId` na ordem exata retornada pelo backend (`lastPlayedAt` decrescente), com `listenCount` (`1 reprodução` / `N reproduções`), sem fabricar artistas ausentes no resumo, mantendo edições distintas separadas e paginando via `nextCursor` (`Carregar mais álbuns`). Falhas de paginação preservam os cards já carregados e permitem nova tentativa. O histórico importado permanece visível mesmo quando o Spotify é desconectado ou exige reautorização.
+- **Histórico sob demanda por álbum (`GET /api/echoes/albums/{spotifyId}/listens?limit=20&cursor=<opaco>`)**: os cards iniciam recolhidos (`aria-expanded="false"`, indicador `▸`) e carregam as escutas sob demanda na primeira expansão (reutilizando o cache ao recolher e reabrir até nova invalidação), com cursor, loading, erro/retry e paginação independentes por `album.spotifyId` (`Carregar mais reproduções deste álbum`), preservando repetições da mesma faixa com `item.id` distintos, exibindo artistas, duração e horário `HH:mm`.
+- **Sincronização manual (`POST /api/echoes/sync`)**: exibe `Conectado · Sincronizar` no chip do topo, invalida a lista, os históricos carregados e todos os cursores após `200`, descarta respostas obsoletas iniciadas antes da invalidação, reinicia a listagem sem `cursor`, exibe avisos para `possibleGap === true` e `complete === false`, respeita `Retry-After` (incluindo respostas parciais `200`, `429` e `503`) e `sync.nextAllowedAt`, consulta `GET /api/spotify/connection` em `409` e exibe mensagens amigáveis em `502`/`504` sem detalhes técnicos.
+- **Regras de domínio**: Ecos exibe apenas reproduções recentes efetivamente ouvidas e importadas pelo Sonarfy (não músicas curtidas/salvas, biblioteca ou playlists), com aviso explícito de que o Spotify disponibiliza apenas reproduções recentes.
+- **Sidebar compartilhada**: `"Ecos"` aponta para `echoes.html` em `js/profile-shell.js` (`feed.html`, `profile.html`, `account.html` e `echoes.html`, com `aria-current="page"` em `echoes.html`).
 
 ## Verificação
 
 Comandos: `npm test` e `node tests/browser/ecos.cjs`.
-`npm test` aprovou **214 testes** em 22 arquivos (incluindo 7 testes em `tests/ecos.test.js`).
-O script `tests/browser/ecos.cjs` verifica Microsoft Edge e Firefox em `1440px` e `390px`, nos temas claro e escuro, cobrindo estados Populated (50 itens), Loading (`aria-busy="true"` e `prefers-reduced-motion`), Empty (`spotify-sync.html?source=ecos`), Error + Retry, drawer mobile (`296px`, contenção de foco e `Escape`), foco por teclado, carregamento de SVGs locais, ausência de overflow horizontal e remoção de `sonarfy_token` no logout.
+`npm test` aprovou **221 testes** em 23 arquivos (incluindo `tests/ecos.test.js`, `tests/echoes-http.test.js` e `tests/spotify-http.test.js`).
+O script `tests/browser/ecos.cjs` verifica Microsoft Edge e Firefox em `1440px` e `390px`, nos temas claro e escuro, cobrindo estados Populated (álbuns agrupados, recolhidos por padrão e expansão sob demanda por teclado), Loading (`aria-busy="true"` e `prefers-reduced-motion`), Empty (`spotify-sync.html?source=echoes`), Error + Retry, drawer mobile (`296px`, contenção de foco e `Escape`), foco visível, carregamento de SVGs locais, ausência de overflow horizontal e remoção de `sonarfy_token` no logout.
 
 Capturas e relatório JSON ficam em `test-results/ecos/`, ignorados pelo Git. Mobile utiliza viewport emulado em navegador headless; dados e estados são simulados via fixtures/adapter de teste e não comprovam integração real com backend ou API do Spotify.

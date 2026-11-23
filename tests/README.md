@@ -58,7 +58,7 @@ resenha de 255 pontos de código, retry e logout. Relatórios/capturas:
 
 ### Ecos
 
-`npm test` inclui `tests/ecos.test.js` em Vitest + Happy DOM.
+`npm test` inclui `tests/ecos.test.js` e `tests/echoes-http.test.js` em Vitest + Happy DOM.
 `node tests/browser/ecos.cjs` inicia seu próprio servidor e verifica Ecos no Edge
 e Firefox, em 1440/390px e claro/escuro, incluindo drawer (`296px`, contenção de foco
 e `Escape`), foco visível, carregamento de SVGs, ausência de overflow horizontal,

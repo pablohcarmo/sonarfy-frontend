@@ -63,8 +63,9 @@ describe('spotify-http: OAuth authorization, connection, disconnect e callback',
     // Consulta GET /api/spotify/connection para CONNECTED, REAUTHORIZATION_REQUIRED e DISCONNECTED e executa DELETE.
     it('consulta status da conexão e desconecta via DELETE /api/spotify/connection (204)', async () => {
         const fetcher = vi.fn()
-            .mockResolvedValueOnce(json({ status: 'CONNECTED', connectedAt: '2026-11-10T03:00:00Z' }))
-            .mockResolvedValueOnce(json({ status: 'REAUTHORIZATION_REQUIRED', connectedAt: '2026-11-10T03:00:00Z' }))
+            .mockResolvedValueOnce(json({ status: 'CONNECTED', connectedAt: '2026-11-10T03:00:00Z', recentListensAuthorized: true }))
+            .mockResolvedValueOnce(json({ status: 'CONNECTED', connectedAt: '2026-11-10T03:00:00Z', recentListensAuthorized: false }))
+            .mockResolvedValueOnce(json({ status: 'REAUTHORIZATION_REQUIRED', connectedAt: '2026-11-10T03:00:00Z', recentListensAuthorized: false }))
             .mockResolvedValueOnce(new Response(null, { status: 204 }));
         const client = createSpotifyClient({
             baseUrl: 'https://api.example.invalid/api',
@@ -73,17 +74,35 @@ describe('spotify-http: OAuth authorization, connection, disconnect e callback',
         });
 
         const connected = await client.getConnection();
-        expect(connected).toEqual({ status: 'CONNECTED', connectedAt: '2026-11-10T03:00:00Z', spotifyConnected: true });
+        expect(connected).toEqual({
+            status: 'CONNECTED',
+            connectedAt: '2026-11-10T03:00:00Z',
+            spotifyConnected: true,
+            recentListensAuthorized: true
+        });
         expect(localStorage.getItem(SPOTIFY_SYNCED_KEY)).toBe('true');
 
+        const legacyConnected = await client.getConnection();
+        expect(legacyConnected).toEqual({
+            status: 'CONNECTED',
+            connectedAt: '2026-11-10T03:00:00Z',
+            spotifyConnected: true,
+            recentListensAuthorized: false
+        });
+
         const reauth = await client.getConnection();
-        expect(reauth).toEqual({ status: 'REAUTHORIZATION_REQUIRED', connectedAt: '2026-11-10T03:00:00Z', spotifyConnected: false });
+        expect(reauth).toEqual({
+            status: 'REAUTHORIZATION_REQUIRED',
+            connectedAt: '2026-11-10T03:00:00Z',
+            spotifyConnected: false,
+            recentListensAuthorized: false
+        });
         expect(localStorage.getItem(SPOTIFY_SYNCED_KEY)).toBeNull();
 
         const disconnected = await client.disconnectConnection();
-        expect(disconnected).toMatchObject({ status: 'DISCONNECTED', spotifyConnected: false, message: SPOTIFY_DISCONNECT_NOTICE });
-        expect(fetcher.mock.calls[2][0]).toBe('https://api.example.invalid/api/spotify/connection');
-        expect(fetcher.mock.calls[2][1].method).toBe('DELETE');
+        expect(disconnected).toMatchObject({ status: 'DISCONNECTED', spotifyConnected: false, recentListensAuthorized: false, message: SPOTIFY_DISCONNECT_NOTICE });
+        expect(fetcher.mock.calls[3][0]).toBe('https://api.example.invalid/api/spotify/connection');
+        expect(fetcher.mock.calls[3][1].method).toBe('DELETE');
     });
 
     // Lê todos os desfechos de ?spotify= e limpa o parâmetro da barra de endereços via replaceState.
@@ -150,7 +169,7 @@ describe('spotify-http: OAuth authorization, connection, disconnect e callback',
 
         const fetcher2 = vi.fn()
             .mockResolvedValueOnce(json(user))
-            .mockResolvedValueOnce(json({ status: 'CONNECTED', connectedAt: '2026-11-10T03:00:00Z' }))
+            .mockResolvedValueOnce(json({ status: 'CONNECTED', connectedAt: '2026-11-10T03:00:00Z', recentListensAuthorized: true }))
             .mockResolvedValueOnce(new Response(null, { status: 204 }));
         const adapter2 = createHttpAccountAdapter({ baseUrl: 'https://api.example.invalid/api', fetcher: fetcher2, getToken: () => 'tok' });
         const app2 = mountAccount(adapter2);
