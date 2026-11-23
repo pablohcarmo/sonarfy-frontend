@@ -334,20 +334,23 @@ Estrutura, tokens e assets verificados nos frames:
 - Badge superior (`64 × 64px`, raio `16px`, `#f7f8fa` / `#2a2a2a`, sem borda) com ícone de sair `16 × 18px` (`assets/icons/profile/logout-light.svg` e `logout-dark.svg`, correspondentes aos SVGs `a77f5.svg` e `80a72.svg` do MCP).
 - Cópia oficial: título `Sair da sua conta?` (`32px/38px` desktop, `28px/34px` mobile, Bold), descrição `Você será desconectado do Sonarfy neste navegador. Você poderá entrar novamente a qualquer momento para acessar seu perfil e suas avaliações.` (`15px/24px`), resumo de conta conectada (`padding: 12px 16px`, `gap: 12px`, raio `8px`, avatar `44 × 44px` via `assets/icons/profile/avatar.svg`) e botões `Confirmar e sair` (`#27a9f5`, `15px/20px`, altura `48px`) e `Cancelar e voltar` (borda `1px #8c8d90`, `14px/20px`, altura `48px`).
 
-### Contrato do adapter (`window.sonarfyLogoutAdapter`) e modo demonstração
+### Integração HTTP, adapter (`window.sonarfyLogoutAdapter`) e modo demonstração
 
-Sem backend acoplado, `js/logout.js` opera em modo demonstração usando os dados locais de `js/profile-fixtures.js` (`Display Name`, `@username_123456`, `assets/icons/profile/avatar.svg`). Um host pode injetar `window.sonarfyLogoutAdapter` com:
+Em operação padrão, `js/logout.js` integra diretamente com o backend:
 
-- `user` ou `getUser()`: objeto ou função assíncrona retornando `{ displayName, handle, avatar }`.
-- `logout()` ou `actions.logout()`: função assíncrona opcional para revogação remota de sessão; o botão `"Confirmar e sair"` bloqueia cliques concorrentes enquanto aguarda a promessa e sempre remove `sonarfy_token` (preservando `sonarfy_theme`) antes de redirecionar para `pages/login.html`, mesmo em caso de falha remota.
-- `routes.login` e `routes.fallback`: rotas relativas opcionais (padrão `login.html` e `feed.html`). O parâmetro de query `from` é validado para aceitar apenas rotas internas relativas sob `/pages/` (bloqueando URLs externas, `//`, `javascript:` e loop para `logout.html`).
+- Quando há `sonarfy_token` armazenado (e `?demo=true` não está ativo), `resolveLogoutUser` consulta `GET /api/profile/me` via `createAuthClient().authorizedFetch` (sem redirecionar em falha, para nunca bloquear o encerramento de sessão) e exibe `identity.displayName`, `@${identity.handle}` e `identity.avatarUrl` (com fallback para `assets/icons/profile/avatar.svg`).
+- Ao confirmar `"Confirmar e sair"`, `js/logout.js` bloqueia cliques concorrentes e chama `logoutSession()` (`js/auth-http.js`), que envia `POST /api/auth/logout` com `credentials: 'include'`, `cache: 'no-store'` e `X-Sonarfy-CSRF: 1` (serializado por `navigator.locks` quando disponível), notifica outras abas via `BroadcastChannel('sonarfy_auth')` e sempre remove `sonarfy_token` (preservando `sonarfy_theme`) no `finally` antes de redirecionar para `pages/login.html`, mesmo em caso de falha remota.
+- Em `?demo=true` ou quando um host injeta `window.sonarfyLogoutAdapter`, `js/logout.js` aceita:
+  - `user` ou `getUser()`: objeto ou função assíncrona retornando `{ displayName, handle, avatar }` (ou usa `js/profile-fixtures.js` em modo demonstração).
+  - `logout()` ou `actions.logout()`: função assíncrona opcional para revogação remota de sessão.
+  - `routes.login` e `routes.fallback`: rotas relativas opcionais (padrão `login.html` e `feed.html`). O parâmetro de query `from` é validado para aceitar apenas rotas internas relativas sob `/pages/` (bloqueando URLs externas, `//`, `javascript:` e loop para `logout.html`).
 - A sidebar compartilhada (`js/profile-shell.js`) direciona o item `"Sair"` para `logout.html?from=<página atual>`.
 
 ### Verificação
 
-- Suíte unitária (`npm test`, incluindo `tests/logout.test.js`): 13 arquivos, 143 testes aprovados em Vitest + Happy DOM.
-- Verificação de navegador (`node tests/browser/logout.cjs`): 8 combinações aprovadas no Microsoft Edge `157.0.4341.60` e Firefox `153.0`, em `1440px` e `390px`, nos temas claro e escuro, validando dimensões do card (`480px`/`342px`), badge `64 × 64px`, header `88px`/`80px`, zero overflow horizontal, foco por teclado, carregamento de SVGs e fluxos de cancelar/confirmar.
-- Limitações: mobile verificado por viewport emulado em navegador headless; revogação remota e dados do usuário usam adapter simulado/fixtures locais.
+- Suíte unitária (`npm test`, incluindo `tests/logout.test.js` e `tests/auth-http.test.js`): 24 arquivos, 229 testes aprovados em Vitest + Happy DOM.
+- Verificação de navegador (`node tests/browser/logout.cjs`): 8 combinações aprovadas no Microsoft Edge e Firefox, em `1440px` e `390px`, nos temas claro e escuro, validando dimensões do card (`480px`/`342px`), badge `64 × 64px`, header `88px`/`80px`, zero overflow horizontal, foco por teclado, carregamento de SVGs, preenchimento via `GET /api/profile/me` e confirmação via `POST /api/auth/logout`.
+- Limitações: mobile verificado por viewport emulado em navegador headless; respostas de `GET /api/profile/me` e `POST /api/auth/logout` nos testes automatizados são simuladas por mocks/rotas interceptadas.
 
 <a id="profile-http"></a>
 ## Perfil — integração HTTP de relacionamentos (20/11/2026)

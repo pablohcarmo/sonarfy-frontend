@@ -1,5 +1,5 @@
 import { createFixtures } from './profile-fixtures.js';
-import { clearAccessToken, logoutSession } from './auth-http.js';
+import { clearAccessToken, createAuthClient, getAccessToken, logoutSession, setAccessToken } from './auth-http.js';
 
 const DEFAULT_AVATAR = '../assets/icons/profile/avatar.svg';
 const INTERNAL_BASE = 'https://sonarfy.local/pages/';
@@ -52,15 +52,53 @@ function getDefaultStorages() {
     return list;
 }
 
-// Resolve the active user summary from the host adapter or local demo fixtures.
-export async function resolveLogoutUser(adapter = globalThis.sonarfyLogoutAdapter) {
+function readStoredToken(storages) {
+    for (const storage of storages) {
+        const token = getAccessToken(storage);
+        if (typeof token === 'string' && token.trim()) return token.trim();
+    }
+    return null;
+}
+
+function isDemoSearch(search = '') {
+    return new URLSearchParams(search).get('demo') === 'true';
+}
+
+// Resolve the active user summary from the host adapter, GET /api/profile/me, or demo fixtures.
+export async function resolveLogoutUser(adapter = globalThis.sonarfyLogoutAdapter, options = {}) {
     const fallbackProfile = createFixtures().profile;
+    const storages = options.storages || getDefaultStorages();
+    const search = options.location?.search ?? (typeof location !== 'undefined' ? location.search : '');
     let source = null;
     try {
         if (typeof adapter?.getUser === 'function') {
             source = await adapter.getUser();
         } else if (adapter?.user && typeof adapter.user === 'object') {
             source = adapter.user;
+        } else if (!isDemoSearch(search) && readStoredToken(storages)) {
+            const client = createAuthClient({
+                baseUrl: options.baseUrl,
+                fetcher: options.fetcher,
+                getToken: () => readStoredToken(storages),
+                setToken: token => setAccessToken(token, storages[0]),
+                clearToken: () => clearSessionToken(storages),
+                expire: () => {}
+            });
+            const { response } = await client.authorizedFetch('/profile/me', {
+                method: 'GET',
+                credentials: 'omit',
+                cache: 'no-store'
+            });
+            if (response?.status === 200) {
+                const dto = await response.json();
+                if (dto?.identity && typeof dto.identity === 'object') {
+                    source = {
+                        displayName: dto.identity.displayName,
+                        handle: dto.identity.handle,
+                        avatar: dto.identity.avatarUrl
+                    };
+                }
+            }
         }
     } catch {
         source = null;
@@ -94,7 +132,12 @@ export async function initLogoutPage(options = {}) {
         });
     });
 
-    const user = await resolveLogoutUser(adapter);
+    const user = await resolveLogoutUser(adapter, {
+        baseUrl: options.baseUrl,
+        fetcher: options.fetcher,
+        location: loc,
+        storages
+    });
     const avatarEl = doc.getElementById('logoutUserAvatar');
     const nameEl = doc.getElementById('logoutUserName');
     const handleEl = doc.getElementById('logoutUserHandle');
@@ -123,13 +166,15 @@ export async function initLogoutPage(options = {}) {
             ? adapter.logout
             : typeof adapter?.actions?.logout === 'function'
                 ? adapter.actions.logout
-                : () => logoutSession({
-                    baseUrl: options.baseUrl,
-                    fetcher: options.fetcher,
-                    clearToken: () => clearSessionToken(storages)
-                });
+                : isDemoSearch(loc.search || '')
+                    ? null
+                    : () => logoutSession({
+                        baseUrl: options.baseUrl,
+                        fetcher: options.fetcher,
+                        clearToken: () => clearSessionToken(storages)
+                    });
         try {
-            await remoteLogout();
+            if (remoteLogout) await remoteLogout();
         } catch {
             // Local session cleanup and redirect still proceed if remote revocation fails.
         } finally {

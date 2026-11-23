@@ -111,8 +111,40 @@ function startServer(root = process.cwd()) {
                         await page.locator('#btnCancelLogout').click();
                         await page.waitForURL('**/pages/profile.html');
 
-                        // Return to logout page and verify confirm calls POST /api/auth/logout and clears token while preserving theme.
+                        // Return to logout page and verify GET /api/profile/me + POST /api/auth/logout and token cleanup.
                         let logoutCalls = 0;
+                        let profileCalls = 0;
+                        await context.route('**/api/profile/me', async route => {
+                            const req = route.request();
+                            if (req.method() === 'OPTIONS') {
+                                return route.fulfill({
+                                    status: 200,
+                                    headers: {
+                                        'Access-Control-Allow-Origin': baseUrl,
+                                        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                                        'Access-Control-Allow-Headers': 'Authorization'
+                                    }
+                                });
+                            }
+                            assert.equal(req.method(), 'GET');
+                            assert.equal(req.headers().authorization, 'Bearer browser-demo-token');
+                            profileCalls += 1;
+                            await route.fulfill({
+                                status: 200,
+                                headers: {
+                                    'Access-Control-Allow-Origin': baseUrl,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    identity: {
+                                        id: 1,
+                                        handle: 'marina_som',
+                                        displayName: 'Marina Costa',
+                                        avatarUrl: null
+                                    }
+                                })
+                            });
+                        });
                         await context.route('**/api/auth/logout', async route => {
                             const req = route.request();
                             if (req.method() === 'OPTIONS') {
@@ -137,8 +169,11 @@ function startServer(root = process.cwd()) {
                                 }
                             });
                         });
-                        await page.goto(`${baseUrl}/pages/logout.html?from=https://evil.com`);
                         await page.evaluate(() => localStorage.setItem('sonarfy_token', 'browser-demo-token'));
+                        await page.goto(`${baseUrl}/pages/logout.html?from=https://evil.com`);
+                        assert.equal(profileCalls, 1);
+                        assert.equal(await page.locator('#logoutUserName').textContent(), 'Marina Costa');
+                        assert.equal(await page.locator('#logoutUserHandle').textContent(), '@marina_som');
                         assert.equal(await page.locator('#btnCancelLogout').getAttribute('href'), 'feed.html');
                         await page.locator('#btnConfirmLogout').click();
                         await page.waitForURL('**/pages/login.html');
