@@ -35,6 +35,10 @@ export function validateEcos(data) {
         if (!spotifyId || !name || !Number.isFinite(new Date(lastPlayedAt).getTime()) || !Number.isInteger(listenCount) || listenCount < 0) {
             throw new Error('Álbum inválido.');
         }
+        const rated = item?.rated === true;
+        const hasReviewId = (typeof item?.reviewId === 'number' && Number.isFinite(item.reviewId))
+            || (typeof item?.reviewId === 'string' && item.reviewId.trim() !== '');
+        const reviewId = rated && hasReviewId ? item.reviewId : null;
         return {
             album: {
                 ...item.album,
@@ -47,7 +51,9 @@ export function validateEcos(data) {
             },
             lastPlayedAt: String(lastPlayedAt),
             listenCount,
-            isPlaying: Boolean(item.isPlaying)
+            isPlaying: Boolean(item.isPlaying),
+            rated,
+            reviewId
         };
     });
 
@@ -303,6 +309,31 @@ export function createEcosState(adapter) {
         }
     }
 
+    // Revalidate album summary state (e.g. rated/reviewId after returning from review) without triggering Spotify sync.
+    async function revalidate() {
+        if (!state.data) return loadInitial();
+        if (state.status === 'loading' || state.refreshing) return;
+        const reqGen = ++generation;
+        try {
+            const payload = validateEcos(await adapter.load());
+            if (reqGen !== generation) return;
+            const freshById = new Map(payload.items.map(item => [item.album.spotifyId, item]));
+            const prevExtra = state.data.items.slice(payload.items.length).filter(item => !freshById.has(item.album.spotifyId));
+            state.data = {
+                ...structuredClone(payload),
+                items: [...structuredClone(payload.items), ...structuredClone(prevExtra)],
+                nextCursor: prevExtra.length ? state.data.nextCursor : payload.nextCursor
+            };
+            state.cooldownUntil = Math.max(state.cooldownUntil, resolveCooldownUntil(payload.sync, null));
+            state.status = 'ready';
+            emit();
+        } catch (error) {
+            if (reqGen !== generation) return;
+            state.error = error.message || 'Não foi possível atualizar o estado dos álbuns.';
+            emit();
+        }
+    }
+
     return {
         state,
         subscribe(fn) {
@@ -313,6 +344,7 @@ export function createEcosState(adapter) {
         loadMore,
         toggleAlbum,
         loadAlbumListens,
+        revalidate,
         sync: syncNow,
         refresh: syncNow
     };

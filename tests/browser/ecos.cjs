@@ -124,8 +124,14 @@ async function visibleFocus(page) {
                     assert.equal(await page.locator('.eco-row [data-toggle-album]').first().getAttribute('aria-expanded'), 'true');
                     await page.keyboard.press('Enter');
                     assert.equal(await page.locator('.eco-row [data-toggle-album]').first().getAttribute('aria-expanded'), 'false');
+                    assert.equal(await page.locator('.eco-row[data-album-id="album-bad"] .eco-rate-label').textContent(), 'Avaliar');
+                    assert.equal(await page.locator('.eco-row[data-album-id="album-solaris"] .eco-rate-label').textContent(), 'Avaliado');
+                    assert.equal(await page.locator('.eco-row[data-album-id="album-solaris"] .eco-rate-btn').evaluate(el => el.classList.contains('is-rated')), true);
                     await page.locator('.eco-rate-btn').first().click();
-                    assert.match(await page.locator('#ecos-status').textContent(), /avaliação de álbum/i);
+                    await page.waitForURL(/\/pages\/album-review\.html\?/);
+                    assert.match(page.url(), /id=album-bad/);
+                    await page.goBack();
+                    await page.waitForSelector('.eco-row');
 
                     // Mobile drawer focus containment and Escape
                     if (width === 390) {

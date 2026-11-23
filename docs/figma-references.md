@@ -8,6 +8,9 @@ Feed: [nós, componentes, adapter e verificação](feed-page.md), referência
 Ecos: [nós, componentes, adapter e verificação](ecos-page.md), referência
 [Ecos Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=543-2).
 
+Avaliar Álbum: [nós, componentes, adapter e verificação](album-review-page.md), referência
+[Avaliar Álbum Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=573-150).
+
 Configurações da Conta: [nós, componentes, adapter, modais e verificação](account-page.md), referência
 [Settings Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=427-31281).
 

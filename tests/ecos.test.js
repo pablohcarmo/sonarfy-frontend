@@ -167,4 +167,62 @@ describe('ecos: states, concurrency lock, navigation, and logout', () => {
         expect(localStorage.getItem('sonarfy_token')).toBeNull();
         expect(navigate).toHaveBeenCalledWith('login.html');
     });
+
+    it('preserves rated/reviewId, renders Avaliar vs Avaliado, and revalidates on pageshow without sync', async () => {
+        const validated = validateEcos({
+            connected: true,
+            items: [
+                { album: { spotifyId: 'a1', name: 'Album One' }, lastPlayedAt: '2026-11-23T12:00:00Z', listenCount: 1, rated: true, reviewId: 42 },
+                { album: { spotifyId: 'a2', name: 'Album Two' }, lastPlayedAt: '2026-11-23T11:00:00Z', listenCount: 2 }
+            ]
+        });
+        expect(validated.items[0]).toMatchObject({ rated: true, reviewId: 42 });
+        expect(validated.items[1]).toMatchObject({ rated: false, reviewId: null });
+
+        const syncSpy = vi.fn();
+        const onAlbum = vi.fn();
+        let phase = 'initial';
+        const loadSpy = vi.fn(async () => ({
+            connected: true,
+            items: [
+                {
+                    album: { spotifyId: 'alb-1', name: 'Neon Horizons', coverUrl: null },
+                    lastPlayedAt: '2026-11-23T12:00:00Z',
+                    listenCount: 1,
+                    rated: phase === 'published' || phase === 'edited',
+                    reviewId: phase === 'published' || phase === 'edited' ? 77 : null
+                }
+            ],
+            nextCursor: null,
+            sync: {}
+        }));
+
+        const app = mount({ load: loadSpy, sync: syncSpy, actions: { album: onAlbum } });
+        await app.ready;
+        expect(document.querySelector('.eco-rate-label').textContent).toBe('Avaliar');
+        expect(document.querySelector('.eco-rate-btn').classList.contains('is-rated')).toBe(false);
+
+        phase = 'published';
+        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+        await vi.waitFor(() => {
+            expect(document.querySelector('.eco-rate-label').textContent).toBe('Avaliado');
+        });
+        expect(document.querySelector('.eco-rate-btn').classList.contains('is-rated')).toBe(true);
+        expect(document.querySelector('.eco-rate-btn').getAttribute('aria-label')).toBe('Editar avaliação de Neon Horizons');
+        expect(syncSpy).not.toHaveBeenCalled();
+
+        document.querySelector('.eco-rate-btn').click();
+        expect(onAlbum).toHaveBeenCalledWith('alb-1');
+
+        phase = 'deleted';
+        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+        await vi.waitFor(() => {
+            expect(document.querySelector('.eco-rate-label').textContent).toBe('Avaliar');
+        });
+
+        app.destroy();
+        const callsBeforeDestroy = loadSpy.mock.calls.length;
+        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+        expect(loadSpy).toHaveBeenCalledTimes(callsBeforeDestroy);
+    });
 });

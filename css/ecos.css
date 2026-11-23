@@ -400,6 +400,17 @@
     color: var(--accent-color);
 }
 
+.eco-rate-btn.is-rated {
+    background: var(--ecos-pill-bg);
+    border-color: var(--ecos-border);
+    color: var(--ecos-muted);
+}
+
+.eco-rate-btn.is-rated:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
 .eco-rate-chevron {
     display: none;
 }

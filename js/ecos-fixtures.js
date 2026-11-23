@@ -41,6 +41,8 @@ const demoAlbums = [
         artist: 'Aether',
         color: '#f59e0b',
         mark: 'SO',
+        rated: true,
+        reviewId: 42,
         tracks: [
             { id: '401', trackName: 'Golden Hour', durationMs: 224000, offsetMs: 86400000 }
         ]
@@ -60,7 +62,9 @@ export function createEcosFixtures(now = Date.now()) {
             coverUrl: null
         },
         lastPlayedAt: new Date(now - entry.tracks[0].offsetMs).toISOString(),
-        listenCount: entry.tracks.length
+        listenCount: entry.tracks.length,
+        rated: Boolean(entry.rated),
+        reviewId: entry.rated ? entry.reviewId ?? null : null
     }));
 
     const listensByAlbum = {};
@@ -104,6 +108,15 @@ export function createEcosAdapter(integration = window.sonarfyEcosAdapter) {
     const fixtures = createEcosFixtures();
     return {
         demo: true,
+        routes: {
+            home: 'feed.html?demo=true',
+            echoes: 'echoes.html?demo=true',
+            profile: 'profile.html?demo=true',
+            settings: 'account.html?demo=true',
+            album: 'album-review.html?demo=true',
+            login: 'login.html',
+            spotifySync: 'spotify-sync.html?source=echoes'
+        },
         async load() {
             await wait();
             return structuredClone({

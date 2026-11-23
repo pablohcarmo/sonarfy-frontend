@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
-    <title>Ecos – Sonarfy</title>
+    <title>Avaliar Álbum – Sonarfy</title>
     <link rel="icon" href="../assets/images/sonarfy-symbol.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,31 +12,24 @@
     <link rel="stylesheet" href="../css/login.css">
     <link rel="stylesheet" href="../css/profile.css">
     <link rel="stylesheet" href="../css/profile-dialogs.css">
-    <link rel="stylesheet" href="../css/ecos.css">
+    <link rel="stylesheet" href="../css/album-review.css">
     <script src="../js/api.js"></script>
     <script src="../js/login-theme.js"></script>
-    <script type="module" src="../js/ecos.js"></script>
+    <script type="module" src="../js/album-review.js"></script>
 </head>
-<body class="ecos-page">
-    <a class="skip-link" href="#ecos-main">Ir para os ecos</a>
+<body class="album-review-page">
+    <a class="skip-link" href="#album-review-main">Ir para avaliação do álbum</a>
     <header class="site-header profile-global-header"></header>
-    <div class="profile-layout ecos-layout">
+    <div class="profile-layout album-review-layout">
         <aside id="profile-sidebar" class="profile-sidebar" aria-label="Menu principal"></aside>
-        <main id="ecos-main" class="profile-main ecos-main" tabindex="-1">
-            <header class="ecos-header">
-                <div class="ecos-title-group">
-                    <h1>Ecos</h1>
-                    <p>Suas últimas 50 reproduções sincronizadas do Spotify.</p>
-                </div>
-                <div id="ecos-sync-pill" class="ecos-status-pill" aria-live="polite"></div>
-            </header>
-            <p id="ecos-demo" class="profile-notice" hidden>Demonstração local · reproduções simuladas para visualização.</p>
-            <div id="ecos-banner" class="ecos-banner" hidden></div>
-            <p id="ecos-status" class="profile-status" role="status" aria-live="polite"></p>
-            <section id="ecos-content" aria-label="Reproduções recentes"></section>
+        <main id="album-review-main" class="profile-main album-review-main" tabindex="-1">
+            <p id="album-review-demo" class="profile-notice" hidden>Demonstração local · avaliação simulada para visualização.</p>
+            <p id="album-review-status" class="profile-status" role="status" aria-live="polite"></p>
+            <section id="album-review-content" aria-label="Avaliar álbum"></section>
         </main>
     </div>
     <dialog id="profile-drawer" class="profile-drawer" aria-label="Menu principal"></dialog>
+    <dialog id="review-success-dialog" class="review-success-dialog" aria-labelledby="review-success-title"></dialog>
     <footer class="site-footer profile-footer"></footer>
 </body>
 </html>

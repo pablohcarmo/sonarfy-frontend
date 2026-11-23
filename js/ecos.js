@@ -77,8 +77,11 @@ function renderExpandedDetails(spotifyId, detail) {
 }
 
 function renderAlbumRow(item, detail) {
-    const { album, lastPlayedAt, listenCount, isPlaying } = item;
+    const { album, lastPlayedAt, listenCount, isPlaying, rated } = item;
     const isExpanded = Boolean(detail?.expanded);
+    const isRated = Boolean(rated);
+    const rateLabel = isRated ? 'Avaliado' : 'Avaliar';
+    const rateAriaLabel = isRated ? `Editar avaliação de ${album.name}` : `Avaliar ${album.name}`;
     const timeHtml = isPlaying
         ? '<span class="eco-live-badge"><img src="../assets/icons/ecos/spotify-dot.svg" width="8" height="8" alt="" aria-hidden="true"><span>Ouvindo agora</span></span>'
         : `<time class="eco-time" datetime="${e(lastPlayedAt)}">${e(ecoTimestamp(lastPlayedAt))}</time>`;
@@ -87,7 +90,7 @@ function renderAlbumRow(item, detail) {
     const artistHtml = album.artist ? `<span class="eco-artist">${e(album.artist)}</span>` : '';
     const detailsHtml = renderExpandedDetails(album.spotifyId, detail);
 
-    return `<li class="eco-row${isExpanded ? ' is-expanded' : ''}" data-album-id="${e(album.spotifyId)}"><div class="eco-row-main">${renderCover(album)}<div class="eco-info"><button type="button" class="eco-toggle" data-toggle-album="${e(album.spotifyId)}" aria-expanded="${String(isExpanded)}"><span class="eco-album">${e(album.name)}</span>${artistHtml}<span class="eco-summary">${e(countLabel)}</span></button></div><div class="eco-actions">${timeHtml}<button type="button" class="eco-rate-btn" data-album="${e(album.spotifyId)}" aria-label="Avaliar ${e(album.name)}"><span class="eco-rate-label">Avaliar</span><span class="eco-rate-chevron" aria-hidden="true">›</span></button><span class="eco-group-chevron" aria-hidden="true">${chevron}</span></div></div>${detailsHtml}</li>`;
+    return `<li class="eco-row${isExpanded ? ' is-expanded' : ''}" data-album-id="${e(album.spotifyId)}"><div class="eco-row-main">${renderCover(album)}<div class="eco-info"><button type="button" class="eco-toggle" data-toggle-album="${e(album.spotifyId)}" aria-expanded="${String(isExpanded)}"><span class="eco-album">${e(album.name)}</span>${artistHtml}<span class="eco-summary">${e(countLabel)}</span></button></div><div class="eco-actions">${timeHtml}<button type="button" class="eco-rate-btn${isRated ? ' is-rated' : ''}" data-album="${e(album.spotifyId)}" aria-label="${e(rateAriaLabel)}"><span class="eco-rate-label">${rateLabel}</span><span class="eco-rate-chevron" aria-hidden="true">›</span></button><span class="eco-group-chevron" aria-hidden="true">${chevron}</span></div></div>${detailsHtml}</li>`;
 }
 
 function renderEmpty(connection, syncUrl) {
@@ -253,7 +256,12 @@ export function mountEcos(adapter = resolveEcosAdapter()) {
         if (key === 'album') {
             if (adapter.actions?.album) return adapter.actions.album(id);
             if (adapter.routes?.album) {
-                const targetUrl = `${adapter.routes.album}${adapter.routes.album.includes('?') ? '&' : '?'}id=${encodeURIComponent(id)}`;
+                const entry = state.data?.items?.find(item => item.album?.spotifyId === id)?.album;
+                const params = new URLSearchParams({ id });
+                if (entry?.name) params.set('title', entry.name);
+                if (entry?.artist) params.set('artist', entry.artist);
+                if (entry?.coverUrl || entry?.cover) params.set('cover', entry.coverUrl || entry.cover);
+                const targetUrl = `${adapter.routes.album}${adapter.routes.album.includes('?') ? '&' : '?'}${params.toString()}`;
                 window.location.assign(targetUrl);
                 return;
             }
@@ -340,6 +348,11 @@ export function mountEcos(adapter = resolveEcosAdapter()) {
             renderPill();
         }
     }, 1000);
+
+    // Revalidate rated/reviewId state when restored from browser history/bfcache.
+    on(window, 'pageshow', event => {
+        if (event.persisted) store.revalidate();
+    });
 
     const ready = store.load();
     return {

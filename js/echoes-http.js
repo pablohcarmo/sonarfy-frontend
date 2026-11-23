@@ -44,6 +44,10 @@ function mapAlbumSummaryItem(raw) {
         throw new Error('Resposta de álbuns inválida.');
     }
     const coverUrl = typeof raw.album.coverUrl === 'string' && raw.album.coverUrl.trim() ? raw.album.coverUrl.trim() : null;
+    const rated = raw?.rated === true;
+    const hasReviewId = (typeof raw?.reviewId === 'number' && Number.isFinite(raw.reviewId))
+        || (typeof raw?.reviewId === 'string' && raw.reviewId.trim() !== '');
+    const reviewId = rated && hasReviewId ? raw.reviewId : null;
     return {
         album: {
             spotifyId,
@@ -54,7 +58,9 @@ function mapAlbumSummaryItem(raw) {
             cover: coverUrl
         },
         lastPlayedAt,
-        listenCount
+        listenCount,
+        rated,
+        reviewId
     };
 }
 
@@ -265,7 +271,8 @@ export function createHttpEchoesAdapter(options = {}) {
             profile: 'profile.html',
             settings: 'account.html',
             login: 'login.html',
-            spotifySync: 'spotify-sync.html?source=echoes'
+            spotifySync: 'spotify-sync.html?source=echoes',
+            album: 'album-review.html'
         },
         async load({ limit = 20, cursor = null } = {}) {
             if (cursor) {
