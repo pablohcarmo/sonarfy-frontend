@@ -67,6 +67,11 @@ Loading (`aria-busy="true"` e `prefers-reduced-motion`), Error + Retry e remoç�
 de credencial no logout. Relatórios/capturas: `test-results/ecos/`. Contrato e
 resultados: [Ecos](../docs/ecos-page.md).
 
+### Avaliar Álbum
+
+`npm test` inclui `tests/album-review.test.js` em Vitest + Happy DOM.
+`node tests/browser/album-review.cjs` inicia seu próprio servidor e verifica `pages/album-review.html?demo=true` no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo seleção de meia estrela (clique e teclado), contador de 255 caracteres, modal `Avaliação publicada!`, alternância `Favoritar álbum` / `Desfavoritar álbum`, drawer mobile (`296px` e `Escape`), foco visível, carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/album-review/`. Contrato e resultados: [Avaliar Álbum](../docs/album-review-page.md).
+
 Sirva a raiz do projeto:
 
 ```sh

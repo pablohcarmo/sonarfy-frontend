@@ -61,7 +61,7 @@ describe('echoes-http: distinct albums & per-album listens HTTP client', () => {
     it('calls GET /api/echoes/albums and GET /api/echoes/albums/{spotifyId}/listens with omit/no-store and never sends empty cursor', async () => {
         const fetcher = vi.fn()
             .mockResolvedValueOnce(json({
-                items: [albumSummary('alb/1', 'Bad (Remastered)', 3)],
+                items: [{ ...albumSummary('alb/1', 'Bad (Remastered)', 3), rated: true, reviewId: 42 }],
                 nextCursor: 'alb-c2',
                 sync: { lastSucceededAt: null, historyStartsAt: null, nextAllowedAt: null }
             }))
@@ -77,7 +77,7 @@ describe('echoes-http: distinct albums & per-album listens HTTP client', () => {
         const albumsPage = await client.listAlbums({ limit: 20, cursor: 'null' });
         expect(fetcher.mock.calls[0][0]).toBe('https://api.example.invalid/api/echoes/albums?limit=20');
         expect(fetcher.mock.calls[0][1]).toMatchObject({ method: 'GET', credentials: 'omit', cache: 'no-store' });
-        expect(albumsPage.items[0]).toMatchObject({ album: { spotifyId: 'alb/1', name: 'Bad (Remastered)' }, listenCount: 3 });
+        expect(albumsPage.items[0]).toMatchObject({ album: { spotifyId: 'alb/1', name: 'Bad (Remastered)' }, listenCount: 3, rated: true, reviewId: 42 });
         expect(albumsPage.nextCursor).toBe('alb-c2');
 
         const listensPage = await client.listAlbumListens('alb/1', { limit: 20, cursor: 'lis-c1' });
