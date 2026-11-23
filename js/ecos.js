@@ -92,16 +92,18 @@ function renderAlbumRow(item, detail) {
 
 function renderEmpty(connection, syncUrl) {
     const status = connection?.status || 'DISCONNECTED';
+    const logo = '<img class="ecos-empty-logo" src="../assets/icons/spotify-sync/spotify.svg" width="64" height="64" alt="" aria-hidden="true">';
+    const ctaIcon = '<img class="ecos-cta-icon" src="../assets/icons/spotify-sync/spotify-button.svg" width="24" height="23" alt="" aria-hidden="true">';
     if (status === 'CONNECTED' && !connection?.recentListensAuthorized) {
-        return `<div class="ecos-empty"><div class="ecos-empty-icon" aria-hidden="true">♫</div><h2>Autorize suas escutas recentes</h2><p>Sua conta do Spotify está conectada, mas sem permissão para escutas recentes. Reconecte para acompanhar os álbuns que você ouviu.</p><a class="ecos-connect-cta" href="${e(syncUrl)}">Reconectar Spotify</a></div>`;
+        return `<div class="ecos-empty">${logo}<h2>Autorize suas escutas recentes</h2><p>Sua conta do Spotify está conectada, mas sem permissão para escutas recentes. Reconecte para acompanhar os álbuns que você ouviu.</p><a class="ecos-connect-cta" href="${e(syncUrl)}">${ctaIcon}<span>Reconectar Spotify</span></a></div>`;
     }
     if (status === 'REAUTHORIZATION_REQUIRED') {
-        return `<div class="ecos-empty"><div class="ecos-empty-icon" aria-hidden="true">♫</div><h2>Reconecte seu Spotify</h2><p>Sua autorização do Spotify expirou. Reconecte sua conta para sincronizar suas reproduções recentes.</p><a class="ecos-connect-cta" href="${e(syncUrl)}">Reconectar Spotify</a></div>`;
+        return `<div class="ecos-empty">${logo}<h2>Reconecte seu Spotify</h2><p>Sua autorização do Spotify expirou. Reconecte sua conta para sincronizar suas reproduções recentes.</p><a class="ecos-connect-cta" href="${e(syncUrl)}">${ctaIcon}<span>Reconectar Spotify</span></a></div>`;
     }
     if (status === 'CONNECTED' && connection?.recentListensAuthorized) {
-        return `<div class="ecos-empty"><div class="ecos-empty-icon" aria-hidden="true">♫</div><h2>Nenhuma reprodução importada ainda</h2><p>Sincronize agora para importar as reproduções mais recentes disponibilizadas pelo Spotify.</p><button type="button" class="ecos-connect-cta" data-refresh>Sincronizar agora</button></div>`;
+        return `<div class="ecos-empty">${logo}<h2>Nenhuma reprodução importada ainda</h2><p>Sincronize agora para importar as reproduções mais recentes disponibilizadas pelo Spotify.</p><button type="button" class="ecos-connect-cta" data-refresh>Sincronizar agora</button></div>`;
     }
-    return `<div class="ecos-empty"><div class="ecos-empty-icon" aria-hidden="true">♫</div><h2>Conecte seu Spotify</h2><p>Conecte sua conta do Spotify para acompanhar os álbuns e reproduções recentes que você ouviu.</p><a class="ecos-connect-cta" href="${e(syncUrl)}">Conectar ao Spotify</a></div>`;
+    return `<div class="ecos-empty">${logo}<h2>Conecte seu Spotify</h2><p>Conecte sua conta do Spotify para acompanhar os álbuns e reproduções recentes que você ouviu.</p><a class="ecos-connect-cta" href="${e(syncUrl)}">${ctaIcon}<span>Conectar ao Spotify</span></a></div>`;
 }
 
 function renderError(message) {
@@ -146,7 +148,7 @@ export function mountEcos(adapter = resolveEcosAdapter()) {
         const busy = state.status === 'loading' || state.refreshing;
         const cooldown = remainingCooldownSeconds();
         const connection = state.data?.connection;
-        const connected = state.data?.connected;
+        const isDisconnected = !busy && (state.data?.connected === false || connection?.status === 'DISCONNECTED');
         const label = busy
             ? 'Sincronizando...'
             : cooldown > 0
@@ -155,16 +157,22 @@ export function mountEcos(adapter = resolveEcosAdapter()) {
                     ? 'Permissão pendente'
                     : connection?.status === 'REAUTHORIZATION_REQUIRED'
                         ? 'Reautorização necessária'
-                        : connected === false
-                            ? 'Spotify desconectado'
+                        : isDisconnected
+                            ? 'Desconectado'
                             : state.status === 'error'
                                 ? 'Erro ao sincronizar'
                                 : 'Conectado · Sincronizar';
-        const dot = connected === false || state.status === 'error'
+        const disconnectedStyle = isDisconnected || state.status === 'error' || (connection && !state.data?.connected);
+        const dot = disconnectedStyle
             ? '<span class="ecos-status-dot is-disconnected" aria-hidden="true"></span>'
             : '<span class="ecos-status-dot" aria-hidden="true"><img src="../assets/icons/ecos/spotify-dot.svg" width="8" height="8" alt=""></span>';
+        const showRefresh = !isDisconnected && connection?.status !== 'REAUTHORIZATION_REQUIRED' && !(connection?.status === 'CONNECTED' && !connection?.recentListensAuthorized);
         const disabled = busy || cooldown > 0 ? 'disabled' : '';
-        pillEl.innerHTML = `${dot}<span>${e(label)}</span><button type="button" class="ecos-refresh-btn" data-refresh aria-label="Sincronizar reproduções" ${disabled}>↻</button>`;
+        const refreshHtml = showRefresh
+            ? `<button type="button" class="ecos-refresh-btn" data-refresh aria-label="Sincronizar reproduções" ${disabled}>↻</button>`
+            : '';
+        pillEl.classList.toggle('is-disconnected', Boolean(isDisconnected));
+        pillEl.innerHTML = `${dot}<span>${e(label)}</span>${refreshHtml}`;
     }
 
     function renderBanner() {

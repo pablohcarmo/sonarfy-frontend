@@ -22,6 +22,7 @@ Reutilizados: `css/login.css`, `js/login-theme.js`, `js/profile-shell.js` (`Head
 Novos SVGs extraídos localmente sem edição em `assets/icons/ecos/`:
 - `assets/icons/ecos/active-ecos.svg` (ícone ativo de Ecos na sidebar/drawer, `#27A9F5`)
 - `assets/icons/ecos/spotify-dot.svg` (indicador `#1ED760` `8×8px` do status de sincronização e badge "Ouvindo agora")
+- Reutilizados no estado desconectado: `assets/icons/spotify-sync/spotify.svg` (`64×64px`) e `assets/icons/spotify-sync/spotify-button.svg` (`24×23px`) ao lado de `"Conectar ao Spotify"`, com chip superior exibindo `"Desconectado"` (ponto `#8c8d90`) sem contador nem botão de atualização.
 
 Não existem URLs temporárias do Figma no runtime.
 
