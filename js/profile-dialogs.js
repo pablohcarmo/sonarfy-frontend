@@ -324,6 +324,7 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
                             status('Excluindo avaliação…');
                             try {
                                 await adapter.deleteReview(item.reviewId ?? item.id);
+                                try { localStorage.setItem('sonarfy_reviews_dirty', String(Date.now())); } catch {}
                                 saving = false;
                                 dialog.close();
                                 notify('Avaliação excluída.');
@@ -400,6 +401,7 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
                         rating: draft.rating,
                         reviewText: draft.review
                     });
+                    try { localStorage.setItem('sonarfy_reviews_dirty', String(Date.now())); } catch {}
                     saving = false;
                     dialog.close();
                     notify('Avaliação atualizada com sucesso.');

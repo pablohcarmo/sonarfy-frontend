@@ -2,135 +2,78 @@
 
 Sirva a raiz e abra `pages/feed.html`. Implementação em HTML5 semântico, CSS3 e
 módulos ES nativos, sem frameworks ou dependências de produção novas.
-`tab=following|for-you` seleciona Seguindo/Para você; valores ausentes ou inválidos
-são normalizados para `following`. As trocas mantêm outros parâmetros e permitem
-Voltar/Avançar. Setas, Home e End alternam abas com foco e seleção ARIA.
 
-## Figma e componentes
+## Decisões funcionais e substituição das abas
 
-Arquivo `kgOOkp9lzghCJtlBpSQtIj`, página [Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862), consultado via Figma MCP somente para leitura em 26/10/2026.
+O feed demonstrativo dividido em abas (`Seguindo` / `Para você` com `?tab=...`) foi
+substituído por um **único feed paginado** de avaliações próprias e dos perfis
+seguidos, consumindo o contrato real do backend (`GET /api/feed`).
 
-| Referência | Claro | Escuro |
-| --- | --- | --- |
-| Desktop / Feed | `406:11863` | `406:11870` |
-| Mobile / Feed | `406:11866` | `406:11873` |
-| Desktop / Empty | `406:11864` | `406:11871` |
-| Mobile / Empty | `406:11867` | `406:11874` |
-| Desktop / Loading | `406:11865` | `406:11872` |
-| Mobile / Loading | `406:11868` | `406:11875` |
-| Mobile / Drawer | `406:11869` | `406:11876` |
+- Não há abas (`Para você`, `Seguindo`, `Seguidores`), filtros ou parâmetros de aba na URL.
+- O feed reúne avaliações próprias e de perfis seguidos (com ou sem resenha), incluindo avaliações anteriores ao seguimento.
+- Seguir alguém não gera publicação; deixar de seguir remove esse autor das próximas consultas.
+- A ordem recebida do servidor (`reviewId` decrescente) é preservada integralmente; editar nota ou texto não reposiciona o card.
+- Novas publicações são carregadas ao carregar a página ou clicar no logo do Sonarfy (reiniciando a paginação), sem inserção automática durante a navegação.
+- Não exige conexão Spotify.
+- Likes, comentários, respostas e notificações não estão ativos nesta versão; os botões de curtir e comentar são exibidos no card em estado indisponível (`aria-disabled="true"`, `.activity-social.is-unavailable`, sem contadores fictícios), seguindo o layout global do Figma e o padrão já adotado em Atividades do Perfil.
 
-Metadados da página e dos masters foram recuperados. Contextos de alta fidelidade
-e screenshots: quatro frames Feed, Empty `407:18`/`407:40` e skeleton mobile
-`407:1232`. Estados e drawers foram identificados nos metadados; sua navegação
-reutiliza o renderer já implementado do perfil.
+## Contrato HTTP real e mapeamento
 
-Masters: Header / Global `187:548`, Sidebar / Global `368:6383`, Activity Card /
-Global `328:956`, Activity Feed / Global `329:1420`, Footer / Global `175:216`.
-Community Feed usa variantes `406:7802`, `406:8022`, `406:8242`, `406:8462` com
-quatro publicações. Home ativo corresponde a `368:5123` (desktop claro),
-`368:5774` (desktop escuro) e `368:5426` (drawer claro).
-Abas: `407:2/24/46/68`; convite: `407:9/31/53/75`; vazio: `407:18/40/62/84`.
+O adapter padrão (`js/feed-http.js`) consome:
 
-`profile-shell.js` compartilha header, footer, sidebar, skeleton; `profile-views.js`
-compartilha cards, avatares, estrelas, capas e ações sociais. `profile-dialogs.js`
-fornece contenção de foco para o drawer nativo. O perfil também usa os renderers
-de header/footer extraídos, e Home aponta para `feed.html` nas duas páginas.
-O sidebar admite seleção explícita de Home, mantendo o contrato anterior de Perfil.
-Avatar, nome público e handle agora são links para `/pages/profile.html?handle=...`
-no card global. O renderer valida 255 pontos de código Unicode sem truncar.
+- `GET /api/feed?limit=20&cursor=<token>` com `Authorization: Bearer <accessToken>`, `credentials: 'omit'` e `cache: 'no-store'` (via `js/auth-http.js`).
+- `GET /api/profile/me` para obter o avatar do visitante no convite de avaliação rápida (`#quick-review`).
 
-Reutilizados: tokens de `login.css`, `login-theme.js`, chave `sonarfy_theme`,
-CSS global de perfil e SVGs locais em `assets/icons/profile`, marcas em
-`assets/logos` e ícones de tema em `assets/icons/shared`. O novo Home ativo foi
-baixado sem edição do SVG `1b5dd.svg` retornado pelo MCP, salvo como
-`assets/icons/profile/active-home.svg`. Não existem URLs temporárias no runtime.
+Mapeamento de cada item de `items`:
 
-Feed usa os tokens globais branco/#1a1a1a para fundo, branco/#242424 para superfície,
-#1a1a1a/branco para texto, #65676b/#b2b3b5 para texto secundário e
-#ebecef/#65676b para bordas. Inter 400/500/600/700, azul #27a9f5.
-Desktop: margens 40px, sidebar 248px, gap 32px e coluna 1080px em viewport 1440px.
-Mobile: margens 16px e coluna 358px em viewport 390px. Header 88/80px;
-título 28/24px; abas 56px, indicador 64×4px; convite com padding 16px/20px,
-avatar 44px, CTA 40px; cards preservam padding 24/16px e gap vertical 16px.
-Footer é o último elemento do body em fluxo normal; drawer modal não ocupa fluxo.
+- `reviewId` → identidade estável do card (`id`/`reviewId`);
+- `author` (`id`, `handle`, `displayName`, `avatarUrl`) → identidade e link para `/pages/profile.html?handle=...`;
+- `album` (`spotifyId`, `name`, `coverUrl`, `artist.spotifyId`, `artist.name`) → capa, título, artista e link externo `Abrir no Spotify`;
+- `rating / 2` → escala de `0` a `5` estrelas em passos de `0,25` (nota zero e quartos de estrela preservados sem dupla conversão);
+- `reviewText` → texto opcional renderizado com escape HTML (validação até 255 pontos de código Unicode);
+- `createdAt` → data relativa/absoluta atualizada pelo relógio real;
+- `updatedAt` → preservado sem reordenar o card.
 
-Adaptações previstas pelo contrato do perfil: aviso explícito de demonstração
-acrescenta uma linha; conteúdo e rodapé crescem naturalmente; avatar de fixture
-permanece constante entre temas como imagem de API. Capas fictícias são as mesmas
-primitivas CSS do master. Datas usam relógio real, com horas abaixo de 24h
-(incluindo `0h` para a fixture de 45 minutos), e Mês Dia a partir de 24h.
-Os timestamps são atualizados a cada minuto sem reconstruir controles.
+Sem destino implementado para página de álbum ou avaliação completa, o bloco do álbum no feed é renderizado sem botão de navegação falsa, mantendo o link real do Spotify e a navegação real de perfil por handle.
 
-## Adapter e demonstração
+## Paginação, concorrência, estados e invalidação
 
-Não há contrato de API de feed neste repositório. O host pode definir
-`window.sonarfyFeedAdapter` **antes** do módulo `feed.js`; ele substitui inteiramente
-as fixtures. Não se inventam endpoints, paginação ou sincronização Spotify.
+- **Carregamento inicial, adicional e atualização**: estados distintos (`loadingInitial`, `loadingMore`, `refreshing`). O botão acessível **Carregar mais avaliações** envia `nextCursor` intacto e encerra quando `nextCursor === null` ou quando uma página adicional vem vazia (sem apagar os cards já exibidos).
+- **Concorrência e respostas atrasadas**: cada início/atualização incrementa a geração da consulta, cancela requisições anteriores com `AbortController` e valida geração, sessão e cursor antes de aplicar respostas. Carregamentos adicionais simultâneos para a mesma fronteira são bloqueados.
+- **Estados vazios**: `followingCount = 0` não oculta avaliações próprias. Quando a primeira página está vazia:
+  - `followingCount === 0`: orienta avaliar ou seguir perfis usando apenas rotas existentes (`echoes.html`, `profile.html`);
+  - `followingCount > 0`: informa que ainda não há avaliações disponíveis.
+- **Erros**:
+  - `401`: segue `createAuthClient` (renovação single-flight única e expiração para `login.html`, sem loops).
+  - `400`: indica paginação inválida/expirada e oferece **Recarregar do início**, sem repetição infinita.
+  - Rede/5xx: erro contextual com **Tentar novamente**; no carregamento adicional preserva cards e cursor; no inicial não faz fallback silencioso para fixtures.
+- **Invalidação e sessão**: recarrega o início em eventos `storage` (`sonarfy_reviews_dirty`, `sonarfy_following_dirty`), no clique do logo do Sonarfy (`a.brand`) e no retorno via histórico/bfcache (`pageshow` com `event.persisted`). Troca de sessão ou logout (`sonarfy_token`, `BroadcastChannel('sonarfy_auth')`, ação Sair) limpa imediatamente itens, cursor e estados pendentes.
 
-| Método/propriedade | Contrato proposto de frontend |
-| --- | --- |
-| `load(tab)` | Promise de `{session, viewer?, followingCount, publications}` para `following` ou `for-you` |
-| `like(publicationId, boolean)` | Promise de `{liked: boolean, likeCount: number}` autoritativos, contador finito não negativo |
-| `routes` | URLs opcionais `home`, `search`, `echoes`, `profile`, `settings` |
-| `actions` | Handlers opcionais `search`, `echoes`, `review`, `logout`, `comments(id)`, `album(id)` |
+## Modo demonstração explícito e override de host
 
-`session.userId` identifica a sessão (ou `session: null` para bloquear curtidas).
-`viewer` é o perfil público do usuário conectado, usado no convite. `followingCount`
-é inteiro não negativo. `publications` usa o contrato do perfil:
-`id`, `author: {id,displayName,handle,avatar?}`, `album: {id,title,artist,mark,cover?}`,
-`createdAt` ISO, `rating`, `review`, `liked`, `likeCount`, `commentCount`.
-O servidor deve validar identidade, autorização e limites. Nomes privados não são
-usados. Os handles de autores são resolvidos pelo adapter de perfil no destino;
-as fixtures existentes de perfil reconhecem apenas o próprio usuário e Lucas.
+O modo demonstração local (`js/feed-fixtures.js`) só é ativado explicitamente via `?demo=true` (com aviso `#feed-demo` visível) ou por injeção de `window.sonarfyFeedAdapter` antes de `js/feed.js`. No fluxo normal (`pages/feed.html`), o adapter HTTP real é sempre usado.
 
-Sem host, `feed-fixtures.js` fornece quatro publicações locais e uma sessão
-explicitamente demonstrativa. Para você apresenta outra ordem sobre as mesmas
-entidades. Curtidas só alteram memória; recarregar restaura a demonstração.
+## Figma e componentes compartilhados
 
-`feed-state.js` mantém cache por aba, loading/erro independentes e bloqueio de
-mutação por ID. Atualiza todas as cópias somente após confirmação; rejeições e
-respostas inválidas preservam conteúdo/contadores e liberam retry. Reconcila
-também respostas de carregamento que chegam após uma curtida confirmada. Carregamentos
-atrasados não trocam a aba selecionada. Refresh com falha preserva o cache anterior.
-
-Seguindo com `followingCount: 0` mostra o vazio e permite explorar Para você;
-feed sem publicações mostra um vazio genérico. Requisições mostram skeleton com
-`aria-busy`; `prefers-reduced-motion` desliga sua animação. Falha de carga mostra
-erro e Tentar novamente. Funcionalidades sem rota/handler mostram indisponibilidade.
-Sair remove `sonarfy_token` antes de navegar ao login ou invocar logout do host,
-inclusive quando revogação remota falha. Tema não é removido.
+Arquivo `kgOOkp9lzghCJtlBpSQtIj`, página [Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862).
+Reutiliza `profile-shell.js` (header, footer, sidebar com Home ativo, skeleton), `profile-views.js` (`activityCard` com `socialUnavailable: true` e `interactiveAlbum: false`), `profile-dialogs.js` (`containFocus`), tokens de `login.css`/`login-theme.js` e SVGs locais.
 
 ## Verificação
 
-Comandos: `npm test`, `node tests/browser/feed.cjs`,
-`node tests/browser/profile.cjs`, `node tests/browser/profile-states.cjs`.
-O script Feed inicia/encerra o próprio servidor; aceita `PLAYWRIGHT_MODULE` para
-uma instalação externa de Playwright, sem nova dependência no frontend.
+Comandos executados em 24/11/2026:
 
-Resultados em 26/10/2026: `npm test` aprovou **127 testes**, incluindo 14 de Feed.
-`feed.cjs` aprovou as oito combinações abaixo, cada uma com seis cenários
-(demo, loading, vazio, texto longo, retry/falha de curtida e logout):
+- `npm test`: **27 arquivos / 260 testes aprovados** (inclui `tests/feed.test.js` e `tests/feed-http.test.js`).
+- `node tests/browser/feed.cjs` (interceptando `GET /api/feed`, `GET /api/profile/me` e `POST /api/auth/logout` no HTTP real do navegador): **8/8 combinações aprovadas** (5 cenários: `populated-paginated`, `loading`, `empty-zero`, `empty-following`, `error-retry`).
+- `node tests/browser/profile.cjs` (regressão dos componentes compartilhados): **16/16 combinações aprovadas**.
 
-| Navegador | Desktop 1440 claro/escuro | Mobile 390 claro/escuro |
-| --- | --- | --- |
-| Microsoft Edge 156.0.4314.42 | Aprovados | Aprovados |
-| Firefox 153.0 | Aprovados | Aprovados |
+| Navegador | Versão | Desktop 1440 claro/escuro | Mobile 390 claro/escuro | Dados |
+| --- | --- | --- | --- | --- |
+| Microsoft Edge | `158.0.4370.33` | Aprovado | Aprovado | HTTP interceptado (simulado) |
+| Firefox | `159.0` | Aprovado | Aprovado | HTTP interceptado (simulado) |
 
-Sem overflow horizontal em todos os estados. Verificados: header 88/80px,
-card 1080/358px, avatar 48/44px, capa 112/84px, gaps 16px, alinhamento de estrelas
-e ações, footer em fluxo e último elemento, SVGs locais carregados, abas por
-teclado com foco visível, query/histórico, links de autores e Home de retorno,
-reconciliação de curtidas, drawer 296px de largura/altura do viewport com foco
-contido e Escape, reduced-motion, 255 pontos de código e remoção da credencial.
-Nenhum erro JavaScript de página foi detectado. Capturas desktop/mobile em ambos
-os temas foram revisadas visualmente com os screenshots do Figma.
+## Limitações
 
-Regressão dos componentes compartilhados: `profile.cjs` aprovou 16 combinações de
-perfil próprio/visitante e `profile-states.cjs` aprovou 40 cenários, nos mesmos
-navegadores/viewports/temas. A exclusão local pré-existente de
-`assets/images/sonarfy-logo-legacy.png` foi preservada.
-
-Capturas/JSON estão em `test-results/feed/`, ignorados pelo Git. Mobile é viewport
-emulado; browsers headless não substituem aparelhos físicos. Dados/mutações de
-estados são simulados e não demonstram integração com backend ou sessão real.
+- Testes de navegador rodam em modo headless com viewport mobile emulado (`390px`), que não substitui dispositivos físicos.
+- O backend local não estava em execução na porta `8080` durante a verificação; os testes HTTP em navegador validaram o contrato real por interceptação de rede, sem alterar banco ou servidor.
+- CI remota não foi executada nem verificada nesta entrega.
+- Likes, comentários, respostas, notificações, página de álbum e busca de perfis permanecem fora desta versão.

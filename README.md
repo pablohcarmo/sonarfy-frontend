@@ -37,11 +37,11 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 - Verificação de conta por token, com estados de sucesso e erro.
 - Tela de conexão com o Spotify, com opção de pular e lembrete após 7 dias.
 - Página de perfil (próprio e visitante) com abas de atividades, respostas e coleção, edição e compartilhamento.
-- Feed da comunidade com abas **Seguindo** e **Para você**, navegação por teclado e estados de carregamento/vazio.
+- Feed único de atividades integrado a `GET /api/feed`, com paginação por cursor opaco, estados de carregamento/vazio/erro e atualização pelo carregamento da página ou clique no logo do Sonarfy.
 - Configurações da conta com edição de dados pessoais e `@handle`, integração visual com Spotify, cooldowns de segurança e popups de desativação e exclusão de conta.
 - Layouts responsivos e alternância entre os temas claro e escuro.
 
-Os fluxos de conta, Ecos, Avaliar Álbum e Perfil (identidade, edição, mídia, relacionamentos, Avaliações e Coleção paginada com ordenação, filtro e edição/exclusão no modal) já estão integrados aos contratos HTTP do backend, mantendo modo demonstração explícito em `?demo=true`. O Feed permanece em modo demonstração local substituível via adapter, aguardando o contrato de backend. A disponibilização pública em produção ainda está em preparação.
+Os fluxos de conta, Feed, Ecos, Avaliar Álbum e Perfil (identidade, edição, mídia, relacionamentos, Avaliações e Coleção paginada com ordenação, filtro e edição/exclusão no modal) já estão integrados aos contratos HTTP do backend, mantendo modo demonstração explícito em `?demo=true`. A disponibilização pública em produção ainda está em preparação.
 
 ## Conecte suas músicas ao Sonarfy
 
