@@ -270,7 +270,7 @@ async function loadedAssets(page) {
                     assert.equal(await page.locator('#album-cover-dialog[open]').count(), 0);
 
                     // Edit own review inline via modal without navigating to album-review.html.
-                    assert.equal(await page.locator('a[href*="album-review.html"]').count(), 0);
+                    assert.equal(await page.locator('a[href*="album-review.html"]:not(.review-cta)').count(), 0);
                     await page.locator('.album-my-review-card [data-open-review-modal]').click();
                     await page.waitForSelector('#album-review-dialog[open]');
                     await noOverflow(page, width);

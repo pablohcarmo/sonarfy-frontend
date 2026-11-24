@@ -41,7 +41,7 @@ O bloco do álbum na coluna direita de cada card (`[data-album]`, com `interacti
 - **Carregamento inicial, adicional e atualização**: estados distintos (`loadingInitial`, `loadingMore`, `refreshing`). O botão acessível **Carregar mais avaliações** envia `nextCursor` intacto e encerra quando `nextCursor === null` ou quando uma página adicional vem vazia (sem apagar os cards já exibidos).
 - **Concorrência e respostas atrasadas**: cada início/atualização incrementa a geração da consulta, cancela requisições anteriores com `AbortController` e valida geração, sessão e cursor antes de aplicar respostas. Carregamentos adicionais simultâneos para a mesma fronteira são bloqueados.
 - **Estados vazios**: `followingCount = 0` não oculta avaliações próprias. Quando a primeira página está vazia:
-  - `followingCount === 0`: orienta avaliar ou seguir perfis usando apenas rotas existentes (`echoes.html`, `profile.html`);
+  - `followingCount === 0`: orienta avaliar ou seguir perfis usando apenas rotas existentes (`album-review.html`, `profile.html`);
   - `followingCount > 0`: informa que ainda não há avaliações disponíveis.
 - **Erros**:
   - `401`: segue `createAuthClient` (renovação single-flight única e expiração para `login.html`, sem loops).
@@ -72,6 +72,14 @@ Comandos executados em 24/11/2026:
 | Firefox | `159.0` | Aprovado | Aprovado | HTTP interceptado (simulado) |
 
 ## Limitações
+
+### Tempo das avaliações exibido como `0h` — 24/11/2026
+
+Durante a validação manual, o usuário observou todas as avaliações com tempo `0h` e informou que o problema é do backend. A correção permanece pendente no backend; esta entrega do frontend não corrige nem compensa os horários recebidos. A causa técnica específica e a abrangência dos registros afetados não foram confirmadas nesta verificação.
+
+O frontend usa `createdAt` para calcular horas completas: menos de uma hora aparece como `0h`; de uma a menos de 24 horas, `1h` a `23h`; a partir de 24 horas, mês e dia. Portanto, `0h` isoladamente é esperado para uma publicação recente. Essa regra não explica avaliações antigas permanecerem com `0h` quando os horários fornecidos estão incorretos. O relato se refere à validação com dados reais; os testes automatizados usam datas controladas e não reproduzem o problema do backend. Após a correção, validar novamente os horários com dados reais no Feed e nas demais telas de avaliações.
+
+O convite **Avaliar Álbum**, o CTA da sidebar/drawer e os links de avaliação do estado vazio agora abrem a busca em `album-review.html`, sem depender de Ecos. O convite preserva `adapter.actions.review`; o link global da sidebar/drawer usa `adapter.routes.review` ou o destino padrão, sem handler local. Convite e CTA preservam `?demo=true` em demonstração. Detalhes do contrato e validação em [Avaliar Álbum](album-review-page.md).
 
 - Testes de navegador rodam em modo headless com viewport mobile emulado (`390px`), que não substitui dispositivos físicos.
 - O backend local não estava em execução na porta `8080` durante a verificação; os testes HTTP em navegador validaram o contrato real por interceptação de rede, sem alterar banco ou servidor.

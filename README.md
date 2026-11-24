@@ -40,6 +40,8 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 - Tela de conexão com o Spotify, com opção de pular e lembrete após 7 dias.
 - Página de perfil (próprio e visitante) com abas de atividades, respostas e coleção, edição e compartilhamento.
 - Feed único de atividades integrado a `GET /api/feed`, com paginação por cursor opaco, estados de carregamento/vazio/erro e atualização pelo carregamento da página ou clique no logo do Sonarfy.
+- Botão **Avaliar Álbum** do Feed com busca automática por álbum/artista durante a digitação, seleção e publicação ou edição da avaliação, sem sincronização pessoal do Spotify. A busca usa `GET /api/albums/search` no backend.
+- A mesma busca fica disponível pelo CTA **Avaliar Álbum** do menu lateral e hambúrguer compartilhado em Perfil, Configurações, Ecos e Álbum.
 - Configurações da conta com edição de dados pessoais e `@handle`, integração visual com Spotify, cooldowns de segurança e popups de desativação e exclusão de conta.
 - Layouts responsivos e alternância entre os temas claro e escuro.
 

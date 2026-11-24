@@ -1,5 +1,7 @@
 # Ecos Sonarfy
 
+O CTA **Avaliar Álbum** da sidebar/drawer usa o link global para a busca em `album-review.html`, sem exigir sincronização pessoal Spotify. Preserva `routes.review` e modo demonstração. Atalhos de avaliação de um álbum específico mantêm seu comportamento contextual. Ver [Avaliar Álbum](album-review-page.md).
+
 Sirva a raiz do repositório e abra `pages/echoes.html` (ou `pages/echoes.html?demo=true` para modo demonstração local). Implementação em HTML5 semântico, CSS3 e módulos ES nativos, sem frameworks ou dependências de produção novas. O tema reutiliza `sonarfy_theme` e `js/login-theme.js`.
 
 ## Figma e componentes

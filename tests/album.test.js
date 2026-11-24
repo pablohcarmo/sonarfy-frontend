@@ -456,7 +456,7 @@ describe('album: page states and interactions', () => {
         const instance = mount(adapter, '?albumId=4aawyAB9vmqN3uQ7FjRGTy');
         await instance.ready;
 
-        expect(document.querySelectorAll('a[href*="album-review.html"]')).toHaveLength(0);
+        expect(document.querySelectorAll('a[href*="album-review.html"]:not(.review-cta)')).toHaveLength(0);
         document.querySelector('.album-my-review-card [data-open-review-modal]').click();
         const dialog = document.querySelector('#album-review-dialog');
         expect(dialog.open).toBe(true);

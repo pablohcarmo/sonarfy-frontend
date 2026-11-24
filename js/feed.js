@@ -8,12 +8,12 @@ import { escapeHTML as e, timestamp, albumURL } from './profile-utils.js';
 
 // Renderiza o estado vazio diferenciado entre followingCount=0 e followingCount>0 usando apenas rotas reais.
 function emptyFeedMarkup(followingCount, routes = {}) {
-    const echoesUrl = routes.echoes || 'echoes.html';
+    const reviewUrl = routes.review || 'album-review.html';
     const profileUrl = routes.profile || 'profile.html';
     if (followingCount === 0) {
-        return `<div class="feed-empty"><span class="feed-empty-mark" aria-hidden="true">S</span><h2>Seu feed ainda está silencioso</h2><p>Avalie seus álbuns ou siga outros perfis para acompanhar novas avaliações por aqui.</p><div class="feed-empty-actions"><a class="profile-primary" href="${e(echoesUrl)}">Avaliar em Ecos</a><a class="profile-secondary" href="${e(profileUrl)}">Ir para meu perfil</a></div></div>`;
+        return `<div class="feed-empty"><span class="feed-empty-mark" aria-hidden="true">S</span><h2>Seu feed ainda está silencioso</h2><p>Avalie seus álbuns ou siga outros perfis para acompanhar novas avaliações por aqui.</p><div class="feed-empty-actions"><a class="profile-primary" href="${e(reviewUrl)}">Avaliar Álbum</a><a class="profile-secondary" href="${e(profileUrl)}">Ir para meu perfil</a></div></div>`;
     }
-    return `<div class="feed-empty"><span class="feed-empty-mark" aria-hidden="true">S</span><h2>Ainda não há avaliações disponíveis</h2><p>Quando você ou os perfis que você segue publicarem avaliações, elas aparecerão aqui.</p><div class="feed-empty-actions"><a class="profile-primary" href="${e(echoesUrl)}">Avaliar em Ecos</a></div></div>`;
+    return `<div class="feed-empty"><span class="feed-empty-mark" aria-hidden="true">S</span><h2>Ainda não há avaliações disponíveis</h2><p>Quando você ou os perfis que você segue publicarem avaliações, elas aparecerão aqui.</p><div class="feed-empty-actions"><a class="profile-primary" href="${e(reviewUrl)}">Avaliar Álbum</a></div></div>`;
 }
 
 // Monta a página Feed único paginado consumindo GET /api/feed com invalidação, concorrência e ações sociais indisponíveis.
@@ -37,9 +37,9 @@ export function mountFeed(adapter = createFeedAdapter()) {
     function render() {
         const busy = Boolean(state.loadingInitial || state.loadingMore || state.refreshing);
         list.setAttribute('aria-busy', String(busy));
-        const echoesUrl = adapter.routes?.echoes || 'echoes.html';
+        const reviewUrl = adapter.routes?.review || `album-review.html${adapter.demo ? '?demo=true' : ''}`;
         quick.hidden = false;
-        quick.innerHTML = `<div class="quick-review-invite">${avatar(state.viewer || { displayName: 'S' })}<p>Qual álbum você ouviu recentemente?</p></div>${adapter.actions?.review ? '<button type="button" class="profile-primary" data-navigation="review">Avaliar Álbum</button>' : `<a class="profile-primary" href="${e(echoesUrl)}">Avaliar Álbum</a>`}`;
+        quick.innerHTML = `<div class="quick-review-invite">${avatar(state.viewer || { displayName: 'S' })}<p>Qual álbum você ouviu recentemente?</p></div>${adapter.actions?.review ? '<button type="button" class="profile-primary" data-navigation="review">Avaliar Álbum</button>' : `<a class="profile-primary" href="${e(reviewUrl)}">Avaliar Álbum</a>`}`;
 
         if (state.loadingInitial && !state.items.length) {
             list.innerHTML = skeleton('activities');
@@ -94,7 +94,7 @@ export function mountFeed(adapter = createFeedAdapter()) {
         }
         if (key === 'review') {
             if (adapter.actions?.review) return adapter.actions.review();
-            window.location.assign(adapter.routes?.echoes || 'echoes.html');
+            window.location.assign(adapter.routes?.review || `album-review.html${adapter.demo ? '?demo=true' : ''}`);
             return;
         }
         if (adapter.actions?.[key]) return adapter.actions[key]();

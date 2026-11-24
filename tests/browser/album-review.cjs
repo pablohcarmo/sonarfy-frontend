@@ -101,9 +101,20 @@ async function visibleFocus(page) {
                     assert.equal(await favBtn.getAttribute('aria-pressed'), 'true');
 
                     await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-published.png`), fullPage: true });
+                    await page.getByRole('button', { name: 'Fechar confirmação' }).click();
+                    await page.waitForURL(/\/pages\/feed\.html\?demo=true/);
+                    assert.equal(await page.locator('#review-success-dialog[open]').count(), 0);
+                    assert.equal(await page.locator('body.profile-modal-open').count(), 0);
+                    await page.goto(`${base}/pages/album-review.html?demo=true`);
+                    await page.locator('[data-review-submit]').click();
+                    await page.locator('#review-success-dialog[open]').waitFor();
+                    await page.keyboard.press('Escape');
+                    await page.waitForFunction(() => !document.querySelector('#review-success-dialog').open);
+                    assert(await page.locator('[data-review-submit]').evaluate(el => el === document.activeElement));
+                    await page.locator('[data-review-submit]').click();
+                    await page.locator('#review-success-dialog[open]').waitFor();
                     await page.locator('[data-success-another]').click();
-                    await page.waitForURL(/\/pages\/echoes\.html\?demo=true/);
-                    await page.goBack();
+                    await page.waitForURL(/\/pages\/album-review\.html\?demo=true/);
                     await page.waitForSelector('.album-review-card');
 
                     if (width === 390) {
@@ -112,6 +123,105 @@ async function visibleFocus(page) {
                         assert.equal(await page.locator('#profile-drawer').evaluate(el => getComputedStyle(el).width), '296px');
                         await page.keyboard.press('Escape');
                         assert.equal(await page.locator('#profile-drawer[open]').count(), 0);
+                    }
+
+                    // Exercise real HTTP adapters with simulated backend contracts and no Spotify personal connection.
+                    const albumId = '4aawyAB9vmqN3uQ7FjRGTy';
+                    const album = { spotifyId: albumId, name: 'Random Access Memories', artist: { name: 'Daft Punk' }, coverUrl: null, releaseOn: '2013', totalTracks: 13 };
+                    const calls = [];
+                    let searchFailure = true, detailFailure = true, exists = false, created = false;
+                    const review = { reviewId: 42, album, rating: 8.5, reviewText: 'Minha avaliação anterior' };
+                    await page.route('http://localhost:8080/api/**', async route => {
+                        const request = route.request(), url = new URL(request.url());
+                        const headers = { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'access-control-expose-headers': 'Retry-After', 'access-control-allow-headers': 'Authorization, Content-Type', 'access-control-allow-methods': 'GET, POST, PUT, OPTIONS' };
+                        const reply = (status, body = {}, extras = {}) => route.fulfill({ status, headers: { ...headers, ...extras }, body: JSON.stringify(body) });
+                        if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+                        calls.push(`${request.method()} ${url.pathname}`);
+                        assert.equal(request.headers().authorization, 'Bearer test-token');
+                        if (url.pathname === '/api/profile/me') return reply(200, { identity: { id: 1, handle: 'teste', displayName: 'Teste' }, viewer: { isSelf: true }, statistics: {} });
+                        if (url.pathname === '/api/feed') return reply(200, { items: [], followingCount: 0, nextCursor: null });
+                        if (url.pathname === '/api/albums/search') {
+                            if (url.searchParams.get('q') === 'Vazio') return reply(200, { items: [], nextOffset: null });
+                            if (searchFailure) { searchFailure = false; return reply(503, {}, { 'Retry-After': '30' }); }
+                            const more = url.searchParams.get('offset') === '10';
+                            return reply(200, { items: [more ? { ...album, spotifyId: '0'.repeat(22), name: 'Outro álbum' } : album], nextOffset: more ? null : 10 });
+                        }
+                        if (url.pathname === `/api/albums/${albumId}`) {
+                            if (detailFailure) { detailFailure = false; return reply(503); }
+                            return reply(200, album);
+                        }
+                        if (url.pathname.endsWith('/reviews/me')) return reply(exists ? 200 : 404, exists ? review : {});
+                        if (request.method() === 'POST' && url.pathname.endsWith('/reviews')) {
+                            exists = true;
+                            if (!created) { created = true; return reply(201, { ...review, ...request.postDataJSON() }); }
+                            return reply(409);
+                        }
+                        if (request.method() === 'PUT' && url.pathname === '/api/reviews/42') {
+                            assert.deepEqual(request.postDataJSON(), { rating: 9, reviewText: 'Minha avaliação atualizada' });
+                            return reply(200, { ...review, ...request.postDataJSON() });
+                        }
+                        throw new Error(`Unexpected API request: ${request.method()} ${url.pathname}`);
+                    });
+                    await page.evaluate(() => localStorage.setItem('sonarfy_token', 'test-token'));
+                    await page.goto(`${base}/pages/album-review.html`);
+                    assert.equal(await page.locator('.album-summary').count(), 0);
+                    await page.locator('#album-query').fill('Vazio');
+                    assert.equal(await page.locator('.album-search-form button').count(), 0);
+                    await page.waitForFunction(() => document.querySelector('[data-search-status]').textContent.includes('Nenhum álbum'));
+                    await page.locator('#album-query').fill('Daft Punk');
+                    await page.waitForFunction(() => document.querySelector('[data-search-status]').textContent.includes('30 segundos'));
+                    await page.locator('[data-search-retry]').click();
+                    await page.locator('.album-search-result').waitFor();
+                    await page.locator('[data-search-more]').click();
+                    await page.waitForFunction(() => document.querySelectorAll('.album-search-result').length === 2);
+                    await noOverflow(page, width);
+                    await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-search.png`), fullPage: true });
+                    await page.locator('.album-search-result').first().focus();
+                    await page.keyboard.press('Tab');
+                    await page.keyboard.press('Shift+Tab');
+                    await visibleFocus(page);
+                    await page.keyboard.press('Enter');
+                    await page.locator('[data-review-retry]').waitFor();
+                    assert.equal(await page.locator('[data-review-submit]').count(), 0);
+                    await page.locator('[data-review-retry]').click();
+                    await page.locator('.album-summary-name').waitFor();
+                    assert.equal(await page.locator('.album-summary-name').textContent(), album.name);
+                    assert(calls.indexOf(`GET /api/albums/${albumId}`) < calls.indexOf(`GET /api/albums/${albumId}/reviews/me`));
+                    await page.locator('[data-rating-value="4.5"]').click();
+                    await page.locator('[data-review-submit]').click();
+                    await page.locator('#review-success-dialog[open]').waitFor();
+                    // Start a separate fixture scenario where a concurrent publication causes POST to conflict.
+                    exists = false;
+                    await page.goto(`${base}/pages/album-review.html?albumId=${albumId}`);
+                    await page.locator('[data-rating-value="4.5"]').click();
+                    await page.locator('[data-review-submit]').click();
+                    await page.waitForFunction(() => document.querySelector('[data-review-submit]').textContent === 'Salvar alterações');
+                    assert.equal(await page.locator('#review-text').inputValue(), review.reviewText);
+                    await page.locator('[data-rating-value="4.5"]').click();
+                    await page.locator('#review-text').fill('Minha avaliação atualizada');
+                    await page.locator('[data-review-submit]').click();
+                    await page.locator('#review-success-dialog[open]').waitFor();
+                    await noOverflow(page, width);
+                    await page.getByRole('button', { name: 'Fechar confirmação' }).click();
+                    await page.waitForURL(/\/pages\/feed\.html$/);
+                    await page.locator('.feed-empty').waitFor();
+                    await page.goto(`${base}/pages/album-review.html`);
+                    await page.locator('#album-query').waitFor();
+
+                    // The shared CTA always selects another album, independently of each page's local actions.
+                    for (const source of ['profile', 'account', 'echoes', 'album', 'album-review']) {
+                        await page.goto(`${base}/pages/${source}.html?demo=true`);
+                        await page.locator('#profile-sidebar .review-cta').waitFor({ state: 'attached' });
+                        if (width === 390) await page.locator('#open-menu').click();
+                        const cta = page.locator(`${width === 390 ? '#profile-drawer' : '#profile-sidebar'} .review-cta`);
+                        await cta.waitFor({ state: 'visible' });
+                        assert.equal(await cta.getAttribute('href'), 'album-review.html?demo=true');
+                        assert.equal(await cta.evaluate(el => Math.round(el.getBoundingClientRect().height)), width === 390 ? 48 : 52);
+                        await noOverflow(page, width);
+                        if (source === 'profile') await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-global-cta.png`), fullPage: true });
+                        await cta.click();
+                        await page.waitForURL(/\/pages\/album-review\.html\?demo=true$/);
+                        await page.locator('.album-summary-name').waitFor();
                     }
 
                     assert.deepEqual(errors, [], `${name} ${width} ${theme} page errors: ${errors.join('; ')}`);

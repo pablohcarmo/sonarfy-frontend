@@ -217,6 +217,12 @@ function makeFeedItem(reviewId, { authorId = 7, handle = 'marina_som', displayNa
                 await noOverflow(page, width);
 
                 assert.deepEqual(errors, []);
+                // Both quick review and shared sidebar CTA lead to album selection instead of Spotify history.
+                assert.equal(await page.locator('#quick-review a').getAttribute('href'), 'album-review.html');
+                if (width === 390) await page.locator('#open-menu').click();
+                await page.locator(`${width === 390 ? '#profile-drawer' : '#profile-sidebar'} .review-cta`).click();
+                await page.waitForURL(/\/pages\/album-review\.html$/);
+                await page.locator('#album-query').waitFor();
                 results.push({ browser: name, version: browser.version(), width, theme, scenarios: ['populated-paginated', 'loading', 'empty-zero', 'empty-following', 'error-retry'], assets: assets.length, passed: true });
                 await context.close();
                 console.log(`PASS ${prefix}`);

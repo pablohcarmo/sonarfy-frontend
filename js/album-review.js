@@ -4,6 +4,7 @@ import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
 import { escapeHTML as e, safeImage } from './profile-utils.js';
+import { mountAlbumSearch } from './album-search.js';
 
 const MAX_REVIEW_CHARS = 255;
 
@@ -87,7 +88,8 @@ function renderAlbumSummary(album) {
 
 function renderSuccessDialog(albumName, favorited, favoritePending) {
     const favLabel = favorited ? 'Desfavoritar álbum' : 'Favoritar álbum';
-    return `<img class="review-success-badge" src="../assets/icons/album-review/success-badge.svg" width="56" height="56" alt="" aria-hidden="true">
+    return `<button type="button" class="profile-icon-button review-success-close" data-success-close aria-label="Fechar confirmação">${icon('close')}</button>
+        <img class="review-success-badge" src="../assets/icons/album-review/success-badge.svg" width="56" height="56" alt="" aria-hidden="true">
         <div class="review-success-header">
             <h2 id="review-success-title">Avaliação publicada!</h2>
             <p>Sua avaliação de <strong>${e(albumName)}</strong> foi publicada com sucesso.</p>
@@ -135,7 +137,8 @@ export function mountAlbumReview(options = {}) {
     containFocus(successDialog, controller.signal);
 
     const state = {
-        album: readAlbumFromSearch() || { ...demoAlbum },
+        album: readAlbumFromSearch() || (adapter.isDemo ? { ...demoAlbum } : null),
+        loaded: false,
         reviewId: null,
         rating: 0,
         hasRating: false,
@@ -147,6 +150,8 @@ export function mountAlbumReview(options = {}) {
     };
 
     const notify = text => { if (statusEl) statusEl.textContent = text; };
+    const searchUrl = `album-review.html${adapter.isDemo ? '?demo=true' : ''}`;
+    let search;
 
     function renderForm() {
         const charCount = countReviewChars(state.reviewText);
@@ -195,10 +200,16 @@ export function mountAlbumReview(options = {}) {
     }
 
     async function loadInitial() {
-        renderForm();
-        if (!adapter.loadAlbumReview) return;
+        if (!state.album?.spotifyId && !adapter.isDemo) {
+            search = mountAlbumSearch(contentEl, adapter);
+            return;
+        }
+        state.loaded = false;
+        state.error = '';
+        contentEl.innerHTML = '<p role="status">Carregando álbum e avaliação…</p>';
         try {
-            const result = await adapter.loadAlbumReview(state.album.spotifyId);
+            if (adapter.loadAlbumDetails) state.album = await adapter.loadAlbumDetails(state.album.spotifyId);
+            const result = await adapter.loadAlbumReview?.(state.album.spotifyId);
             if (result?.album) state.album = { ...state.album, ...result.album };
             if (result?.review) {
                 state.reviewId = result.review.reviewId;
@@ -210,6 +221,7 @@ export function mountAlbumReview(options = {}) {
                 state.hasRating = state.rating > 0;
                 state.reviewText = result.initialDraft.reviewText || '';
             }
+            state.loaded = true;
             renderForm();
             if (scenario === 'published') openSuccessModal();
         } catch (err) {
@@ -218,12 +230,12 @@ export function mountAlbumReview(options = {}) {
                 return;
             }
             state.error = err?.message || 'Não foi possível carregar os dados da avaliação.';
-            renderForm();
+            contentEl.innerHTML = `<article class="album-review-card"><h1 class="album-review-title">Avaliar Álbum</h1><p role="alert">${e(state.error)}</p><button class="review-btn-primary" data-review-retry>Tentar novamente</button><a class="review-btn-secondary" href="${searchUrl}">Escolher outro álbum</a></article>`;
         }
     }
 
     async function submitReview() {
-        if (state.submitting) return;
+        if (state.submitting || !state.loaded) return;
         if (!state.hasRating && (!state.rating || state.rating <= 0)) {
             state.error = 'Selecione uma nota nas estrelas antes de publicar.';
             renderForm();
@@ -276,7 +288,8 @@ export function mountAlbumReview(options = {}) {
             return;
         }
         if (key === 'review') {
-            contentEl.querySelector('#review-text')?.focus();
+            if (search) contentEl.querySelector('#album-query')?.focus();
+            else window.location.assign(searchUrl);
             return;
         }
         if (adapter.actions?.[key]) return adapter.actions[key]();
@@ -315,15 +328,21 @@ export function mountAlbumReview(options = {}) {
         }
         const target = event.target.closest('button, a');
         if (!target) return;
+        if (target.hasAttribute('data-success-close')) {
+            successDialog.close();
+            window.location.assign(adapter.routes?.home || 'feed.html');
+            return;
+        }
+        if (target.hasAttribute('data-review-retry')) { loadInitial(); return; }
         if (target.hasAttribute('data-review-submit')) { submitReview(); return; }
         if (target.hasAttribute('data-review-back')) {
             if (typeof history !== 'undefined' && history.length > 1) { history.back(); return; }
-            window.location.assign(adapter.routes?.echoes || 'echoes.html');
+            window.location.assign(searchUrl);
             return;
         }
         if (target.hasAttribute('data-success-another')) {
             successDialog.close();
-            window.location.assign(adapter.routes?.echoes || 'echoes.html');
+            window.location.assign(searchUrl);
             return;
         }
         if (target.hasAttribute('data-toggle-favorite')) {
@@ -377,13 +396,14 @@ export function mountAlbumReview(options = {}) {
 
     on(successDialog, 'close', () => {
         document.body.classList.remove('profile-modal-open');
+        contentEl.querySelector('[data-review-submit]')?.focus();
     });
 
     on(document, 'error', event => {
         if (event.target.matches?.('[data-image-fallback]')) {
             const parent = event.target.parentElement;
             event.target.remove();
-            if (parent) parent.textContent = (state.album.name || 'S').slice(0, 2).toUpperCase();
+            if (parent) parent.textContent = (state.album?.name || 'S').slice(0, 2).toUpperCase();
         }
     }, { capture: true });
 
@@ -392,6 +412,7 @@ export function mountAlbumReview(options = {}) {
         state,
         ready,
         destroy() {
+            search?.destroy();
             controller.abort();
         }
     };

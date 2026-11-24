@@ -131,7 +131,7 @@ describe('album-review: rating conversion, Unicode counter, and UI interactions'
         vi.stubGlobal('location', { ...window.location, assign: assignSpy });
         document.querySelector('[data-success-another]').click();
         expect(document.querySelector('#review-success-dialog').open).toBe(false);
-        expect(assignSpy).toHaveBeenCalledWith('echoes.html?demo=true');
+        expect(assignSpy).toHaveBeenCalledWith('album-review.html?demo=true');
         vi.unstubAllGlobals();
     });
 });
@@ -208,6 +208,13 @@ describe('album-review-http: REST contract and 409 conflict recovery', () => {
             rating: 0,
             reviewText: 'Nota zero válida'
         });
+        const assignSpy = vi.fn();
+        vi.stubGlobal('location', { ...window.location, assign: assignSpy });
+        document.querySelector('[data-success-close]').click();
+        expect(document.querySelector('#review-success-dialog').open).toBe(false);
+        expect(assignSpy).toHaveBeenCalledWith('feed.html?demo=true');
+        expect(document.body.classList.contains('profile-modal-open')).toBe(false);
+        vi.unstubAllGlobals();
     });
 
     // Verify 401 triggers single-flight refresh and retry, failed refresh expires session, and logout revokes via logoutSession.
