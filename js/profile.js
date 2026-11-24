@@ -34,8 +34,8 @@ function render() {
     document.title = `${profile.displayName} (@${profile.handle}) – Sonarfy`;
     if (typeof adapter.loadReviews === 'function') {
         document.getElementById('panel-activities').innerHTML = reviewsPanel(state.reviews, profile, state.pending);
-        document.getElementById('panel-replies').innerHTML = emptyState('Conteúdo ainda não disponível', 'Respostas ainda não estão integradas.');
-        document.getElementById('panel-collection').innerHTML = emptyState('Conteúdo ainda não disponível', 'A coleção ainda não está integrada.');
+        document.getElementById('panel-replies').innerHTML = emptyState('Em breve', 'As respostas a avaliações e comentários estarão disponíveis em breve.');
+        document.getElementById('panel-collection').innerHTML = emptyState('Em implementação', 'A coleção está em implementação e estará disponível em breve.');
         return;
     }
     if (state.data.contentAvailable === false) {
@@ -80,7 +80,7 @@ window.addEventListener('popstate', () => changeTab(new URL(location.href).searc
 
 async function run(action) { try { await action(); } catch (error) { notify(error.message || 'Não foi possível concluir. Tente novamente.'); } }
 async function navigation(key) {
-    if (key === 'notifications') { notify('Notificações estarão disponíveis em breve.'); return; }
+    if (key === 'notifications' || key === 'search') return;
     const handler = adapter.actions?.[key];
     if (handler) { await handler(); return; }
     if (key === 'logout') {
