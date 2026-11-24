@@ -1,5 +1,7 @@
 # Página do Álbum — Sonarfy
 
+O CTA global **Avaliar Álbum** da sidebar/drawer abre a busca em `album-review.html`, sem selecionar automaticamente o álbum atual. Os botões contextuais **Avaliar este álbum** e **Editar minha avaliação** mantêm o modal inline. A navegação compartilhada preserva `routes.review` e modo demonstração; detalhes em [Avaliar Álbum](album-review-page.md).
+
 Sirva a raiz do repositório e abra `pages/album.html?albumId=<spotifyId>` (ou use o modo demonstração explícito com `?demo=true` e cenários opcionais `?scenario=rated`, `?scenario=already-rated`, `?scenario=empty`, `?scenario=loading` e `?scenario=error`). Implementação em HTML5 semântico, CSS3 e módulos ES nativos, sem frameworks ou dependências de produção novas. O tema reutiliza `sonarfy_theme` e `js/login-theme.js`.
 
 ## Figma e componentes
@@ -36,7 +38,7 @@ Por padrão, `pages/album.html` utiliza `createHttpAlbumAdapter()` (`js/album-ht
 
 - `GET /api/albums/{spotifyId}`: carrega `spotifyId`, `name`, `coverUrl`, `artist`, `releaseOn`, `releasePrecision` (`ano`, `mes`, `dia` sem inventar partes ausentes), `totalTracks`, `averageRating` (escala `0–10` convertida para `0–5` dividindo por 2; `null` diferenciado de `0`) e `reviewCount`.
 - `GET /api/albums/{spotifyId}/reviews/me`: controla o estado `Avaliar este álbum` / `Editar minha avaliação` e o card `Sua Avaliação`; `404` indica ausência de avaliação própria sem tratar o álbum como inexistente.
-- `POST /api/albums/{spotifyId}/reviews`, `PUT /api/reviews/{reviewId}` e `DELETE /api/reviews/{reviewId}`: criação e edição da avaliação própria acontecem diretamente no modal inline `#album-review-dialog` (no mesmo padrão visual do modal de edição da Coleção do Perfil em `css/profile-dialogs.css`), mantendo a página dedicada `album-review.html` exclusivamente para o fluxo a partir de Ecos; exclusão segue inline com confirmação. Após mutações, grava `sonarfy_reviews_dirty` para sincronizar Ecos, Coleção e feed, além de reconsultar detalhes e comunidade para atualizar média, contagem e lista.
+- `POST /api/albums/{spotifyId}/reviews`, `PUT /api/reviews/{reviewId}` e `DELETE /api/reviews/{reviewId}`: criação e edição da avaliação própria acontecem diretamente no modal inline `#album-review-dialog` (no mesmo padrão visual do modal de edição da Coleção do Perfil em `css/profile-dialogs.css`), mantendo a página dedicada `album-review.html` para a busca global e os atalhos de Ecos; exclusão segue inline com confirmação. Após mutações, grava `sonarfy_reviews_dirty` para sincronizar Ecos, Coleção e feed, além de reconsultar detalhes e comunidade para atualizar média, contagem e lista.
 - `GET /api/profile/me`: consultado de forma não bloqueante para exibir nome público e `@handle` no card `Sua Avaliação`.
 - Tratamento de erros: `400` (identificador inválido), `401` (fluxo de sessão Sonarfy), `404` (álbum não encontrado), `502`/`503`/`504` (falha do catálogo sem solicitar OAuth Spotify pessoal, respeitando `Retry-After` sem loops de retry) e proteção contra respostas atrasadas em troca de álbum ou conta (`AbortController`, `popstate`, `storage`, `BroadcastChannel`).
 - Compartilhamento usa a URL real da página Sonarfy (`navigator.share` quando disponível, com fallback para `navigator.clipboard.writeText`).
@@ -57,6 +59,8 @@ Integrada diretamente ao endpoint `GET /api/albums/{spotifyId}/reviews?sort=rece
 - **Dados e estados**: normaliza `rating` (`0–10` → `0–5`), exibe nota zero e avaliações sem texto (`reviewText: null`), preserva identidade pública do autor (`displayName`, `@handle`), mantém curtidas/comentários indisponíveis sem contadores fictícios, trata erro isolado da seção com botão `Tentar novamente` e exibe estado vazio quando `items` retorna vazio.
 
 ## Verificação
+
+Limitação conhecida em 24/11/2026: o usuário relatou avaliações sempre com `0h` e identificou o problema no backend, cuja correção fica pendente. A página usa o formatador compartilhado para a avaliação própria e a comunidade, sem compensação local dos horários. Regra de exibição, evidência e limites da verificação em [Tempo das avaliações no Feed](feed-page.md#tempo-das-avaliações-exibido-como-0h--24112026).
 
 - **Suíte unitária (`npm test`)**: **284 testes em 31 arquivos** aprovados em Vitest + Happy DOM (incluindo `tests/album-http.test.js`, `tests/album.test.js` e `tests/profile-collection.test.js`).
 - **Verificação de navegador (`node tests/browser/album.cjs`)**: 8 combinações aprovadas sem erros de página e sem overflow horizontal, interceptando `GET /api/albums/{spotifyId}`, `GET /api/albums/{spotifyId}/reviews`, `GET /api/albums/{spotifyId}/reviews/me`, `PUT /api/reviews/{reviewId}`, `DELETE /api/reviews/{reviewId}` e `GET /api/profile/me`:

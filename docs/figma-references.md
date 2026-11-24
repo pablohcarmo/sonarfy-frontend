@@ -2,6 +2,12 @@
 
 Este documento reúne os links, frames e especificações visuais do Sonarfy, organizados por página.
 
+O CTA **Avaliar Álbum** de `Sidebar / Global` mantém o visual existente e agora é um link compartilhado para a seleção de álbum em todas as páginas autenticadas que reutilizam `profile-shell.js`, incluindo drawer mobile. Preservados altura 52px desktop/48px mobile, formato pill, posição abaixo das sete opções e temas. Sem alteração de geometria ou do arquivo Figma.
+
+O modal de confirmação de Avaliar Álbum inclui um botão local **Fechar confirmação** no canto superior direito, reutilizando o ícone compartilhado de fechar e os tokens existentes. Ajuste solicitado em 24/11/2026, sem alteração do arquivo Figma; validação em [Avaliar Álbum](album-review-page.md).
+
+Em 24/11/2026, a entrada de **Avaliar Álbum** passou a incluir busca automática por álbum/artista ao digitar, sem botão Buscar, antes do formulário. A busca reutiliza o shell global existente (`Sidebar / Global` com `Active Item=None`, header/footer), tokens claro/escuro e superfícies de Avaliar Álbum. A navegação do Feed continua com Home ativo. Nenhum arquivo Figma foi alterado ou novo frame de busca inspecionado; os controles novos são uma extensão local do frontend. Contratos e verificação: [Avaliar Álbum](album-review-page.md).
+
 Feed: [nós, componentes, adapter e verificação](feed-page.md), referência
 [Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862).
 

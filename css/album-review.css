@@ -1,4 +1,21 @@
 /* Avaliar Álbum Page: 573:151/252/312/423/524/584, 591:298/357/414/473, 593:456/464. */
+#album-review-content { width: 100%; max-width: 720px; }
+.album-search-form { display: grid; gap: 8px; }
+.album-search-controls { display: flex; gap: 12px; }
+.album-search-controls input { min-width: 0; min-height: 0; flex: 1; height: 48px; }
+.album-search-list { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 12px; }
+.album-search-result { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid var(--review-border); border-radius: 12px; color: var(--review-text); text-decoration: none; }
+.album-search-result:hover { background: var(--review-summary-bg); text-decoration: none; }
+.album-search-result > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 6px; overflow-wrap: anywhere; }
+.album-search-result > span:nth-child(2) > span { color: var(--review-muted); font-size: 14px; }
+.album-search-result img, .album-search-cover { flex: none; width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
+.album-search-cover { display: grid; place-items: center; background: var(--review-badge-bg); font-size: 28px; }
+[data-search-status] { color: var(--review-muted); margin: 0; }
+@media (max-width: 600px) {
+    .album-search-controls { flex-direction: column; }
+    .album-search-controls input { flex: none; width: 100%; }
+    .album-search-result { gap: 12px; padding: 12px; }
+}
 .album-review-page {
     --review-page: #f7f8fa;
     --review-surface: #ffffff;
@@ -377,6 +394,14 @@
 
 .review-success-dialog::backdrop {
     background: rgba(0, 0, 0, 0.55);
+}
+
+.review-success-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
 }
 
 .review-success-badge {

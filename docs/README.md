@@ -10,6 +10,12 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 
 ## Índice de Documentação
 
+**Limitação conhecida (24/11/2026):** avaliações podem aparecer sempre como `0h` no ambiente validado pelo usuário, que identificou o problema no backend. Correção e nova validação com dados reais pendentes; o frontend mantém o cálculo baseado em `createdAt`, sem compensação local. Consulte [o registro no Feed](feed-page.md#tempo-das-avaliações-exibido-como-0h--24112026).
+
+A navegação global usa **Avaliar Álbum** como link para a busca, tanto na sidebar quanto no menu hambúrguer de Feed, Perfil, Configurações, Ecos e Álbum. Contrato e destinos em [Avaliar Álbum](album-review-page.md).
+
+A página [Avaliar Álbum](album-review-page.md) inclui busca automática por álbum/artista durante a digitação via `/api/albums/search`, seleção com detalhes oficiais e publicação sem sincronização Spotify pessoal, acessível pelo Feed.
+
 - **[Referências do Figma](figma-references.md)** — Links, nós inspecionados, tokens de tema e especificações das telas Home, Login, Cadastro, Confirmação de e-mail, Verify Account e Spotify Sync.
 - **[Perfis Sonarfy](profile-page.md)** — Perfil e relacionamentos via HTTP, contrato de `window.sonarfyProfileAdapter`, demonstração explícita, referências do Figma (`Profile Page` e `Profile Page (Friend)`), verificação e limitações.
 - **[Feed Sonarfy](feed-page.md)** — Feed único paginado via `GET /api/feed` (`js/feed-http.js`), controle de cursor/concorrência, invalidação, reutilização do shell compartilhado, modo demonstração explícito (`?demo=true`) e verificação.

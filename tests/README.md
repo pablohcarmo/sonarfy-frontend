@@ -173,7 +173,21 @@ node tests/browser/not-found.cjs
 
 Valida `404.html` e `js/not-found.js` (resolução da rota inicial por sessão, retorno por `history.back()` com fallback, caminhos de assets a partir da raiz em rotas aninhadas com status HTTP `404`, dimensões do card `480px`/`342px`, carregamento de SVGs e ausência de overflow horizontal) no Edge e Firefox (`1440px`/`390px`, claro/escuro). Referência: [Figma — 404](../docs/figma-references.md#not-found).
 
+## Busca e avaliação sem sincronização Spotify — 24/11/2026
+
+Navegação global: `album-review.cjs` verifica o link **Avaliar Álbum** na sidebar/drawer de Perfil, Configurações, Ecos, Álbum e Avaliar Álbum, com altura preservada (52px/48px), tema, ausência de overflow e destino sem contexto de álbum. `feed.cjs` valida o mesmo link no Feed. Regressão de Perfil: `node tests/browser/profile.cjs`, 16 combinações aprovadas (próprio/visitante, Edge/Firefox, 1440/390px e claro/escuro). Modos demonstração dessas páginas usam fixtures locais; o fluxo principal de busca e o Feed usam HTTP interceptado.
+
+O modal de publicação também é verificado pelo botão **Fechar confirmação**, que redireciona ao Feed (normal e demonstração), e pela tecla Escape, que apenas fecha e devolve o foco ao botão de publicação. Ambos removem o bloqueio de rolagem, nas oito combinações de `tests/browser/album-review.cjs` descritas abaixo.
+
+- `npm test`: 293 testes aprovados em 32 arquivos. `tests/album-search.test.js` cobre debounce de 350ms sem botão Buscar, composição IME, limpeza/desmontagem, requisições obsoletas, cancelamento, validação, escape de HTML, paginação com falha/retry, Bearer, `Retry-After`, respostas incompatíveis e bloqueio do formulário até carregar os dados oficiais e a avaliação existente.
+- `node tests/browser/feed.cjs`: oito combinações aprovadas, incluindo entrada pela sidebar/drawer e destino do convite rápido para `album-review.html`.
+- `node tests/browser/album-review.cjs`: oito combinações aprovadas, incluindo formulário demonstrativo e fluxo HTTP com busca automática ao digitar (sem botão Buscar), busca vazia, erro 503, paginação, falha/retry dos detalhes, seleção por teclado, publicação POST 201, recuperação de duplicata 409, edição por PUT e retorno à busca.
+- Navegadores: Microsoft Edge **158.0.4370.33** e Firefox **153.0**; desktop **1440px** e mobile **390px**, temas claro/escuro. Capturas de busca e relatórios em `test-results/album-review/` e `test-results/feed/` (artefatos locais ignorados pelo Git); capturas de desktop claro/mobile escuro inspecionadas visualmente.
+- Limitações: navegadores headless, mobile emulado, HTTP interceptado com dados sintéticos; não houve publicação real, conexão Spotify pessoal ou validação do endpoint implantado. Os testes em origens diferentes expõem `Retry-After` via CORS simulado; em produção na mesma origem isso não é necessário. A suíte unitária emitiu mensagens CORS de logout contra localhost:8080, sem falhas. CI remota não executada.
+
 ## Limitações
+
+Em 24/11/2026, o usuário relatou avaliações sempre com `0h` e informou que o problema está no backend. A verificação local do formatador confirmou `30min → 0h`, `60min → 1h` e `3h → 3h`; `npm test -- tests/profile.test.js tests/feed.test.js` passou com 25 testes. Esses testes usam datas controladas e não validam os horários dos registros reais afetados. Correção no backend e nova validação manual permanecem pendentes; nenhuma compensação de horário foi adicionada ao frontend. Ver [registro da limitação](../docs/feed-page.md#tempo-das-avaliações-exibido-como-0h--24112026).
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.
 

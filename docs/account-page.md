@@ -1,5 +1,7 @@
 # Configurações da Conta — Sonarfy
 
+O CTA **Avaliar Álbum** da sidebar/drawer usa o link global para a busca em `album-review.html`, preservando `routes.review` e modo demonstração; não depende de handlers de Configurações. Ver [Avaliar Álbum](album-review-page.md).
+
 Sirva a raiz do repositório e abra `pages/account.html`. Implementação em HTML5 semântico, CSS3 e módulos ES nativos (`Inter`, `css/login.css`, `css/profile.css`, `css/profile-dialogs.css`, `css/account.css`, `js/login-theme.js`, `js/profile-shell.js`), sem dependências novas de produção.
 
 ## Figma e componentes

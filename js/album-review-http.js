@@ -98,6 +98,33 @@ export function createHttpAlbumReviewAdapter({
         return { album: review?.album || null, review };
     }
 
+    // Search the application catalog without personal Spotify authorization or synchronization.
+    async function searchAlbums(query, { offset = 0, signal } = {}) {
+        const response = await request(`/albums/search?${new URLSearchParams({ q: query, limit: '10', offset: String(offset) })}`, { signal });
+        if (!response.ok) {
+            const retry = response.headers.get('Retry-After');
+            const wait = response.status === 503 && /^[1-9]\d*$/.test(retry || '') ? ` Aguarde ${retry} segundos antes de tentar novamente.` : '';
+            throw createReviewError(`Não foi possível pesquisar os álbuns. Tente novamente.${wait}`, response.status);
+        }
+        const page = await response.json();
+        if (!Array.isArray(page?.items) || page.items.some(album => !/^[A-Za-z0-9]{22}$/.test(album?.spotifyId) || typeof album.name !== 'string' || !album.name.trim() || typeof album.artist?.name !== 'string' || !album.artist.name.trim())
+            || !(page.nextOffset === null || Number.isInteger(page.nextOffset) && page.nextOffset > offset && page.nextOffset <= 1000)) {
+            throw createReviewError('Resposta da busca de álbuns inválida.');
+        }
+        return page;
+    }
+
+    // Resolve authoritative metadata and persist unknown albums before any review operation.
+    async function loadAlbumDetails(spotifyId) {
+        if (!/^[A-Za-z0-9]{22}$/.test(spotifyId)) throw createReviewError('Identificador de álbum inválido.', 400);
+        const response = await request(`/albums/${encodeURIComponent(spotifyId)}`);
+        if (!response.ok) throw createReviewError('Não foi possível carregar o álbum. Tente novamente.', response.status);
+        const album = await response.json();
+        if (album?.spotifyId !== spotifyId || typeof album.name !== 'string' || !album.name.trim() || typeof album.artist?.name !== 'string' || !album.artist.name.trim()) throw createReviewError('Resposta de álbum inválida.');
+        return { spotifyId, name: album.name, artist: album.artist.name, coverUrl: album.coverUrl,
+            releaseYear: album.releaseOn?.slice(0, 4), trackCount: album.totalTracks };
+    }
+
     async function publishReview({ spotifyId, reviewId, rating, reviewText }) {
         const apiRating = starsToApiRating(rating);
         if (apiRating === null) throw createReviewError('Selecione uma nota válida antes de publicar.', 400);
@@ -147,6 +174,8 @@ export function createHttpAlbumReviewAdapter({
 
     return {
         routes,
+        searchAlbums,
+        loadAlbumDetails,
         loadAlbumReview,
         publishReview,
         deleteReview,

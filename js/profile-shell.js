@@ -12,6 +12,9 @@ export function logoutRoute() {
     return `logout.html?from=${encodeURIComponent(`${file}${location.search || ''}`)}`;
 }
 export function sidebar(own, routes = {}, activeItem = own ? 'profile' : null) {
+    const demo = new URLSearchParams(typeof location === 'object' ? location.search : '').get('demo') === 'true'
+        || new URLSearchParams((routes.home || '').split('?')[1]).get('demo') === 'true';
+    const reviewHref = routes.review || `album-review.html${demo ? '?demo=true' : ''}`;
     return `<nav class="profile-navigation" aria-label="Navegação principal">${items.map(([key, label, route]) => {
         const active = key === activeItem;
         const iconKey = active && key === 'profile' ? 'activeProfile' : active && key === 'home' ? 'activeHome' : active && key === 'echoes' ? 'activeEchoes' : active && key === 'settings' ? 'activeSettings' : key;
@@ -27,7 +30,7 @@ export function sidebar(own, routes = {}, activeItem = own ? 'profile' : null) {
             return `<span class="profile-nav-disabled" title="${hint}" data-tooltip="${hint}"><button type="button" data-navigation="${key}" disabled>${content}</button></span>`;
         }
         return href ? `<a href="${e(href)}" ${active ? 'aria-current="page"' : ''}>${content}</a>` : `<button data-navigation="${key}">${content}</button>`;
-    }).join('')}</nav><button class="profile-primary review-cta" data-navigation="review">Avaliar Álbum</button>`;
+    }).join('')}</nav><a class="profile-primary review-cta" href="${e(reviewHref)}">Avaliar Álbum</a>`;
 }
 export function globalHeader(home = 'feed.html') {
     return `<button class="profile-icon-button mobile-menu" id="open-menu" aria-label="Abrir menu" aria-haspopup="dialog" aria-expanded="false" aria-controls="profile-drawer">${icon('menu')}</button><a href="${e(home)}" class="brand" aria-label="Sonarfy — página inicial"><svg width="118" height="32" viewBox="0 0 118 32" aria-hidden="true"><use href="../assets/logos/sonarfy-desktop.svg#logo"></use></svg></a><button id="theme-toggle" class="profile-icon-button" aria-label="Ativar tema escuro" aria-pressed="false"><img class="theme-light-only" src="../assets/icons/shared/theme-moon.svg" alt=""><img class="theme-dark-only" src="../assets/icons/shared/theme-sun.svg" alt=""></button>`;

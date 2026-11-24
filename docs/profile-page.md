@@ -1,5 +1,7 @@
 # Perfis Sonarfy
 
+O CTA global **Avaliar Álbum** da sidebar/drawer abre a busca em `album-review.html` por link compartilhado, sem depender de `adapter.actions.review` ou exibir indisponibilidade. `routes.review` pode personalizar o destino e o modo demonstração é preservado. Ver [Avaliar Álbum](album-review-page.md).
+
 Implementação em HTML5, CSS3 e módulos ES Vanilla, sem dependências novas.
 Sirva a raiz do repositório e abra `pages/profile.html` (próprio) ou
 `pages/profile.html?handle=lucas_vinyl` (visitante). `tab=activities|replies|collection`
@@ -98,7 +100,7 @@ as páginas existentes. **Pesquisar**, **Notificações**, **curtidas/comentári
 e as **páginas institucionais do rodapé** (`Termos de Uso`, `Privacidade`, `Diretrizes`,
 `Apoie o Sonarfy`) ficam fora desta versão do Sonarfy (implementações futuras); Pesquisar
 e Notificações permanecem desabilitadas na sidebar global e o footer informa indisponibilidade
-sem links para arquivos inexistentes. Clicar na capa/título do álbum (`[data-album]`) nos cards da **Coleção** e **Avaliações** navega diretamente para `album.html?albumId=<spotifyId>` (via `albumURL`, preservando `?demo=true` em modo demonstração ou `adapter.actions.album` quando injetado por host). Avaliar Álbum usa handler configurável quando não há rota direta. Ecos não é redirecionado ao onboarding do Spotify.
+sem links para arquivos inexistentes. Clicar na capa/título do álbum (`[data-album]`) nos cards da **Coleção** e **Avaliações** navega diretamente para `album.html?albumId=<spotifyId>` (via `albumURL`, preservando `?demo=true` em modo demonstração ou `adapter.actions.album` quando injetado por host). Avaliar Álbum usa o link compartilhado configurável por `routes.review`. Ecos não é redirecionado ao onboarding do Spotify.
 
 Compartilhar usa a rota real `/pages/profile.html?handle=...` na origem configurada,
 Clipboard API, URLs das redes e Web Share com fallback de seleção manual.
@@ -140,6 +142,8 @@ O footer e os estados vazios crescem com o conteúdo; não reproduzem a altura f
 dos frames. Avatar de demonstração é constante entre temas, como uma imagem da API.
 
 ## Verificação
+
+Limitação conhecida em 24/11/2026: o usuário relatou avaliações sempre com `0h` e identificou o problema no backend, cuja correção fica pendente. O Perfil compartilha o formatador de tempo do Feed, sem compensação local dos horários. Regra de exibição, evidência e limites da verificação em [Tempo das avaliações no Feed](feed-page.md#tempo-das-avaliações-exibido-como-0h--24112026).
 
 `npm test`: 113 testes aprovados, incluindo regras de limites e timestamps,
 ordenação sem mutação, permissões e concorrência/reconciliação de curtidas.

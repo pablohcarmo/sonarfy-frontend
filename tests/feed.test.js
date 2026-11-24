@@ -186,7 +186,7 @@ describe('feed: integração DOM, estados vazios, erros, invalidação e ações
         });
         await emptyZero.ready;
         expect(document.querySelector('.feed-empty h2').textContent).toContain('silencioso');
-        expect(document.querySelector('.feed-empty a[href="echoes.html"]')).not.toBeNull();
+        expect(document.querySelector('.feed-empty a[href="album-review.html"]')).not.toBeNull();
         expect(document.querySelector('.feed-empty a[href="profile.html"]')).not.toBeNull();
         emptyZero.destroy();
 
