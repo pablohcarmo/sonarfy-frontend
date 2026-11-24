@@ -16,6 +16,9 @@ Projeto de autoria própria, em desenvolvimento como **Trabalho de Conclusão de
 
 Configuração HTTP: fora de `localhost` e `127.0.0.1`, o frontend usa `/api` na mesma origem da página; o servidor deve encaminhar esse caminho ao backend por proxy reverso. Em desenvolvimento local, a base continua `http://localhost:8080/api`.
 
+O adapter do Feed reutiliza essa resolução em `auth-http.js`, sem exigir
+`API_BASE_URL` em `feed.html`. Opções explícitas de base continuam disponíveis.
+
 Uma experiência que acompanha você no computador e no celular, com temas claro e escuro.
 
 | Desktop · tema escuro | Mobile · tema claro |

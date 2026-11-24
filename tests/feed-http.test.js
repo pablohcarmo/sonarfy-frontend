@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHttpFeedAdapter, mapFeedItem, mapFeedPage } from '../js/feed-http.js';
+
+afterEach(() => vi.unstubAllGlobals());
 
 function jsonResponse(status, body) {
     return {
@@ -28,6 +30,27 @@ function sampleDto(overrides = {}) {
 }
 
 describe('feed-http: contrato e normalização de GET /api/feed', () => {
+    // Exercita o adapter sem base explícita para impedir que produção volte a acessar localhost.
+    it.each([
+        ['https://sonarfymusic.duckdns.org', undefined, undefined, 'https://sonarfymusic.duckdns.org/api'],
+        ['http://localhost:4173', undefined, undefined, 'http://localhost:8080/api'],
+        ['http://127.0.0.1:4173', undefined, undefined, 'http://localhost:8080/api'],
+        ['https://sonarfymusic.duckdns.org', 'https://configured.example/api/', undefined, 'https://configured.example/api'],
+        ['https://sonarfymusic.duckdns.org', 'https://configured.example/api', 'https://override.example/api/', 'https://override.example/api']
+    ])('resolves feed and viewer URLs from %s with global %s and override %s', async (origin, configuredBase, baseUrl, expectedBase) => {
+        vi.stubGlobal('location', new URL(origin));
+        vi.stubGlobal('API_BASE_URL', configuredBase);
+        const fetcher = vi.fn()
+            .mockResolvedValueOnce(jsonResponse(200, { items: [], followingCount: 0, nextCursor: null }))
+            .mockResolvedValueOnce(jsonResponse(200, { identity: { id: 1, handle: 'listener', displayName: 'Listener' } }));
+        const adapter = createHttpFeedAdapter({ baseUrl, fetcher, getToken: () => 'test-token' });
+        await adapter.loadPage();
+        await adapter.loadViewer();
+        expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+            `${expectedBase}/feed?limit=20`, `${expectedBase}/profile/me`
+        ]);
+    });
+
     // Valida normalização de nota zero, dez e quartos de estrela sem conversão duplicada.
     it('normalizes 0, 0.5, 8.5 and 10 ratings to 0..5 quarter-star scale and preserves optional fields', () => {
         expect(mapFeedItem(sampleDto({ rating: 0, reviewText: null })).rating).toBe(0);

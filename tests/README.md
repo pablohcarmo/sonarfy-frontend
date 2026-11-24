@@ -51,6 +51,12 @@ contra backend real e CI remoto não realizadas nesta entrega.
 
 ### Feed
 
+Regressão de base HTTP: `tests/feed-http.test.js` verifica o adapter sem
+`API_BASE_URL` na origem publicada e em localhost/127.0.0.1, além da precedência
+de configuração global e `baseUrl` explícita. `tests/browser/feed.cjs` também
+serve a build local sob a origem HTTPS publicada simulada e confere que Feed,
+perfil e paginação usam `/api` nessa origem, sem requisições a localhost.
+
 `npm test` inclui `tests/feed.test.js` e `tests/feed-http.test.js` em Vitest + Happy DOM, cobrindo normalização de `GET /api/feed`, notas `0`/`10`/quartos de estrela, estados vazios (`followingCount=0` vs `>0`), paginação por cursor opaco, prevenção de duplicatas, retry preservando cards, erros `400`/`401`, respostas atrasadas, troca de sessão/logout, `pageshow`/bfcache, recarga ao clicar no logo do Sonarfy, escape HTML, ausência de abas e controles sociais indisponíveis sem contadores fictícios.
 `node tests/browser/feed.cjs` inicia seu próprio servidor e verifica `pages/feed.html` interceptando `GET /api/feed` e `GET /api/profile/me` no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo feed único paginado, ausência de abas e do botão de atualização manual, navegação para `pages/album.html?albumId=<spotifyId>` ao clicar no álbum do card, botões sociais de curtir/comentar em estado indisponível conforme o Figma, carregamento com `reduced-motion`, estados vazios, erro inicial sem fallback + retry, drawer mobile, foco visível, assets SVG e ausência de overflow horizontal. Relatórios/capturas: `test-results/feed/`. Contrato e resultados: [Feed](../docs/feed-page.md).
 
