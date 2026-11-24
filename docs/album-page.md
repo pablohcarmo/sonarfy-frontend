@@ -36,7 +36,7 @@ Por padrão, `pages/album.html` utiliza `createHttpAlbumAdapter()` (`js/album-ht
 
 - `GET /api/albums/{spotifyId}`: carrega `spotifyId`, `name`, `coverUrl`, `artist`, `releaseOn`, `releasePrecision` (`ano`, `mes`, `dia` sem inventar partes ausentes), `totalTracks`, `averageRating` (escala `0–10` convertida para `0–5` dividindo por 2; `null` diferenciado de `0`) e `reviewCount`.
 - `GET /api/albums/{spotifyId}/reviews/me`: controla o estado `Avaliar este álbum` / `Editar minha avaliação` e o card `Sua Avaliação`; `404` indica ausência de avaliação própria sem tratar o álbum como inexistente.
-- `POST /api/albums/{spotifyId}/reviews`, `PUT /api/reviews/{reviewId}` e `DELETE /api/reviews/{reviewId}`: fluxo de criação/edição via `album-review.html` e exclusão inline com confirmação; após mutações, grava `sonarfy_reviews_dirty` para sincronizar Ecos, Coleção e feed, além de reconsultar `GET /api/albums/{spotifyId}` (e revalidar em `pageshow`/`storage`) para atualizar média e contagem.
+- `POST /api/albums/{spotifyId}/reviews`, `PUT /api/reviews/{reviewId}` e `DELETE /api/reviews/{reviewId}`: criação e edição da avaliação própria acontecem diretamente no modal inline `#album-review-dialog` (no mesmo padrão visual do modal de edição da Coleção do Perfil em `css/profile-dialogs.css`), mantendo a página dedicada `album-review.html` exclusivamente para o fluxo a partir de Ecos; exclusão segue inline com confirmação. Após mutações, grava `sonarfy_reviews_dirty` para sincronizar Ecos, Coleção e feed, além de reconsultar detalhes e comunidade para atualizar média, contagem e lista.
 - `GET /api/profile/me`: consultado de forma não bloqueante para exibir nome público e `@handle` no card `Sua Avaliação`.
 - Tratamento de erros: `400` (identificador inválido), `401` (fluxo de sessão Sonarfy), `404` (álbum não encontrado), `502`/`503`/`504` (falha do catálogo sem solicitar OAuth Spotify pessoal, respeitando `Retry-After` sem loops de retry) e proteção contra respostas atrasadas em troca de álbum ou conta (`AbortController`, `popstate`, `storage`, `BroadcastChannel`).
 - Compartilhamento usa a URL real da página Sonarfy (`navigator.share` quando disponível, com fallback para `navigator.clipboard.writeText`).
@@ -58,8 +58,8 @@ Integrada diretamente ao endpoint `GET /api/albums/{spotifyId}/reviews?sort=rece
 
 ## Verificação
 
-- **Suíte unitária (`npm test`)**: **282 testes em 31 arquivos** aprovados em Vitest + Happy DOM (incluindo `tests/album-http.test.js`, `tests/album.test.js` e `tests/profile-collection.test.js`).
-- **Verificação de navegador (`node tests/browser/album.cjs`)**: 8 combinações aprovadas sem erros de página e sem overflow horizontal, interceptando `GET /api/albums/{spotifyId}`, `GET /api/albums/{spotifyId}/reviews`, `GET /api/albums/{spotifyId}/reviews/me`, `DELETE /api/reviews/{reviewId}` e `GET /api/profile/me`:
+- **Suíte unitária (`npm test`)**: **284 testes em 31 arquivos** aprovados em Vitest + Happy DOM (incluindo `tests/album-http.test.js`, `tests/album.test.js` e `tests/profile-collection.test.js`).
+- **Verificação de navegador (`node tests/browser/album.cjs`)**: 8 combinações aprovadas sem erros de página e sem overflow horizontal, interceptando `GET /api/albums/{spotifyId}`, `GET /api/albums/{spotifyId}/reviews`, `GET /api/albums/{spotifyId}/reviews/me`, `PUT /api/reviews/{reviewId}`, `DELETE /api/reviews/{reviewId}` e `GET /api/profile/me`:
   - **Microsoft Edge `158.0.4370.33`**: `1440px` e `390px`, temas claro e escuro.
   - **Firefox `159.0`**: `1440px` e `390px`, temas claro e escuro.
 - **Limitações**: mobile verificado por viewport emulado em navegador headless; testes automatizados de navegador e unidade interceptam/simulam respostas HTTP e não executam contra o backend real em execução. **Curtidas, comentários, respostas**, **Pesquisas**, **Notificações** e **páginas institucionais do rodapé** ficam fora desta entrega.

@@ -1,10 +1,10 @@
 import { createAlbumFixturesAdapter } from './album-fixtures.js';
 import { createHttpAlbumAdapter, formatReleaseDate } from './album-http.js';
 import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
-import { socialActions } from './profile-views.js';
+import { cover, socialActions, stars } from './profile-views.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
-import { escapeHTML as e, safeImage } from './profile-utils.js';
+import { escapeHTML as e, limits, safeImage, validateReview } from './profile-utils.js';
 
 const SORT_OPTIONS = [
     ['recent', 'Ordenar: Mais recentes'],
@@ -136,9 +136,8 @@ function renderCommunityRating(album) {
     </div>`;
 }
 
-function renderHeroCard(album, userReview, adapter) {
+function renderHeroCard(album, userReview) {
     const submeta = renderSubmeta(album);
-    const reviewHref = buildReviewHref(album, adapter);
     const spotifyUrl = album?.spotifyUrl || (album?.spotifyId ? `https://open.spotify.com/album/${encodeURIComponent(album.spotifyId)}` : '');
     const userBadgeHtml = userReview
         ? `<div class="album-user-badge">Sua avaliação: <span aria-hidden="true">${formatStarsText(userReview.rating)}</span> · ${e(formatRatingComma(userReview.rating))}</div>`
@@ -160,7 +159,7 @@ function renderHeroCard(album, userReview, adapter) {
                 ${renderCommunityRating(album)}
                 ${userBadgeHtml}
                 <div class="album-cta-row">
-                    <a class="album-primary-cta" href="${e(reviewHref)}" data-rate-album data-rated="${String(Boolean(userReview))}">${e(ctaLabel)}</a>
+                    <button type="button" class="album-primary-cta" data-open-review-modal data-rate-album data-rated="${String(Boolean(userReview))}">${e(ctaLabel)}</button>
                     ${spotifyHtml}
                 </div>
             </div>
@@ -189,8 +188,7 @@ function formatAuthorLine(review) {
     return `${name}${handlePart}${datePart}`;
 }
 
-function renderMyReviewCard(userReview, album, adapter, confirmingDelete, deleting) {
-    const reviewHref = buildReviewHref(album, adapter);
+function renderMyReviewCard(userReview, confirmingDelete, deleting) {
     const authorLine = formatAuthorLine(userReview);
     const actionsHtml = confirmingDelete
         ? `<div class="album-my-review-actions">
@@ -198,10 +196,10 @@ function renderMyReviewCard(userReview, album, adapter, confirmingDelete, deleti
             <button type="button" class="album-cancel-delete" data-cancel-delete ${deleting ? 'disabled' : ''}>Cancelar</button>
         </div>`
         : `<div class="album-my-review-actions">
-            <a class="album-icon-action" href="${e(reviewHref)}" aria-label="Editar minha avaliação">
+            <button type="button" class="album-icon-action" data-open-review-modal aria-label="Editar minha avaliação">
                 <img class="theme-light-only" src="../assets/icons/album/edit-light.svg" width="36" height="36" alt="" aria-hidden="true">
                 <img class="theme-dark-only" src="../assets/icons/album/edit-dark.svg" width="36" height="36" alt="" aria-hidden="true">
-            </a>
+            </button>
             <button type="button" class="album-icon-action" data-request-delete aria-label="Excluir minha avaliação">
                 <img class="theme-light-only" src="../assets/icons/album/delete-light.svg" width="36" height="36" alt="" aria-hidden="true">
                 <img class="theme-dark-only" src="../assets/icons/album/delete-dark.svg" width="36" height="36" alt="" aria-hidden="true">
@@ -279,6 +277,7 @@ export function mountAlbumPage(options = {}) {
     const footerEl = document.querySelector('.profile-footer');
     const drawer = document.querySelector('#profile-drawer');
     const coverDialog = document.querySelector('#album-cover-dialog');
+    const reviewDialog = document.querySelector('#album-review-dialog');
     const demoEl = document.querySelector('#album-demo');
     const statusEl = document.querySelector('#album-status');
     const contentEl = document.querySelector('#album-content');
@@ -303,6 +302,9 @@ export function mountAlbumPage(options = {}) {
     const trigger = headerEl.querySelector('#open-menu');
     containFocus(drawer, controller.signal);
     containFocus(coverDialog, controller.signal);
+    if (reviewDialog) containFocus(reviewDialog, controller.signal);
+    let reviewDialogTrigger = null;
+    let savingReview = false;
 
     const state = {
         loading: true,
@@ -427,12 +429,12 @@ export function mountAlbumPage(options = {}) {
             reviewsBody = `<div class="album-empty-card">
                 <h3>Nenhuma avaliação para este álbum ainda</h3>
                 <p>Seja o primeiro a compartilhar o que achou deste disco.</p>
-                <a class="album-primary-cta" href="${e(buildReviewHref(state.album, adapter))}">Avaliar agora</a>
+                <button type="button" class="album-primary-cta" data-open-review-modal>Avaliar agora</button>
             </div>`;
         }
 
-        contentEl.innerHTML = `${renderHeroCard(state.album, state.userReview, adapter)}
-            ${state.userReview ? renderMyReviewCard(state.userReview, state.album, adapter, state.confirmingDelete, state.deleting) : ''}
+        contentEl.innerHTML = `${renderHeroCard(state.album, state.userReview)}
+            ${state.userReview ? renderMyReviewCard(state.userReview, state.confirmingDelete, state.deleting) : ''}
             <section class="album-reviews-section" aria-labelledby="community-reviews-heading">
                 <div class="album-section-header">
                     <h2 id="community-reviews-heading" class="album-section-title">Avaliações da Comunidade</h2>
@@ -440,6 +442,134 @@ export function mountAlbumPage(options = {}) {
                 </div>
                 <div class="album-reviews-stack"${state.communityLoading ? ' aria-busy="true"' : ''}>${reviewsBody}</div>
             </section>`;
+    }
+
+    // Open the inline review modal (matching Profile Collection edit modal) to create or edit own review on the Album Page.
+    function openReviewModal() {
+        if (!state.album || !reviewDialog) return;
+        const isEditing = Boolean(state.userReview?.reviewId != null);
+        const canSave = isEditing
+            ? typeof adapter.updateReview === 'function'
+            : typeof adapter.createReview === 'function';
+        if (!canSave) {
+            notify('Não é possível salvar avaliações neste modo.');
+            return;
+        }
+        reviewDialogTrigger = document.activeElement;
+        const draft = {
+            rating: isEditing ? Math.max(0, Math.min(5, Math.round((Number(state.userReview.rating) || 0) * 4) / 4)) : 0,
+            review: isEditing ? (state.userReview.reviewText || '') : ''
+        };
+        const headingTitle = isEditing ? 'Editar avaliação do álbum' : 'Avaliar álbum';
+        const albumHeader = `<div class="expanded-album">${cover({
+            title: state.album.name,
+            artist: state.album.artist,
+            cover: state.album.coverUrl || state.album.cover
+        })}<div><strong>${e(state.album.name)}</strong>${state.album.artist ? `<p>${e(state.album.artist)}</p>` : ''}</div></div>`;
+
+        reviewDialog.innerHTML = `<header class="dialog-heading">${albumHeader}<h2 id="album-review-dialog-title" class="visually-hidden">${e(headingTitle)}</h2><button type="button" class="profile-icon-button" data-close-review-dialog aria-label="Fechar">${icon('close')}</button></header>
+            <form id="edit-review-form" class="expanded-edit-form">
+                <div class="expanded-rating">
+                    <div id="edit-review-stars-preview" tabindex="0" role="slider" aria-label="Nota do álbum de 0 a 5 estrelas" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${draft.rating}">${stars(draft.rating)}</div>
+                    <span class="album-rating-badge" id="edit-review-rating-badge">${e(formatRatingComma(draft.rating))}</span>
+                    <input id="edit-review-rating" name="rating" type="hidden" value="${draft.rating}">
+                </div>
+                <textarea id="edit-review-text" name="review" class="expanded-review-textarea" aria-label="Resenha" placeholder="Compartilhe o que você achou deste álbum (opcional)..." maxlength="${limits.review}" rows="5">${e(draft.review)}</textarea>
+                <div class="expanded-review-actions">
+                    <button type="submit" class="expanded-review-save" id="save-review">Salvar</button>
+                </div>
+            </form>
+            <p class="dialog-status" role="status" aria-live="polite"></p>`;
+
+        const form = reviewDialog.querySelector('#edit-review-form');
+        const ratingInput = form.elements.rating;
+        const starsPreview = reviewDialog.querySelector('#edit-review-stars-preview');
+        const ratingBadge = reviewDialog.querySelector('#edit-review-rating-badge');
+        const reviewInput = form.elements.review;
+        const dialogStatus = reviewDialog.querySelector('.dialog-status');
+        const setDialogStatus = message => { if (dialogStatus) dialogStatus.textContent = message; };
+
+        const syncRating = next => {
+            draft.rating = Math.max(0, Math.min(5, Math.round(Number(next) * 4) / 4));
+            ratingInput.value = String(draft.rating);
+            starsPreview.innerHTML = stars(draft.rating);
+            starsPreview.setAttribute('aria-valuenow', String(draft.rating));
+            if (ratingBadge) ratingBadge.textContent = formatRatingComma(draft.rating);
+        };
+
+        starsPreview.addEventListener('click', event => {
+            if (savingReview) return;
+            const starEls = [...starsPreview.querySelectorAll('.profile-star')];
+            const clicked = event.target.closest('.profile-star');
+            const idx = starEls.indexOf(clicked);
+            if (idx === -1) return;
+            const rect = clicked.getBoundingClientRect();
+            const isHalf = rect.width > 0 && (event.clientX - rect.left) < rect.width / 2;
+            syncRating(idx + (isHalf ? 0.5 : 1));
+        });
+
+        starsPreview.addEventListener('keydown', event => {
+            if (savingReview) return;
+            if (!['ArrowRight', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            let next = draft.rating;
+            if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next = Math.min(5, next + 0.5);
+            else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next = Math.max(0, next - 0.5);
+            else if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = 5;
+            syncRating(next);
+        });
+
+        reviewInput.addEventListener('input', () => {
+            const value = Array.from(reviewInput.value).slice(0, limits.review).join('');
+            reviewInput.value = value;
+            draft.review = value;
+        });
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (savingReview) return;
+            draft.rating = Math.max(0, Math.min(5, Math.round(Number(ratingInput.value) * 4) / 4));
+            draft.review = Array.from(reviewInput.value).slice(0, limits.review).join('');
+            try { validateReview(draft.review); } catch (err) { setDialogStatus(err.message); return; }
+            savingReview = true;
+            const controls = [...reviewDialog.querySelectorAll('button, input, textarea')];
+            controls.forEach(c => { c.disabled = true; });
+            setDialogStatus('Salvando avaliação…');
+            try {
+                const saved = state.userReview?.reviewId != null
+                    ? await adapter.updateReview(state.userReview.reviewId, { rating: draft.rating, reviewText: draft.review })
+                    : await adapter.createReview(state.album.spotifyId, { rating: draft.rating, reviewText: draft.review });
+                lastDirtyMarker = markReviewsDirty();
+                savingReview = false;
+                reviewDialog.close();
+                if (!adapter.isDemo) {
+                    await load();
+                } else {
+                    state.userReview = saved || {
+                        reviewId: state.userReview?.reviewId ?? Date.now(),
+                        rating: draft.rating,
+                        reviewText: draft.review,
+                        publishedLabel: 'Agora'
+                    };
+                    render();
+                }
+            } catch (err) {
+                savingReview = false;
+                controls.forEach(c => { c.disabled = false; });
+                if (err?.status === 409 && err.existingReview) {
+                    state.userReview = err.existingReview;
+                    syncRating(err.existingReview.rating ?? draft.rating);
+                    reviewInput.value = err.existingReview.reviewText || '';
+                    draft.review = reviewInput.value;
+                }
+                setDialogStatus(err?.message || 'Não foi possível salvar a avaliação. Tente novamente.');
+            }
+        });
+
+        if (!reviewDialog.open) reviewDialog.showModal();
+        document.body.classList.add('profile-modal-open');
+        reviewInput.focus();
     }
 
     function openCoverModal() {
@@ -674,6 +804,8 @@ export function mountAlbumPage(options = {}) {
     on(document, 'click', async event => {
         const target = event.target.closest('button, a');
         if (!target) return;
+        if (target.hasAttribute('data-open-review-modal')) { openReviewModal(); return; }
+        if (target.hasAttribute('data-close-review-dialog')) { if (!savingReview) reviewDialog?.close(); return; }
         if (target.hasAttribute('data-expand-cover')) { openCoverModal(); return; }
         if (target.hasAttribute('data-close-cover')) { coverDialog.close(); return; }
         if (target.hasAttribute('data-share-album')) { await shareAlbum(); return; }
@@ -739,7 +871,7 @@ export function mountAlbumPage(options = {}) {
             const key = target.dataset.navigation;
             if (key === 'review') {
                 if (state.album) {
-                    window.location.assign(buildReviewHref(state.album, adapter));
+                    openReviewModal();
                 } else {
                     window.location.assign(adapter.routes?.echoes || 'echoes.html');
                 }
@@ -783,6 +915,20 @@ export function mountAlbumPage(options = {}) {
         document.body.classList.remove('profile-modal-open');
         contentEl.querySelector('[data-expand-cover]')?.focus();
     });
+
+    if (reviewDialog) {
+        on(reviewDialog, 'click', event => {
+            if (event.target === reviewDialog && !savingReview) reviewDialog.close();
+        });
+        on(reviewDialog, 'cancel', event => {
+            if (savingReview) event.preventDefault();
+        });
+        on(reviewDialog, 'close', () => {
+            document.body.classList.remove('profile-modal-open');
+            if (reviewDialogTrigger?.isConnected) reviewDialogTrigger.focus();
+            else contentEl.querySelector('[data-open-review-modal]')?.focus();
+        });
+    }
 
     on(document, 'error', event => {
         if (event.target.matches?.('[data-image-fallback]')) {

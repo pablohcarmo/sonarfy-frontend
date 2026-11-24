@@ -276,7 +276,7 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
                     for (const items of [store.state.data.activities, store.state.data.replies, store.state.data.collection, store.state.reviews?.items || []]) {
                         items.filter(item => item.author.id === profile.id).forEach(item => { item.author = profile; });
                     }
-                    onSaved(); saving = false; dialog.close(); notify(adapter.demo ? 'Perfil atualizado nesta demonstração.' : 'Perfil atualizado com sucesso.');
+                    onSaved(); saving = false; dialog.close();
                 } catch (error) { if (alive) status(error.message || 'Não foi possível salvar. Tente novamente.'); }
                 finally { saving = false; controls.forEach(control => { control.disabled = previouslyDisabled.includes(control); }); }
             });
@@ -404,7 +404,6 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
                     try { localStorage.setItem('sonarfy_reviews_dirty', String(Date.now())); } catch {}
                     saving = false;
                     dialog.close();
-                    notify('Avaliação atualizada com sucesso.');
                     await store.invalidateReviewsAndCollection();
                 } catch (error) {
                     saving = false;
