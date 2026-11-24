@@ -181,15 +181,20 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
         const dialogStatus = dialog.querySelector('.account-dialog-status');
         closeButtons.forEach(btn => btn.addEventListener('click', () => { if (!dialogBusy) dialog.close(); }));
         if (confirmBtn && onConfirm) {
+            dialog.querySelector('form')?.addEventListener('submit', event => {
+                event.preventDefault();
+                confirmBtn.click();
+            });
             confirmBtn.addEventListener('click', async () => {
                 if (dialogBusy) return;
                 dialogBusy = true;
                 dialog.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
                 if (dialogStatus) dialogStatus.textContent = '';
                 try {
-                    await onConfirm();
+                    const afterClose = await onConfirm();
                     dialogBusy = false;
                     if (dialog.open) dialog.close();
+                    if (typeof afterClose === 'function') afterClose();
                 } catch (error) {
                     dialogBusy = false;
                     dialog.querySelectorAll('button').forEach(btn => { btn.disabled = false; });
@@ -201,7 +206,7 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
     }
 
     // Open the success feedback modal matching the Figma specification.
-    function openSuccessDialog(message, note = 'Por segurança, aguarde antes de fazer uma nova alteração.') {
+    function openSuccessDialog(message, note = 'Por segurança, aguarde antes de fazer uma nova alteração.', buttonLabel = 'Entendi') {
         openDialog(
             `<div class="account-dialog-content">
                 <div class="account-dialog-success-head">
@@ -211,14 +216,54 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
                 <p class="account-dialog-text">${e(message)}</p>
                 <p class="account-dialog-note">${e(note)}</p>
                 <div class="account-dialog-actions is-single">
-                    <button type="button" class="account-btn-primary" data-close>Entendi</button>
+                    <button type="button" class="account-btn-primary" data-close>${e(buttonLabel)}</button>
                 </div>
             </div>`
         );
     }
 
-    // Open the Deactivate Account confirmation modal.
+    // Open the Deactivate Account confirmation modal (HTTP requests email confirmation; demo deactivates locally).
     function openDeactivateDialog() {
+        if (!adapter.demo) {
+            openDialog(
+                `<div class="account-dialog-content">
+                    <div class="account-dialog-top">
+                        <span class="account-dialog-badge" aria-hidden="true">${accountIcon('eye-off-light', 'eye-off-dark', 24)}</span>
+                        <button type="button" class="account-dialog-close" data-close aria-label="Fechar">${accountIcon('close-light', 'close-dark', 20)}</button>
+                    </div>
+                    <h2 id="account-dialog-title" class="account-dialog-title">Desativar sua conta?</h2>
+                    <p class="account-dialog-text">Informe sua senha atual para receber um link de confirmação por e-mail (válido por 15 minutos). Sua conta só será desativada após confirmar o link, preservando suas avaliações, coleção, Ecos e conexões.</p>
+                    <div class="account-dialog-info"><strong>Reativação explícita:</strong> O login normal não reativa a conta. Quando quiser voltar, utilize a opção <strong>Reativar conta</strong> na tela de login.</div>
+                    <form id="deactivate-account-form" class="account-section" novalidate>
+                        <div class="account-field">
+                            <label for="deactivate-password">Senha atual</label>
+                            <div class="account-input-box is-editable">
+                                <input id="deactivate-password" name="currentPassword" type="password" autocomplete="current-password" required>
+                            </div>
+                        </div>
+                        <p class="account-dialog-status" role="alert" aria-live="polite"></p>
+                        <div class="account-dialog-actions">
+                            <button type="button" class="account-btn-secondary" data-close>Cancelar</button>
+                            <button type="button" class="account-btn-primary" data-confirm>Enviar confirmação</button>
+                        </div>
+                    </form>
+                </div>`,
+                async () => {
+                    const currentPassword = dialog.querySelector('#deactivate-password')?.value || '';
+                    const request = typeof adapter.requestAccountDeactivation === 'function'
+                        ? adapter.requestAccountDeactivation({ currentPassword })
+                        : adapter.deactivateAccount({ currentPassword });
+                    const result = await request;
+                    startCooldown('deactivate', result?.cooldownSeconds || 30, deactivateBtn, null);
+                    return () => openSuccessDialog(
+                        result?.message || 'Solicitação enviada! Verifique seu e-mail para confirmar a desativação da conta.',
+                        'O link de confirmação é válido por 15 minutos. Por segurança, aguarde antes de fazer uma nova solicitação.',
+                        'OK'
+                    );
+                }
+            );
+            return;
+        }
         openDialog(
             `<div class="account-dialog-content">
                 <div class="account-dialog-top">
@@ -227,7 +272,7 @@ export function mountAccount(adapter = resolveAccountAdapter(), options = {}) {
                 </div>
                 <h2 id="account-dialog-title" class="account-dialog-title">Desativar sua conta?</h2>
                 <p class="account-dialog-text">Ao confirmar a desativação, seu perfil ficará temporariamente indisponível para outros usuários, mas todas as suas avaliações, resenhas e dados continuarão armazenados com segurança.</p>
-                <div class="account-dialog-info"><strong>Reativação automática:</strong> Sua conta será reativada automaticamente assim que você realizar o próximo login.</div>
+                <div class="account-dialog-info"><strong>Reativação explícita:</strong> Quando quiser voltar, utilize a opção <strong>Reativar conta</strong> na tela de login.</div>
                 <p class="account-dialog-status" role="alert" aria-live="polite"></p>
                 <div class="account-dialog-actions">
                     <button type="button" class="account-btn-secondary" data-close>Cancelar</button>

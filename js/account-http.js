@@ -2,6 +2,7 @@ import { createAuthClient, getAccessToken, setAccessToken, clearAccessToken, res
 import { createSpotifyClient } from './spotify-http.js';
 import { createPasswordClient } from './password-http.js';
 import { createEmailChangeClient } from './email-change-http.js';
+import { createAccountDeactivationClient } from './account-deactivation-http.js';
 
 // Map backend UserDto and optional Spotify connection snapshot to the Account page state.
 export function mapUserDto(dto, spotify = null) {
@@ -65,6 +66,7 @@ export function createHttpAccountAdapter({
     const spotifyClient = createSpotifyClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
     const passwordClient = createPasswordClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
     const emailChangeClient = createEmailChangeClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
+    const deactivationClient = createAccountDeactivationClient({ baseUrl, fetcher, getToken, setToken, expire, authClient: client });
     let lastSpotify = { status: 'DISCONNECTED', connectedAt: null, recentListensAuthorized: false };
 
     const unavailable = feature => async () => {
@@ -240,7 +242,14 @@ export function createHttpAccountAdapter({
         async changePassword(payload) {
             return passwordClient.changePassword(payload);
         },
-        deactivateAccount: unavailable('Desativação de conta'),
+        // Request authenticated account deactivation via POST /api/users/me/account-deactivation-request.
+        async requestAccountDeactivation(payload) {
+            return deactivationClient.requestAccountDeactivation(payload);
+        },
+        // Alias kept for callers invoking deactivateAccount with currentPassword payload.
+        async deactivateAccount(payload) {
+            return deactivationClient.requestAccountDeactivation(payload);
+        },
         deleteAccount: unavailable('Exclusão permanente de conta')
     };
 }

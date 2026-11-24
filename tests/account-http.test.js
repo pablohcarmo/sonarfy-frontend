@@ -155,7 +155,6 @@ describe('account-http: GET/PUT /api/users/me e GET /api/locations/cities', () =
         await expect(adapter.updateAccount(payload)).rejects.toMatchObject({ status: 409 });
         await expect(adapter.updateAccount(payload)).rejects.toMatchObject({ status: 400 });
         await expect(adapter.updateAccount(payload)).rejects.toMatchObject({ status: 503 });
-        await expect(adapter.deactivateAccount()).rejects.toThrow('não está disponível');
         await expect(adapter.deleteAccount()).rejects.toThrow('não está disponível');
         expect(() => mapUserDto({})).toThrow('inválida');
     });

@@ -201,7 +201,7 @@ describe('account: deactivate and delete confirmation modals', () => {
         const dialog = document.getElementById('account-dialog');
         expect(dialog.open).toBe(true);
         expect(dialog.textContent).toContain('Desativar sua conta?');
-        expect(dialog.textContent).toContain('reativada automaticamente');
+        expect(dialog.textContent).toContain('Reativar conta');
 
         const confirmBtn = dialog.querySelector('[data-confirm]');
         confirmBtn.click();

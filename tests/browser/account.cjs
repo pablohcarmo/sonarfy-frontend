@@ -97,7 +97,7 @@ async function loadedAssets(page) {
                         status: 200,
                         contentType: 'application/json',
                         headers: cors,
-                        body: JSON.stringify({ status: spotifyStatus, connectedAt: spotifyStatus === 'CONNECTED' ? '2026-11-10T03:00:00Z' : null })
+                        body: JSON.stringify({ status: spotifyStatus, connectedAt: spotifyStatus === 'CONNECTED' ? '2026-11-10T03:00:00Z' : null, recentListensAuthorized: spotifyStatus === 'CONNECTED' })
                     });
                 });
                 await context.route('**/api/locations/cities**', async route => {
@@ -146,6 +146,29 @@ async function loadedAssets(page) {
                         };
                         return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(accountState) });
                     }
+                });
+
+                await context.route('**/api/users/me/account-deactivation-request', async route => {
+                    const req = route.request();
+                    if (req.method() === 'OPTIONS') {
+                        return route.fulfill({
+                            status: 200,
+                            headers: {
+                                'Access-Control-Allow-Origin': '*',
+                                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                                'Access-Control-Allow-Headers': 'Authorization, Content-Type'
+                            }
+                        });
+                    }
+                    assert.equal(req.headers().authorization, 'Bearer test-token');
+                    const payload = JSON.parse(req.postData() || '{}');
+                    assert.equal(payload.currentPassword, 'SenhaAtual@2026');
+                    return route.fulfill({
+                        status: 202,
+                        contentType: 'application/json',
+                        headers: { 'Access-Control-Allow-Origin': '*' },
+                        body: JSON.stringify({ message: 'Account deactivation request accepted for delivery.', expiresInSeconds: 900 })
+                    });
                 });
 
                 await page.goto(`${base}/pages/account.html`);
@@ -201,17 +224,20 @@ async function loadedAssets(page) {
                 assert.equal(spotifyDisconnectCalls, 1);
                 assert.match(await page.locator('#account-status').innerText(), /painel de aplicativos conectados/);
 
-                // Deactivate and delete modals must NOT simulate success in HTTP mode.
+                // Deactivate modal in HTTP mode collects currentPassword, sends 202 request, and preserves sonarfy_token.
                 await page.click('#deactivate-account-btn');
                 await page.locator('#account-dialog[open]').waitFor();
                 assert((await page.locator('#account-dialog').textContent()).includes('Desativar sua conta?'));
                 await loadedAssets(page);
                 await page.screenshot({ path: `${output}/${prefix}-deactivate.png` });
+                await page.fill('#deactivate-password', 'SenhaAtual@2026');
                 await page.click('#account-dialog [data-confirm]');
-                await page.waitForFunction(() => document.querySelector('#account-dialog .account-dialog-status')?.textContent.includes('não está disponível'));
-                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), 'test-token');
-                await page.keyboard.press('Escape');
+                await page.waitForFunction(() => document.querySelector('#account-dialog')?.open && document.querySelector('#account-dialog button[data-close]')?.textContent.trim() === 'OK');
+                assert.equal(await page.locator('#account-dialog button').count(), 1);
+                await page.click('#account-dialog [data-close]');
                 await page.waitForFunction(() => !document.getElementById('account-dialog').open);
+                assert.equal(await page.locator('#deactivate-account-btn').isDisabled(), true);
+                assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), 'test-token');
 
                 // Delete modal in HTTP mode reports unavailability without clearing token.
                 await page.click('#delete-account-btn');

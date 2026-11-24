@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="referrer" content="no-referrer">
+    <title>Confirmar desativação de conta – Sonarfy</title>
+    <link rel="icon" type="image/png" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/verify.css">
+    <script src="../js/login-theme.js"></script>
+    <script src="../js/api.js" defer></script>
+    <script type="module" src="../js/confirm-account-deactivation.js"></script>
+</head>
+<body class="verify-page" data-state="confirm">
+    <header class="site-header">
+        <a class="brand" href="../index.html" aria-label="Sonarfy — página inicial">
+            <span class="brand-symbol" aria-hidden="true">S</span>
+            <span>Sonarfy</span>
+        </a>
+        <nav class="header-actions" aria-label="Navegação principal">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
+                <img class="theme-light-only" src="../assets/icons/register/theme-moon.svg" alt="">
+                <img class="theme-dark-only" src="../assets/icons/register/theme-sun.svg" alt="">
+            </button>
+            <a class="back-link mobile-home" href="../index.html">
+                <img class="theme-light-only" src="../assets/icons/register/header-arrow-back-light.svg" alt="">
+                <img class="theme-dark-only" src="../assets/icons/register/header-arrow-back-dark.svg" alt="">
+                Início
+            </a>
+        </nav>
+    </header>
+    <main class="verify-layout" id="main-content" aria-live="polite" aria-atomic="false" aria-busy="false">
+        <section id="confirm-state" class="verify-card" aria-labelledby="confirm-title">
+            <div class="status-message">
+                <span class="status-indicator" aria-hidden="true">
+                    <img class="theme-light-only" src="../assets/icons/account/eye-off-light.svg" alt="">
+                    <img class="theme-dark-only" src="../assets/icons/account/eye-off-dark.svg" alt="">
+                </span>
+                <div class="form-introduction">
+                    <h1 id="confirm-title">Confirmar desativação da conta</h1>
+                    <p>Ao confirmar, seu perfil ficará indisponível para outros usuários e todas as suas sessões serão encerradas. Suas avaliações, coleção, Ecos, conexões e dados permanecem preservados. Quando quiser voltar, use a opção <strong>Reativar conta</strong> na tela de login.</p>
+                </div>
+            </div>
+            <button id="btnConfirmAccountDeactivation" type="button" class="btn-submit">Confirmar desativação</button>
+            <nav class="verify-links" aria-label="Acesso à conta">
+                <a href="account.html">Voltar às Configurações</a><span aria-hidden="true">·</span><a href="login.html">Ir para o Login</a>
+            </nav>
+        </section>
+
+        <section id="loading-state" class="verify-card" aria-labelledby="loading-title" hidden>
+            <div class="status-message">
+                <span class="status-indicator" aria-hidden="true">
+                    <img class="theme-light-only" src="../assets/icons/verify/loading-light.svg" alt="">
+                    <img class="theme-dark-only" src="../assets/icons/verify/loading-dark.svg" alt="">
+                </span>
+                <div class="form-introduction">
+                    <h1 id="loading-title">Desativando conta...</h1>
+                    <p>Aguarde um momento enquanto desativamos sua conta e encerramos suas sessões com segurança.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="success-state" class="verify-card" aria-labelledby="success-title" hidden>
+            <div class="status-message">
+                <span class="status-indicator" aria-hidden="true"><img src="../assets/icons/verify/success.svg" alt=""></span>
+                <div class="form-introduction">
+                    <h1 id="success-title">Conta desativada</h1>
+                    <p>Sua conta foi desativada e todas as sessões ativas foram encerradas. Seus dados continuam preservados; para retornar no futuro, utilize a opção <strong>Reativar conta</strong> na tela de login.</p>
+                </div>
+            </div>
+            <a href="login.html" class="btn-submit">Ir para o Login</a>
+        </section>
+
+        <section id="error-state" class="verify-card" aria-labelledby="error-title" hidden>
+            <div class="status-message">
+                <span class="status-indicator" aria-hidden="true"><img src="../assets/icons/verify/error.svg" alt=""></span>
+                <div class="form-introduction">
+                    <h1 id="error-title">Não foi possível confirmar</h1>
+                    <p id="error-message-text">O link de confirmação é inválido ou expirou. Solicite uma nova desativação nas configurações da conta.</p>
+                </div>
+            </div>
+            <nav class="verify-links" aria-label="Acesso à conta">
+                <a href="account.html">Ir para Configurações</a><span aria-hidden="true">·</span><a href="login.html">Voltar para o Login</a>
+            </nav>
+        </section>
+    </main>
+    <noscript><p class="no-script">Ative o JavaScript para confirmar a desativação da conta. <a href="login.html">Voltar para o Login</a>.</p></noscript>
+    <footer class="site-footer">
+        <nav class="footer-links" aria-label="Links institucionais">
+            <a href="terms.html">Termos de Uso</a><span aria-hidden="true">•</span>
+            <a href="privacy.html">Privacidade</a><span aria-hidden="true">•</span>
+            <a href="guidelines.html">Diretrizes</a><span aria-hidden="true">•</span>
+            <a href="support.html">Apoie o Sonarfy</a>
+        </nav>
+        <p>© 2026 Sonarfy</p>
+    </footer>
+</body>
+</html>
