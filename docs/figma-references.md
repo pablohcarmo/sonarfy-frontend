@@ -234,13 +234,16 @@ Página local: `pages/spotify-sync.html`, em HTML5, CSS3 e módulos JavaScript n
 
 | Tema | Desktop 1440 × 900 | Mobile 390 × 900 |
 | --- | --- | --- |
-| Claro | `166:2410` | `166:2456` |
-| Escuro | `166:2502` | `166:2548` |
+| Claro (`initial`) | `166:2410` | `166:2456` |
+| Escuro (`initial`) | `166:2502` | `166:2548` |
+| Claro (`success`) | `618:82` | `618:132` (`390 × 844`) |
+| Escuro (`success`) | `618:184` | `618:234` (`390 × 844`) |
+| Claro (`failure`) | `620:82` | `620:126` (`390 × 844`) |
+| Escuro (`failure`) | `620:172` | `620:216` (`390 × 844`) |
 
-Os quatro frames têm contexto de design e screenshot obtidos pelo Figma MCP.
-A composição contém Header / Global, gráfico de conexão Sonarfy/Spotify,
-introdução, três benefícios, ações de sincronizar/pular e privacidade.
-Esta tela de onboarding não inclui o rodapé global.
+Os doze frames têm contexto de design e screenshot obtidos pelo Figma MCP.
+A composição contém Header / Global e o cartão central `#spotify-card` com três
+estados declarativos (`initial`, `success` e `failure`), sem rodapé global.
 
 ### Tokens e layout
 
@@ -257,17 +260,21 @@ correspondem às propriedades resolvidas dos frames.
 | Texto secundário | #65676b | #b2b3b5 |
 | Borda | #ebecef | #65676b |
 | Sombra | 0 8px 24px rgba(26,26,26,.03) | 0 8px 24px rgba(0,0,0,.09) |
+| Superfície de destaques (`success`) | #f8f9fa | #1e1e1e |
+| Borda de erro (`failure`) | #fecdca | #b42318 |
 
 Azul Sonarfy `#27a9f5`; verde Spotify `#1ed760`; texto do CTA `#1a1a1a`.
 Inter: título 700, 32px/1.2 desktop e 28px/1.2 mobile; descrição 400,
 15px/24px; benefícios 400, 15px/24px desktop e 14px/24px mobile;
+destaques (`success`) 500, 14px/20px com badges 600, 11px/16px; banner de dica
+(`failure`) 400, 13px/20px com `--error-bg` e `--error-color`;
 CTA 700, 15px/20px; ação secundária 600, 14px/20px;
-privacidade 400, 12px/20px.
+privacidade/notas 400, 12px/18–20px.
 
 Card com largura máxima de 560px, padding 32px desktop/24px mobile e raio
 16px. Margens mobile de 20px resultam em 350px de largura a 390px.
 As bordas internas preservam as medidas do Auto Layout. Gaps de 24px entre
-seções, 8px na introdução e nas ações e 16px entre benefícios.
+seções, 8px na introdução e nas ações (`12px` no estado `failure`) e 16px entre benefícios.
 Controles com altura mínima de 48px e raio 8px. Cabeçalho de 88px desktop/
 80px mobile; área principal mínima de 812px/820px, com crescimento natural.
 
@@ -278,37 +285,44 @@ Os SVGs locais estão em `assets/icons/spotify-sync/`, sem URLs temporários:
 - `sonarfy.svg`: círculo e monograma vetoriais de 64 × 64px, sem fundos dos frames ancestrais.
 - `spotify.svg`: símbolo oficial do Spotify na área de 64 × 64px.
 - `spotify-button.svg`: ícone oficial preto de 24 × 22,9019px, centralizado no botão.
-- `connection-light.svg` / `connection-dark.svg`: conexão de 24 × 24px por tema.
-- `check.svg`: confirmação de 16 × 16px em contêiner de 24 × 24px.
+- `connection-light.svg` / `connection-dark.svg`: conexão de 24 × 24px por tema (`initial`).
+- `check.svg`: confirmação de 16 × 16px em contêiner de 24 × 24px (`initial`).
+- `success-check.svg`: confirmação de 12 × 9px dentro do badge verde `#1ed760` de 24 × 24px (`success`).
+- `highlight-check.svg`: confirmação de 10 × 8px nos itens de destaque (`success`).
+- `arrow-right.svg`: seta de 16 × 16px no botão `Continuar no Sonarfy` (`success`).
+- `alert-circle-light.svg` / `alert-circle-dark.svg`: alerta de 14 × 14px no badge de 28 × 28px (`failure`).
+- `info-light.svg` / `info-dark.svg`: ícone informativo de 16 × 16px no banner de dica (`failure`).
 
-O gráfico de integração tem altura de 72px e gaps de 24px entre símbolos.
+O gráfico de integração tem altura de 72px e gaps de 24px (`initial`) ou 16px (`success`/`failure`) entre símbolos.
 As dimensões intrínsecas dos SVGs são preservadas. Marca do cabeçalho,
 ícones de tema e retorno reutilizam os assets compartilhados do projeto.
 
-A implementação acompanha a cópia dos quatro frames: título “Conecte sua
-conta do Spotify”, descrição “Ao conectar, o Sonarfy acessará os dados abaixo
-para ajudar você a encontrar e avaliar álbuns.” e CTA “Conectar ao Spotify”.
-A lista informa os dados acessados: “Artistas que você ouviu no Spotify”,
-“Álbuns identificados nas suas escutas” e “Títulos, capas e faixas desses álbuns”.
-O card tem aproximadamente 632px de altura no mobile e 574px no desktop,
-com crescimento natural quando necessário.
+A implementação acompanha a cópia dos doze frames:
+- `initial`: título “Conecte sua conta do Spotify”, descrição, três benefícios e ações “Conectar ao Spotify” / “Pular por enquanto”.
+- `success`: título “Conta conectada com sucesso!”, descrição de sincronização com Ecos e perfil, destaques (“Artistas sincronizados” e “Histórico recente pronto para avaliação”), CTA “Continuar no Sonarfy” (`#27a9f5`) e nota informativa.
+- `failure`: título “Não foi possível conectar ao Spotify”, descrição de falha/cancelamento, banner de dica, botão “Tentar novamente” (`#1ed760`) e ação secundária “Pular por enquanto”.
 
 ### Comportamento e verificação
 
 `js/spotify-sync-state.js` centraliza o estado local: contas sincronizadas
 seguem para `profile.html`; contas não sincronizadas veem o onboarding no
 primeiro login ou após 7 dias do último skip. O acesso manual nas
-configurações usa `spotify-sync.html?source=account` durante o cooldown.
-A integração exige `window.sonarfySpotifyOAuth` com confirmação assíncrona
-`{ synced: true }` antes de gravar sucesso. O handler OAuth real não está disponível
-neste repositório. O destino `pages/profile.html` usa um adapter HTTP para identidade e relacionamentos; a demonstração é explícita em ?demo=true; consulte [Perfis Sonarfy](profile-page.md).
+configurações ou em Ecos usa `spotify-sync.html?source=account` ou `spotify-sync.html?source=echoes`.
+Em `js/spotify-sync.js`, o fluxo transiciona `#spotify-card` entre `initial`, `success` e `failure`,
+anuncia mudanças em `role="status"` / `aria-live="polite"` e move o foco programático para o botão
+primário do estado ativo (`#spotify-continue` ou `#spotify-retry`).
+O retorno `?spotify=connected` confirmado por `GET /api/spotify/connection` (ou handler customizado
+`window.sonarfySpotifyOAuth` com `{ synced: true }`) ativa `success`, onde “Continuar no Sonarfy”
+direciona para `echoes.html` quando `source=echoes` ou `profile.html` nos demais casos. Retornos
+`?spotify=denied` / `error` / `invalid_state` ou falhas de autorização ativam `failure`.
+O destino `pages/profile.html` usa um adapter HTTP para identidade e relacionamentos; a demonstração é explícita em ?demo=true; consulte [Perfis Sonarfy](profile-page.md).
 
 Verificação: `npm test -- tests/spotify-sync.test.js` e
 `node tests/browser/spotify-sync.cjs`. O script de navegador usa Playwright
 (`PLAYWRIGHT_MODULE`, quando necessário), inicia seu próprio servidor e
 grava capturas/relatório em `test-results/spotify-sync/`, ignorado pelo Git.
-Edge 155 e Firefox 153 verificados em 1440px/390px, nos temas claro/escuro,
-com SVGs carregados e sem overflow na tela Spotify Sync. Mobile é verificado
+Edge e Firefox verificados em `1440px`/`390px`, nos temas claro/escuro,
+cobrindo os estados `initial`, `failure` e `success` com SVGs carregados e sem overflow na tela Spotify Sync. Mobile é verificado
 por viewport emulado; login, confirmação OAuth e destino de perfil são
 simulados nos testes.
 

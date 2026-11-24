@@ -143,7 +143,8 @@ describe('spotify-http: OAuth authorization, connection, disconnect e callback',
 
         await vi.waitFor(() => {
             expect(spotifyClient.getConnection).toHaveBeenCalledOnce();
-            expect(document.getElementById('spotify-error').textContent).toContain('conectada com sucesso');
+            expect(document.getElementById('spotify-card').dataset.state).toBe('success');
+            expect(document.getElementById('spotify-success-title').textContent).toContain('conectada com sucesso');
         });
 
         document.getElementById('spotify-connect').click();

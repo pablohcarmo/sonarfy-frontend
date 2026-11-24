@@ -6,8 +6,17 @@ import { SPOTIFY_COOLDOWN_MS, SPOTIFY_SYNCED_KEY, SPOTIFY_SKIPPED_KEY,
     getPostLoginDestination, syncSpotify } from '../js/spotify-sync-state.js';
 
 const now = 2_000_000_000_000;
+const html = fs.readFileSync(path.resolve(__dirname, '../pages/spotify-sync.html'), 'utf8');
+let initSpotifySync;
 
-beforeEach(() => localStorage.clear());
+beforeEach(async () => {
+    localStorage.clear();
+    document.body.innerHTML = html.match(/<body>([\s\S]*)<\/body>/)[1];
+    if (!initSpotifySync) {
+        ({ initSpotifySync } = await import('../js/spotify-sync.js'));
+        document.body.innerHTML = html.match(/<body>([\s\S]*)<\/body>/)[1];
+    }
+});
 
 describe('Elegibilidade do Spotify após login', () => {
     it('define o cooldown como exatamente 7 dias', () => {
@@ -67,30 +76,113 @@ describe('Confirmação do OAuth', () => {
     });
 });
 
-describe('Interações da página', () => {
-    it('salva skip, bloqueia clique duplicado e permite tentar novamente após falha', async () => {
-        const html = fs.readFileSync(path.resolve(__dirname, '../pages/spotify-sync.html'), 'utf8');
-        document.body.innerHTML = html.match(/<body>([\s\S]*)<\/body>/)[1];
-        const { initSpotifySync } = await import('../js/spotify-sync.js');
-        // The module initializes the actual page once; use a fresh DOM for dependency injection.
-        document.body.innerHTML = html.match(/<body>([\s\S]*)<\/body>/)[1];
+describe('Interações e estados da página', () => {
+    it('renderiza estado inicial por padrão e omite rodapé global', () => {
+        initSpotifySync({ navigate: vi.fn() });
+        const card = document.getElementById('spotify-card');
+        expect(card.dataset.state).toBe('initial');
+        expect(card.querySelector('[data-sync-panel="initial"]').hidden).toBe(false);
+        expect(card.querySelector('[data-sync-panel="success"]').hidden).toBe(true);
+        expect(card.querySelector('[data-sync-panel="failure"]').hidden).toBe(true);
+        expect(document.querySelector('footer')).toBeNull();
+    });
+
+    it('transiciona para estado de sucesso quando handler resolve e navega ao clicar Continuar no Sonarfy', async () => {
         const navigate = vi.fn();
-        let reject;
-        const handler = vi.fn(() => new Promise((_, no) => { reject = no; }));
+        const handler = vi.fn().mockResolvedValue({ synced: true });
+        initSpotifySync({ navigate, handler, locationObj: { search: '', pathname: '/pages/spotify-sync.html', hash: '' } });
+
+        document.getElementById('spotify-connect').click();
+        await vi.waitFor(() => expect(document.getElementById('spotify-card').dataset.state).toBe('success'));
+
+        const continueBtn = document.getElementById('spotify-continue');
+        expect(document.querySelector('[data-sync-panel="success"]').hidden).toBe(false);
+        expect(document.querySelector('[data-sync-panel="initial"]').hidden).toBe(true);
+        expect(document.getElementById('spotify-status-announcer').textContent).toBe('Conta conectada com sucesso!');
+        expect(document.activeElement).toBe(continueBtn);
+        expect(navigate).not.toHaveBeenCalled();
+
+        continueBtn.click();
+        expect(navigate).toHaveBeenCalledWith('profile.html');
+    });
+
+    it('redireciona Continuar no Sonarfy para echoes.html quando source=echoes', async () => {
+        const navigate = vi.fn();
+        const handler = vi.fn().mockResolvedValue({ synced: true });
+        initSpotifySync({
+            navigate,
+            handler,
+            locationObj: { search: '?source=echoes', pathname: '/pages/spotify-sync.html', hash: '' }
+        });
+
+        document.getElementById('spotify-connect').click();
+        await vi.waitFor(() => expect(document.getElementById('spotify-card').dataset.state).toBe('success'));
+
+        document.getElementById('spotify-continue').click();
+        expect(navigate).toHaveBeenCalledWith('echoes.html');
+    });
+
+    it('bloqueia clique duplicado, transiciona para falha em rejeição e permite tentar novamente até sucesso', async () => {
+        const navigate = vi.fn();
+        let rejectFirst;
+        const handler = vi.fn()
+            .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
+            .mockResolvedValueOnce({ synced: true });
         initSpotifySync({ navigate, handler });
+
         const connect = document.getElementById('spotify-connect');
         const skip = document.getElementById('spotify-skip');
         connect.click();
         connect.click();
         expect(handler).toHaveBeenCalledOnce();
         expect(skip.disabled).toBe(true);
-        reject(new Error('Conexão cancelada.'));
-        await vi.waitFor(() => expect(connect.disabled).toBe(false));
-        expect(document.getElementById('spotify-error').textContent).toBe('Conexão cancelada.');
+
+        rejectFirst(new Error('Conexão cancelada.'));
+        await vi.waitFor(() => expect(document.getElementById('spotify-card').dataset.state).toBe('failure'));
+
+        const retry = document.getElementById('spotify-retry');
+        expect(document.querySelector('[data-sync-panel="failure"]').hidden).toBe(false);
+        expect(document.getElementById('spotify-status-announcer').textContent).toBe('Não foi possível conectar ao Spotify.');
+        expect(document.activeElement).toBe(retry);
         expect(navigate).not.toHaveBeenCalled();
-        skip.click();
+
+        retry.click();
+        await vi.waitFor(() => expect(document.getElementById('spotify-card').dataset.state).toBe('success'));
+        expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it('permite pular no estado de falha e salva cooldown', async () => {
+        const navigate = vi.fn();
+        const handler = vi.fn().mockRejectedValue(new Error('Cancelado'));
+        initSpotifySync({ navigate, handler });
+
+        document.getElementById('spotify-connect').click();
+        await vi.waitFor(() => expect(document.getElementById('spotify-card').dataset.state).toBe('failure'));
+
+        document.getElementById('spotify-failure-skip').click();
         expect(Number(localStorage.getItem(SPOTIFY_SKIPPED_KEY))).toBeGreaterThan(0);
         expect(navigate).toHaveBeenCalledWith('profile.html');
-        expect(document.querySelector('footer')).toBeNull();
+    });
+
+    it('transiciona para sucesso ou falha conforme callback OAuth da URL', async () => {
+        const navigate = vi.fn();
+        const getConnection = vi.fn().mockResolvedValue({ status: 'CONNECTED', recentListensAuthorized: true });
+        initSpotifySync({
+            navigate,
+            spotifyClient: { getConnection, startAuthorization: vi.fn() },
+            locationObj: { search: '?spotify=connected', pathname: '/pages/spotify-sync.html', hash: '' },
+            historyObj: { replaceState: vi.fn() }
+        });
+        await vi.waitFor(() => expect(document.getElementById('spotify-card').dataset.state).toBe('success'));
+        expect(localStorage.getItem(SPOTIFY_SYNCED_KEY)).toBe('true');
+
+        document.body.innerHTML = html.match(/<body>([\s\S]*)<\/body>/)[1];
+        initSpotifySync({
+            navigate,
+            spotifyClient: { getConnection: vi.fn(), startAuthorization: vi.fn() },
+            locationObj: { search: '?spotify=denied', pathname: '/pages/spotify-sync.html', hash: '' },
+            historyObj: { replaceState: vi.fn() }
+        });
+        expect(document.getElementById('spotify-card').dataset.state).toBe('failure');
     });
 });

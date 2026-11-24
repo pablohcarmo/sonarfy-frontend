@@ -31,28 +31,101 @@
         </nav>
     </header>
     <main class="spotify-main">
-        <section id="spotify-card" class="spotify-card" aria-labelledby="spotify-title" aria-describedby="spotify-description">
-            <div class="spotify-integration" role="img" aria-label="Conexão entre Sonarfy e Spotify">
-                <img class="ui-icon" src="../assets/icons/spotify-sync/sonarfy.svg" alt="" width="64" height="64">
-                <img class="ui-icon theme-light-only" src="../assets/icons/spotify-sync/connection-light.svg" alt="">
-                <img class="ui-icon theme-dark-only" src="../assets/icons/spotify-sync/connection-dark.svg" alt="">
-                <img class="ui-icon" src="../assets/icons/spotify-sync/spotify.svg" alt="">
+        <section id="spotify-card" class="spotify-card" data-state="initial" aria-labelledby="spotify-title" aria-describedby="spotify-description">
+            <p id="spotify-status-announcer" class="sr-only" role="status" aria-live="polite"></p>
+
+            <div class="spotify-state" data-sync-panel="initial">
+                <div class="spotify-integration" role="img" aria-label="Conexão entre Sonarfy e Spotify">
+                    <img class="ui-icon" src="../assets/icons/spotify-sync/sonarfy.svg" alt="" width="64" height="64">
+                    <img class="ui-icon theme-light-only" src="../assets/icons/spotify-sync/connection-light.svg" alt="">
+                    <img class="ui-icon theme-dark-only" src="../assets/icons/spotify-sync/connection-dark.svg" alt="">
+                    <img class="ui-icon" src="../assets/icons/spotify-sync/spotify.svg" alt="">
+                </div>
+                <div class="spotify-introduction">
+                    <h1 id="spotify-title">Conecte sua conta do Spotify</h1>
+                    <p id="spotify-description">Ao conectar, o Sonarfy acessará os dados abaixo para ajudar você a encontrar e avaliar álbuns.</p>
+                </div>
+                <ul class="spotify-benefits">
+                    <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Artistas que você ouviu no Spotify</span></li>
+                    <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Álbuns identificados nas suas escutas</span></li>
+                    <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Títulos, capas e faixas desses álbuns</span></li>
+                </ul>
+                <div class="spotify-actions">
+                    <button id="spotify-connect" class="spotify-button" type="button"><img class="ui-icon" src="../assets/icons/spotify-sync/spotify-button.svg" alt=""><span>Conectar ao Spotify</span></button>
+                    <button id="spotify-skip" class="spotify-button spotify-skip" type="button">Pular por enquanto</button>
+                </div>
+                <p id="spotify-error" class="spotify-error" role="alert" hidden></p>
+                <p class="spotify-privacy">Não publicamos nada sem sua permissão. Você pode desconectar a qualquer momento nas configurações.</p>
             </div>
-            <div class="spotify-introduction">
-                <h1 id="spotify-title">Conecte sua conta do Spotify</h1>
-                <p id="spotify-description">Ao conectar, o Sonarfy acessará os dados abaixo para ajudar você a encontrar e avaliar álbuns.</p>
+
+            <div class="spotify-state" data-sync-panel="success" hidden>
+                <div class="spotify-integration" role="img" aria-label="Sonarfy e Spotify conectados com sucesso">
+                    <img class="ui-icon" src="../assets/icons/spotify-sync/sonarfy.svg" alt="" width="64" height="64">
+                    <div class="spotify-status-pill is-success" aria-hidden="true">
+                        <span class="spotify-status-line"></span>
+                        <span class="spotify-status-badge is-success">
+                            <img class="ui-icon" src="../assets/icons/spotify-sync/success-check.svg" alt="">
+                        </span>
+                        <span class="spotify-status-line"></span>
+                    </div>
+                    <img class="ui-icon" src="../assets/icons/spotify-sync/spotify.svg" alt="" width="64" height="64">
+                </div>
+                <div class="spotify-introduction">
+                    <h1 id="spotify-success-title">Conta conectada com sucesso!</h1>
+                    <p id="spotify-success-description">Sua conta do Spotify está sincronizada com o Sonarfy. Seus artistas e álbuns ouvidos recentemente já estão disponíveis no Ecos e no seu perfil.</p>
+                </div>
+                <ul class="spotify-highlights" aria-label="Resumo da sincronização">
+                    <li class="spotify-highlight-item">
+                        <span class="spotify-highlight-icon" aria-hidden="true"><img class="ui-icon" src="../assets/icons/spotify-sync/highlight-check.svg" alt=""></span>
+                        <span class="spotify-highlight-text">Artistas sincronizados</span>
+                        <span class="spotify-highlight-badge">Sincronizado</span>
+                    </li>
+                    <li class="spotify-highlight-item">
+                        <span class="spotify-highlight-icon" aria-hidden="true"><img class="ui-icon" src="../assets/icons/spotify-sync/highlight-check.svg" alt=""></span>
+                        <span class="spotify-highlight-text">Histórico recente pronto para avaliação</span>
+                        <span class="spotify-highlight-badge">Pronto</span>
+                    </li>
+                </ul>
+                <div class="spotify-actions">
+                    <button id="spotify-continue" class="spotify-button spotify-continue" type="button">
+                        <span>Continuar no Sonarfy</span>
+                        <img class="ui-icon" src="../assets/icons/spotify-sync/arrow-right.svg" alt="">
+                    </button>
+                </div>
+                <p class="spotify-note">Você pode desconectar ou gerenciar o Spotify a qualquer momento nas configurações.</p>
             </div>
-            <ul class="spotify-benefits">
-                <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Artistas que você ouviu no Spotify</span></li>
-                <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Álbuns identificados nas suas escutas</span></li>
-                <li><span class="spotify-check"><img class="ui-icon" src="../assets/icons/spotify-sync/check.svg" alt=""></span><span>Títulos, capas e faixas desses álbuns</span></li>
-            </ul>
-            <div class="spotify-actions">
-                <button id="spotify-connect" class="spotify-button" type="button"><img class="ui-icon" src="../assets/icons/spotify-sync/spotify-button.svg" alt=""><span>Conectar ao Spotify</span></button>
-                <button id="spotify-skip" class="spotify-button spotify-skip" type="button">Pular por enquanto</button>
+
+            <div class="spotify-state" data-sync-panel="failure" hidden>
+                <div class="spotify-integration" role="img" aria-label="Falha na conexão entre Sonarfy e Spotify">
+                    <img class="ui-icon" src="../assets/icons/spotify-sync/sonarfy.svg" alt="" width="64" height="64">
+                    <div class="spotify-status-error" aria-hidden="true">
+                        <span class="spotify-status-line"></span>
+                        <span class="spotify-status-badge is-error">
+                            <img class="ui-icon theme-light-only" src="../assets/icons/spotify-sync/alert-circle-light.svg" alt="">
+                            <img class="ui-icon theme-dark-only" src="../assets/icons/spotify-sync/alert-circle-dark.svg" alt="">
+                        </span>
+                        <span class="spotify-status-line"></span>
+                    </div>
+                    <img class="ui-icon" src="../assets/icons/spotify-sync/spotify.svg" alt="" width="64" height="64">
+                </div>
+                <div class="spotify-introduction">
+                    <h1 id="spotify-failure-title">Não foi possível conectar ao Spotify</h1>
+                    <p id="spotify-failure-description">Ocorreu uma falha durante a autorização ou a conexão foi cancelada. Não se preocupe, seus dados estão seguros e você pode tentar novamente.</p>
+                </div>
+                <div class="spotify-tip-banner" role="note">
+                    <img class="ui-icon theme-light-only" src="../assets/icons/spotify-sync/info-light.svg" alt="">
+                    <img class="ui-icon theme-dark-only" src="../assets/icons/spotify-sync/info-dark.svg" alt="">
+                    <p id="spotify-failure-tip">Dica: Verifique sua conexão e certifique-se de autorizar as permissões na janela do Spotify.</p>
+                </div>
+                <div class="spotify-actions is-failure">
+                    <button id="spotify-retry" class="spotify-button" type="button">
+                        <img class="ui-icon" src="../assets/icons/spotify-sync/spotify-button.svg" alt="">
+                        <span>Tentar novamente</span>
+                    </button>
+                    <button id="spotify-failure-skip" class="spotify-button spotify-skip is-failure-skip" type="button">Pular por enquanto</button>
+                </div>
+                <p class="spotify-note">Você também pode conectar sua conta mais tarde em Configurações &gt; Conexões.</p>
             </div>
-            <p id="spotify-error" class="spotify-error" role="alert" hidden></p>
-            <p class="spotify-privacy">Não publicamos nada sem sua permissão. Você pode desconectar a qualquer momento nas configurações.</p>
         </section>
     </main>
 </body>
