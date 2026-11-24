@@ -133,6 +133,14 @@ async function visibleFocus(page) {
                     await page.goBack();
                     await page.waitForSelector('.eco-row');
 
+                    // Clicking "Ver álbum" or the album cover navigates to Album Page without toggling tracks
+                    assert.match(await page.locator('.eco-row .eco-cover-link').first().getAttribute('href'), /^album\.html\?demo=true&albumId=album-bad/);
+                    await page.locator('.eco-row .eco-album-link').first().click();
+                    await page.waitForURL(/\/pages\/album\.html\?/);
+                    assert.match(page.url(), /albumId=album-bad/);
+                    await page.goBack();
+                    await page.waitForSelector('.eco-row');
+
                     // Mobile drawer focus containment and Escape
                     if (width === 390) {
                         await page.locator('#open-menu').click();

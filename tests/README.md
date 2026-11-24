@@ -52,7 +52,7 @@ contra backend real e CI remoto não realizadas nesta entrega.
 ### Feed
 
 `npm test` inclui `tests/feed.test.js` e `tests/feed-http.test.js` em Vitest + Happy DOM, cobrindo normalização de `GET /api/feed`, notas `0`/`10`/quartos de estrela, estados vazios (`followingCount=0` vs `>0`), paginação por cursor opaco, prevenção de duplicatas, retry preservando cards, erros `400`/`401`, respostas atrasadas, troca de sessão/logout, `pageshow`/bfcache, recarga ao clicar no logo do Sonarfy, escape HTML, ausência de abas e controles sociais indisponíveis sem contadores fictícios.
-`node tests/browser/feed.cjs` inicia seu próprio servidor e verifica `pages/feed.html` interceptando `GET /api/feed` e `GET /api/profile/me` no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo feed único paginado, ausência de abas e do botão de atualização manual, botões sociais de curtir/comentar em estado indisponível conforme o Figma, carregamento com `reduced-motion`, estados vazios, erro inicial sem fallback + retry, drawer mobile, foco visível, assets SVG e ausência de overflow horizontal. Relatórios/capturas: `test-results/feed/`. Contrato e resultados: [Feed](../docs/feed-page.md).
+`node tests/browser/feed.cjs` inicia seu próprio servidor e verifica `pages/feed.html` interceptando `GET /api/feed` e `GET /api/profile/me` no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo feed único paginado, ausência de abas e do botão de atualização manual, navegação para `pages/album.html?albumId=<spotifyId>` ao clicar no álbum do card, botões sociais de curtir/comentar em estado indisponível conforme o Figma, carregamento com `reduced-motion`, estados vazios, erro inicial sem fallback + retry, drawer mobile, foco visível, assets SVG e ausência de overflow horizontal. Relatórios/capturas: `test-results/feed/`. Contrato e resultados: [Feed](../docs/feed-page.md).
 
 ### Ecos
 
@@ -60,7 +60,7 @@ contra backend real e CI remoto não realizadas nesta entrega.
 `node tests/browser/ecos.cjs` inicia seu próprio servidor e verifica Ecos no Edge
 e Firefox, em 1440/390px e claro/escuro, incluindo drawer (`296px`, contenção de foco
 e `Escape`), foco visível, carregamento de SVGs, ausência de overflow horizontal,
-estados Populated (50 itens), Empty (`spotify-sync.html?source=ecos`), Skeleton
+estados Populated (álbuns agrupados, redirecionamento para `pages/album.html?albumId=...` via capa e `Ver álbum`), Empty (`spotify-sync.html?source=ecos`), Skeleton
 Loading (`aria-busy="true"` e `prefers-reduced-motion`), Error + Retry e remoção
 de credencial no logout. Relatórios/capturas: `test-results/ecos/`. Contrato e
 resultados: [Ecos](../docs/ecos-page.md).
@@ -72,8 +72,8 @@ resultados: [Ecos](../docs/ecos-page.md).
 
 ### Página do Álbum
 
-`npm test` inclui `tests/album.test.js` em Vitest + Happy DOM.
-`node tests/browser/album.cjs` inicia seu próprio servidor e verifica `pages/album.html` (cenários `rated`, `already-rated`, `empty`, `loading`) no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo hero do álbum, modal de capa expandida, card `Sua Avaliação`, estado vazio, skeleton loading, drawer mobile (`296px` e `Escape`), carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/album/`. Contrato e resultados: [Página do Álbum](../docs/album-page.md).
+`npm test` inclui `tests/album-http.test.js` e `tests/album.test.js` em Vitest + Happy DOM, cobrindo `GET /api/albums/{spotifyId}`, precisão de data (`ano`, `mes`, `dia`), média `null` versus `0`, escala `0–10` ↔ `0–5`, `404` em `/reviews/me` sem invalidar o álbum, `POST`/`PUT`/`DELETE` de avaliação própria, reconsulta de agregados após exclusão, `400`/`401`/`404`/`502`/`503` com `Retry-After`/`504`, compartilhamento, seção de comunidade indisponível e proteção contra respostas atrasadas.
+`node tests/browser/album.cjs` inicia seu próprio servidor e verifica `pages/album.html` interceptando `/api/albums/{spotifyId}`, `/api/albums/{spotifyId}/reviews/me`, `/api/reviews/{reviewId}` e `/api/profile/me` no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo hero do álbum, modal de capa expandida, card `Sua Avaliação` + exclusão com atualização de agregados, média zero vs nula, `404`/`503` com `Retry-After`, skeleton loading, drawer mobile (`296px` e `Escape`), carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/album/`. Contrato e resultados: [Página do Álbum](../docs/album-page.md).
 
 Sirva a raiz do projeto:
 

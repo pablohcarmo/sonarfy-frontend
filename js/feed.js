@@ -4,7 +4,7 @@ import { globalHeader, globalFooter, sidebar, skeleton } from './profile-shell.j
 import { activityCard, avatar } from './profile-views.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
-import { escapeHTML as e, timestamp } from './profile-utils.js';
+import { escapeHTML as e, timestamp, albumURL } from './profile-utils.js';
 
 // Renderiza o estado vazio diferenciado entre followingCount=0 e followingCount>0 usando apenas rotas reais.
 function emptyFeedMarkup(followingCount, routes = {}) {
@@ -64,7 +64,7 @@ export function mountFeed(adapter = createFeedAdapter()) {
             : '';
         const cards = state.items.map(item => activityCard(item, undefined, {
             socialUnavailable: true,
-            interactiveAlbum: false
+            interactiveAlbum: true
         })).join('');
         let footer = '';
         if (state.error?.scope === 'more') {
@@ -114,6 +114,18 @@ export function mountFeed(adapter = createFeedAdapter()) {
         if (target.hasAttribute('data-feed-refresh')) { run(() => store.loadInitial({ refresh: true })); return; }
         if (target.hasAttribute('data-feed-retry') || target.hasAttribute('data-feed-restart')) { run(() => store.loadInitial({ refresh: false })); return; }
         if (target.hasAttribute('data-feed-load-more') || target.hasAttribute('data-feed-retry-more')) { run(() => store.loadMore()); return; }
+        if (target.dataset.album) {
+            const albumId = target.dataset.album.trim();
+            if (!albumId) return;
+            if (adapter.actions?.album) { run(() => adapter.actions.album(albumId)); return; }
+            const matched = state.items.find(item => (item.album?.spotifyId || item.album?.id) === albumId)?.album || null;
+            window.location.assign(albumURL(albumId, {
+                base: adapter.routes?.album || 'album.html',
+                demo: Boolean(adapter.demo),
+                album: adapter.demo ? matched : null
+            }));
+            return;
+        }
         if (target.dataset.like) { notify('Curtidas estarão disponíveis em breve.'); return; }
         if (target.dataset.comments) { notify('Comentários estarão disponíveis em breve.'); return; }
         if (target.dataset.navigation) { run(() => navigation(target.dataset.navigation)); if (drawer.open) drawer.close(); return; }

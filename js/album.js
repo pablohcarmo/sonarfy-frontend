@@ -1,4 +1,5 @@
 import { createAlbumFixturesAdapter } from './album-fixtures.js';
+import { createHttpAlbumAdapter, formatReleaseDate } from './album-http.js';
 import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
 import { socialActions } from './profile-views.js';
 import { icon } from './profile-icons.js';
@@ -11,10 +12,12 @@ const SORT_OPTIONS = [
     ['lowest', 'Ordenar: Menor nota']
 ];
 
-// Read optional album metadata from query parameters for deep links or previews.
+const REVIEWS_DIRTY_KEY = 'sonarfy_reviews_dirty';
+
+// Read album identifier and optional preview metadata from query parameters.
 export function readAlbumFromSearch(search = typeof location !== 'undefined' ? location.search : '') {
     const params = new URLSearchParams(search);
-    const spotifyId = params.get('albumId') || params.get('id') || '';
+    const spotifyId = params.get('albumId') || params.get('id') || params.get('spotifyId') || '';
     const name = params.get('title') || params.get('name') || '';
     const artist = params.get('artist') || '';
     const releaseYear = params.get('year') || '';
@@ -22,7 +25,7 @@ export function readAlbumFromSearch(search = typeof location !== 'undefined' ? l
     const trackCount = tracksRaw && /^\d+$/.test(tracksRaw) ? Number(tracksRaw) : null;
     const coverUrl = params.get('cover') || null;
     const override = {};
-    if (spotifyId) override.spotifyId = spotifyId;
+    if (spotifyId) override.spotifyId = spotifyId.trim();
     if (name) override.name = name;
     if (artist) override.artist = artist;
     if (releaseYear) override.releaseYear = releaseYear;
@@ -31,19 +34,26 @@ export function readAlbumFromSearch(search = typeof location !== 'undefined' ? l
     return Object.keys(override).length ? override : null;
 }
 
-// Resolve host-injected adapter or fall back to local skeleton fixtures while backend is in development.
+// Resolve host-injected adapter, explicit demo/scenario mode, or default HTTP adapter.
 export function resolveAlbumAdapter(integration = globalThis.sonarfyAlbumAdapter) {
     if (integration) return integration;
     const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-    const scenario = params.get('scenario') || 'rated';
-    return createAlbumFixturesAdapter({ scenario, albumOverride: readAlbumFromSearch() });
+    const scenario = params.get('scenario');
+    if (params.get('demo') === 'true' || scenario) {
+        return createAlbumFixturesAdapter({ scenario: scenario || 'rated', albumOverride: readAlbumFromSearch() });
+    }
+    return createHttpAlbumAdapter();
 }
 
-// Format a 0..5 star rating with Brazilian decimal comma (e.g., 5,0).
+// Format a 0..5 star rating with Brazilian decimal comma preserving quarter-star precision when present.
 export function formatRatingComma(value) {
     const num = Number(value);
     if (!Number.isFinite(num) || num <= 0) return '0,0';
-    return (Math.round(num * 10) / 10).toFixed(1).replace('.', ',');
+    const rounded = Math.round(num * 100) / 100;
+    const formatted = Math.abs(rounded * 10 - Math.round(rounded * 10)) < 1e-6
+        ? rounded.toFixed(1)
+        : String(rounded);
+    return formatted.replace('.', ',');
 }
 
 // Render 5 star characters reflecting a 0..5 rating rounded to nearest whole star.
@@ -63,10 +73,27 @@ export function buildReviewHref(album, adapter) {
     if (album?.name) params.set('title', album.name);
     if (album?.artist) params.set('artist', album.artist);
     if (album?.releaseYear) params.set('year', String(album.releaseYear));
-    if (typeof album?.trackCount === 'number' && album.trackCount > 0) params.set('tracks', String(album.trackCount));
+    const tracks = album?.totalTracks ?? album?.trackCount;
+    if (typeof tracks === 'number' && Number.isInteger(tracks) && tracks > 0) params.set('tracks', String(tracks));
     if (album?.coverUrl) params.set('cover', album.coverUrl);
     const qs = params.toString();
     return qs ? `${path}?${qs}` : path;
+}
+
+// Build the canonical Sonarfy album page URL for sharing.
+export function buildAlbumShareUrl(album, adapter, loc = typeof location !== 'undefined' ? location : null) {
+    if (!loc?.href) return '';
+    if (!album?.spotifyId) return loc.href;
+    try {
+        const url = new URL(loc.href);
+        url.search = '';
+        url.hash = '';
+        if (adapter?.isDemo) url.searchParams.set('demo', 'true');
+        url.searchParams.set('albumId', album.spotifyId);
+        return url.href;
+    } catch {
+        return loc.href;
+    }
 }
 
 function renderCoverContent(album) {
@@ -77,9 +104,13 @@ function renderCoverContent(album) {
 
 function renderSubmeta(album) {
     const parts = [];
-    if (album?.releaseYear) parts.push(String(album.releaseYear));
-    if (typeof album?.trackCount === 'number' && album.trackCount > 0) {
-        parts.push(`${album.trackCount} ${album.trackCount === 1 ? 'faixa' : 'faixas'}`);
+    const releaseText = album?.releaseLabel
+        || formatReleaseDate(album?.releaseOn, album?.releasePrecision)
+        || (album?.releaseYear ? String(album.releaseYear) : '');
+    if (releaseText) parts.push(releaseText);
+    const tracks = album?.totalTracks ?? album?.trackCount;
+    if (typeof tracks === 'number' && Number.isInteger(tracks) && tracks >= 0) {
+        parts.push(`${tracks} ${tracks === 1 ? 'faixa' : 'faixas'}`);
     }
     return parts.join(' · ');
 }
@@ -94,10 +125,12 @@ function renderCommunityRating(album) {
             <span class="album-rating-count">${e(countLabel)}</span>
         </div>`;
     }
-    const avg = (Math.round(Number(album.averageRating) * 10) / 10).toFixed(1);
-    return `<div class="album-community-rating" aria-label="Nota média ${e(avg)} de 5 com ${count} avaliações">
+    const rawAvg = Number(album.averageRating);
+    const avg = (Math.round(rawAvg * 10) / 10).toFixed(1);
+    const isZero = rawAvg <= 0;
+    return `<div class="album-community-rating" aria-label="Nota média ${e(avg)} de 5 com ${count} ${count === 1 ? 'avaliação' : 'avaliações'}">
         <span class="album-rating-average">${e(avg)}</span>
-        <span class="album-stars" aria-hidden="true">${formatStarsText(album.averageRating)}</span>
+        <span class="album-stars${isZero ? ' is-empty' : ''}" aria-hidden="true">${formatStarsText(rawAvg)}</span>
         <span class="album-rating-count">${e(countLabel)}</span>
     </div>`;
 }
@@ -126,7 +159,7 @@ function renderHeroCard(album, userReview, adapter) {
                 ${renderCommunityRating(album)}
                 ${userBadgeHtml}
                 <div class="album-cta-row">
-                    <a class="album-primary-cta" href="${e(reviewHref)}" data-rate-album>${e(ctaLabel)}</a>
+                    <a class="album-primary-cta" href="${e(reviewHref)}" data-rate-album data-rated="${String(Boolean(userReview))}">${e(ctaLabel)}</a>
                     ${spotifyHtml}
                 </div>
             </div>
@@ -148,13 +181,20 @@ function renderSocialActions(review) {
     });
 }
 
-function renderMyReviewCard(userReview, album, adapter, confirmingDelete) {
+function formatAuthorLine(review) {
+    const name = review.authorName || 'Você';
+    const handlePart = review.authorHandle ? ` @${review.authorHandle}` : '';
+    const datePart = review.publishedLabel ? ` · ${review.publishedLabel}` : '';
+    return `${name}${handlePart}${datePart}`;
+}
+
+function renderMyReviewCard(userReview, album, adapter, confirmingDelete, deleting) {
     const reviewHref = buildReviewHref(album, adapter);
-    const authorLine = `${userReview.authorName} @${userReview.authorHandle}${userReview.publishedLabel ? ` · ${userReview.publishedLabel}` : ''}`;
+    const authorLine = formatAuthorLine(userReview);
     const actionsHtml = confirmingDelete
         ? `<div class="album-my-review-actions">
-            <button type="button" class="album-confirm-delete" data-confirm-delete>Confirmar exclusão</button>
-            <button type="button" class="album-cancel-delete" data-cancel-delete>Cancelar</button>
+            <button type="button" class="album-confirm-delete" data-confirm-delete ${deleting ? 'disabled' : ''}>${deleting ? 'Excluindo...' : 'Confirmar exclusão'}</button>
+            <button type="button" class="album-cancel-delete" data-cancel-delete ${deleting ? 'disabled' : ''}>Cancelar</button>
         </div>`
         : `<div class="album-my-review-actions">
             <a class="album-icon-action" href="${e(reviewHref)}" aria-label="Editar minha avaliação">
@@ -185,7 +225,7 @@ function renderMyReviewCard(userReview, album, adapter, confirmingDelete) {
 }
 
 function renderReviewCard(review) {
-    const authorLine = `${review.authorName} @${review.authorHandle}${review.publishedLabel ? ` · ${review.publishedLabel}` : ''}`;
+    const authorLine = formatAuthorLine(review);
     return `<article class="album-review-card">
         <div class="album-review-header">
             <p class="album-review-author">${e(authorLine)}</p>
@@ -220,7 +260,17 @@ function renderLoadingSkeleton() {
     <div class="album-reviews-stack" aria-label="Carregando avaliações" aria-busy="true">${card.repeat(3)}</div>`;
 }
 
-// Mount the Album Page skeleton with shared shell, states, sorting, and expanded cover modal.
+function readDirtyMarker() {
+    try { return localStorage.getItem(REVIEWS_DIRTY_KEY) || ''; } catch { return ''; }
+}
+
+function markReviewsDirty() {
+    const marker = String(Date.now());
+    try { localStorage.setItem(REVIEWS_DIRTY_KEY, marker); } catch {}
+    return marker;
+}
+
+// Mount the Album Page with shared shell, backend details, own review lifecycle, and expanded cover modal.
 export function mountAlbumPage(options = {}) {
     const adapter = options.adapter || resolveAlbumAdapter();
     const headerEl = document.querySelector('.profile-global-header');
@@ -256,14 +306,67 @@ export function mountAlbumPage(options = {}) {
     const state = {
         loading: true,
         error: '',
+        errorStatus: null,
+        retryable: true,
+        retryAfterUntil: 0,
+        albumId: readAlbumFromSearch()?.spotifyId || '',
         album: null,
         userReview: null,
         reviews: [],
+        communityReviewsAvailable: adapter.communityReviewsAvailable !== false,
         sort: 'recent',
-        confirmingDelete: false
+        confirmingDelete: false,
+        deleting: false
     };
 
+    let requestToken = 0;
+    let activeController = null;
+    let retryTimer = null;
+    let lastDirtyMarker = readDirtyMarker();
+
     const notify = text => { if (statusEl) statusEl.textContent = text; };
+
+    function remainingRetrySeconds() {
+        return Math.max(0, Math.ceil((state.retryAfterUntil - Date.now()) / 1000));
+    }
+
+    function stopRetryTimer() {
+        if (retryTimer) {
+            clearInterval(retryTimer);
+            retryTimer = null;
+        }
+    }
+
+    function startRetryTimer() {
+        stopRetryTimer();
+        if (remainingRetrySeconds() <= 0) return;
+        retryTimer = setInterval(() => {
+            if (remainingRetrySeconds() <= 0) {
+                state.retryAfterUntil = 0;
+                stopRetryTimer();
+            }
+            if (state.error && !state.album) render();
+        }, 1000);
+    }
+
+    function renderErrorState() {
+        const heading = state.errorStatus === 404
+            ? 'Álbum não encontrado'
+            : state.errorStatus === 400
+                ? 'Identificador do álbum inválido'
+                : 'Não foi possível carregar o álbum';
+        const remaining = remainingRetrySeconds();
+        const fallbackHref = adapter.routes?.echoes || adapter.routes?.home || 'echoes.html';
+        const actionHtml = state.retryable
+            ? `<button type="button" class="album-primary-cta" data-retry-album ${remaining > 0 ? 'disabled' : ''}>${remaining > 0 ? `Aguarde ${remaining}s` : 'Tentar novamente'}</button>`
+            : `<a class="album-primary-cta" href="${e(fallbackHref)}">Voltar para Ecos</a>`;
+
+        contentEl.innerHTML = `<section class="album-error-card" role="alert">
+            <h2>${e(heading)}</h2>
+            <p>${e(state.error || 'Tente novamente em instantes.')}</p>
+            ${actionHtml}
+        </section>`;
+    }
 
     function render() {
         if (state.loading) {
@@ -271,28 +374,30 @@ export function mountAlbumPage(options = {}) {
             return;
         }
         if (state.error || !state.album) {
-            contentEl.innerHTML = `<section class="album-error-card" role="alert">
-                <h2>Não foi possível carregar o álbum</h2>
-                <p>${e(state.error || 'Tente novamente em instantes.')}</p>
-                <button type="button" class="album-primary-cta" data-retry-album>Tentar novamente</button>
-            </section>`;
+            renderErrorState();
             return;
         }
 
-        const hasReviews = state.reviews.length > 0;
+        const communityAvailable = state.communityReviewsAvailable !== false && adapter.communityReviewsAvailable !== false;
+        const hasReviews = communityAvailable && state.reviews.length > 0;
         const sortHtml = hasReviews
             ? `<div class="album-sort-pill"><select id="album-sort" class="album-sort-select" aria-label="Ordenar avaliações">${SORT_OPTIONS.map(([val, label]) => `<option value="${val}"${state.sort === val ? ' selected' : ''}>${e(label)}</option>`).join('')}</select></div>`
             : '';
-        const reviewsBody = hasReviews
-            ? state.reviews.map(renderReviewCard).join('')
-            : `<div class="album-empty-card">
-                <h3>Nenhuma avaliação para este álbum ainda</h3>
-                <p>Seja o primeiro a compartilhar o que achou deste disco.</p>
-                <a class="album-primary-cta" href="${e(buildReviewHref(state.album, adapter))}">Avaliar agora</a>
-            </div>`;
+        const reviewsBody = !communityAvailable
+            ? `<div class="album-empty-card album-unavailable-card" data-community-unavailable>
+                <h3>Avaliações da comunidade em breve</h3>
+                <p>A listagem de avaliações da comunidade para este álbum ainda não está disponível.</p>
+            </div>`
+            : hasReviews
+                ? state.reviews.map(renderReviewCard).join('')
+                : `<div class="album-empty-card">
+                    <h3>Nenhuma avaliação para este álbum ainda</h3>
+                    <p>Seja o primeiro a compartilhar o que achou deste disco.</p>
+                    <a class="album-primary-cta" href="${e(buildReviewHref(state.album, adapter))}">Avaliar agora</a>
+                </div>`;
 
         contentEl.innerHTML = `${renderHeroCard(state.album, state.userReview, adapter)}
-            ${state.userReview ? renderMyReviewCard(state.userReview, state.album, adapter, state.confirmingDelete) : ''}
+            ${state.userReview ? renderMyReviewCard(state.userReview, state.album, adapter, state.confirmingDelete, state.deleting) : ''}
             <section class="album-reviews-section" aria-labelledby="community-reviews-heading">
                 <div class="album-section-header">
                     <h2 id="community-reviews-heading" class="album-section-title">Avaliações da Comunidade</h2>
@@ -317,29 +422,117 @@ export function mountAlbumPage(options = {}) {
         coverDialog.querySelector('[data-close-cover]')?.focus();
     }
 
-    async function load() {
+    function resetState() {
+        activeController?.abort();
+        activeController = null;
+        requestToken += 1;
+        stopRetryTimer();
+        state.loading = false;
+        state.error = '';
+        state.errorStatus = null;
+        state.retryable = true;
+        state.retryAfterUntil = 0;
+        state.album = null;
+        state.userReview = null;
+        state.reviews = [];
+        state.confirmingDelete = false;
+        state.deleting = false;
+    }
+
+    async function load({ preserveStatus = false } = {}) {
+        activeController?.abort();
+        activeController = new AbortController();
+        const { signal } = activeController;
+        const token = ++requestToken;
+        const albumId = readAlbumFromSearch()?.spotifyId || '';
+        const sessionKey = typeof adapter.getSessionKey === 'function' ? adapter.getSessionKey() : null;
+
+        state.albumId = albumId;
         state.loading = true;
         state.error = '';
+        state.errorStatus = null;
+        state.retryable = true;
+        state.confirmingDelete = false;
+        if (!preserveStatus) notify('');
         render();
+
         try {
-            const albumId = readAlbumFromSearch()?.spotifyId || '';
-            const data = await adapter.loadAlbum({ albumId, sort: state.sort });
+            const data = await adapter.loadAlbum({ albumId, sort: state.sort, signal });
+            if (token !== requestToken || signal.aborted || controller.signal.aborted) return;
+            if (typeof adapter.getSessionKey === 'function' && adapter.getSessionKey() !== sessionKey) return;
+
             state.album = data?.album || null;
             state.userReview = data?.userReview || null;
             state.reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+            state.communityReviewsAvailable = data?.communityReviewsAvailable !== undefined
+                ? Boolean(data.communityReviewsAvailable)
+                : adapter.communityReviewsAvailable !== false;
+            state.retryAfterUntil = 0;
+            stopRetryTimer();
             state.loading = false;
+            lastDirtyMarker = readDirtyMarker();
+            if (data?.userReviewError && !preserveStatus) {
+                notify(data.userReviewError);
+            }
             render();
         } catch (err) {
+            if (token !== requestToken || signal.aborted || controller.signal.aborted || err?.name === 'AbortError') return;
+            if (err?.code === 'SESSION_CHANGED') {
+                resetState();
+                if (typeof adapter.getSessionKey === 'function' && adapter.getSessionKey()) {
+                    load();
+                }
+                return;
+            }
+            if (err?.status === 401 && !adapter.isDemo) {
+                resetState();
+                state.error = err.message || 'Sessão expirada. Entre novamente.';
+                state.errorStatus = 401;
+                state.retryable = false;
+                render();
+                return;
+            }
             state.loading = false;
+            state.album = null;
+            state.userReview = null;
+            state.reviews = [];
             state.error = err?.message || 'Não foi possível carregar este álbum.';
+            state.errorStatus = err?.status ?? null;
+            state.retryable = err?.retryable !== undefined ? Boolean(err.retryable) : (err?.status !== 400 && err?.status !== 404);
+            if (typeof err?.retryAfterSeconds === 'number' && err.retryAfterSeconds > 0) {
+                state.retryAfterUntil = Date.now() + err.retryAfterSeconds * 1000;
+                startRetryTimer();
+            } else {
+                state.retryAfterUntil = 0;
+                stopRetryTimer();
+            }
             render();
         }
     }
 
     async function shareAlbum() {
-        const shareUrl = typeof location !== 'undefined' ? location.href : '';
+        const shareUrl = buildAlbumShareUrl(state.album, adapter);
+        if (!shareUrl) {
+            notify('Compartilhamento indisponível neste navegador.');
+            return;
+        }
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+            try {
+                await navigator.share({
+                    title: state.album?.name ? `${state.album.name} – Sonarfy` : 'Sonarfy',
+                    text: state.album?.artist
+                        ? `${state.album.name} por ${state.album.artist} no Sonarfy`
+                        : (state.album?.name || 'Confira este álbum no Sonarfy'),
+                    url: shareUrl
+                });
+                notify('Álbum compartilhado.');
+                return;
+            } catch (err) {
+                if (err?.name === 'AbortError') return;
+            }
+        }
         try {
-            if (navigator.clipboard?.writeText && shareUrl) {
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(shareUrl);
                 notify('Link do álbum copiado para a área de transferência.');
                 return;
@@ -360,7 +553,11 @@ export function mountAlbumPage(options = {}) {
         if (target.hasAttribute('data-expand-cover')) { openCoverModal(); return; }
         if (target.hasAttribute('data-close-cover')) { coverDialog.close(); return; }
         if (target.hasAttribute('data-share-album')) { await shareAlbum(); return; }
-        if (target.hasAttribute('data-retry-album')) { load(); return; }
+        if (target.hasAttribute('data-retry-album')) {
+            if (remainingRetrySeconds() > 0) return;
+            load();
+            return;
+        }
         if (target.hasAttribute('data-request-delete')) {
             state.confirmingDelete = true;
             render();
@@ -368,18 +565,38 @@ export function mountAlbumPage(options = {}) {
             return;
         }
         if (target.hasAttribute('data-cancel-delete')) {
+            if (state.deleting) return;
             state.confirmingDelete = false;
             render();
             return;
         }
         if (target.hasAttribute('data-confirm-delete')) {
+            if (state.deleting) return;
             const id = state.userReview?.reviewId;
-            state.confirmingDelete = false;
-            if (id != null && adapter.deleteReview) {
-                await adapter.deleteReview(id);
-                state.userReview = null;
-                notify('Sua avaliação foi excluída.');
+            if (id == null || !adapter.deleteReview) {
+                state.confirmingDelete = false;
                 render();
+                return;
+            }
+            state.deleting = true;
+            render();
+            try {
+                await adapter.deleteReview(id);
+                lastDirtyMarker = markReviewsDirty();
+                state.userReview = null;
+                state.confirmingDelete = false;
+                state.deleting = false;
+                notify('Sua avaliação foi excluída.');
+                if (!adapter.isDemo) {
+                    await load({ preserveStatus: true });
+                } else {
+                    render();
+                }
+            } catch (err) {
+                state.deleting = false;
+                state.confirmingDelete = false;
+                render();
+                notify(err?.message || 'Não foi possível excluir sua avaliação.');
             }
             return;
         }
@@ -388,8 +605,12 @@ export function mountAlbumPage(options = {}) {
         }
         if (target.dataset.navigation) {
             const key = target.dataset.navigation;
-            if (key === 'review' && state.album) {
-                window.location.assign(buildReviewHref(state.album, adapter));
+            if (key === 'review') {
+                if (state.album) {
+                    window.location.assign(buildReviewHref(state.album, adapter));
+                } else {
+                    window.location.assign(adapter.routes?.echoes || 'echoes.html');
+                }
                 return;
             }
             if (drawer.open) drawer.close();
@@ -439,11 +660,76 @@ export function mountAlbumPage(options = {}) {
         }
     }, { capture: true });
 
+    // Reload when navigating to another album in the same document.
+    on(window, 'popstate', () => {
+        const nextId = readAlbumFromSearch()?.spotifyId || '';
+        if (nextId !== state.albumId) {
+            resetState();
+            load();
+        }
+    });
+
+    // Revalidate when returning via browser history/bfcache or after review mutations.
+    on(window, 'pageshow', event => {
+        if (adapter.isDemo) return;
+        const currentDirty = readDirtyMarker();
+        const dirtyChanged = currentDirty && currentDirty !== lastDirtyMarker;
+        if (!event.persisted && !dirtyChanged) return;
+        const sessionKey = typeof adapter.getSessionKey === 'function' ? adapter.getSessionKey() : null;
+        if (typeof adapter.getSessionKey === 'function' && !sessionKey) {
+            resetState();
+            render();
+            return;
+        }
+        load();
+    });
+
+    // React to account/session switches and review updates from other tabs.
+    on(window, 'storage', event => {
+        if (adapter.isDemo) return;
+        if (event.key === 'sonarfy_token' || event.key === null) {
+            resetState();
+            if (typeof adapter.getSessionKey === 'function' && adapter.getSessionKey()) {
+                load();
+            } else {
+                state.error = 'Sessão encerrada. Entre novamente.';
+                state.errorStatus = 401;
+                state.retryable = false;
+                render();
+            }
+            return;
+        }
+        if (event.key === REVIEWS_DIRTY_KEY) {
+            lastDirtyMarker = readDirtyMarker();
+            load();
+        }
+    });
+
+    let authChannel = null;
+    if (!adapter.isDemo && typeof BroadcastChannel === 'function') {
+        try {
+            authChannel = new BroadcastChannel('sonarfy_auth');
+            authChannel.addEventListener('message', event => {
+                if (event.data?.type === 'logout') {
+                    resetState();
+                    state.error = 'Sessão encerrada. Entre novamente.';
+                    state.errorStatus = 401;
+                    state.retryable = false;
+                    render();
+                }
+            });
+        } catch {}
+    }
+
     const ready = load();
     return {
         state,
         ready,
+        reload: load,
         destroy() {
+            activeController?.abort();
+            stopRetryTimer();
+            authChannel?.close();
             controller.abort();
         }
     };

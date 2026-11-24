@@ -169,6 +169,22 @@ const profileDto = (own, handle = own ? 'owner' : 'other') => ({
                         });
                     }
 
+                    if (url.pathname === '/api/albums/alb-202' && req.method() === 'GET') {
+                        return reply(200, {
+                            spotifyId: 'alb-202',
+                            name: 'Terceiro Um',
+                            coverUrl: null,
+                            artist: { spotifyId: 'art-3', name: 'Artista C' },
+                            releaseOn: '2024',
+                            releasePrecision: 'ano',
+                            totalTracks: 12,
+                            averageRating: 10,
+                            reviewCount: 1
+                        });
+                    }
+                    if (url.pathname === '/api/albums/alb-202/reviews/me' && req.method() === 'GET') {
+                        return reply(404);
+                    }
                     if (url.pathname === '/api/reviews/101' && req.method() === 'PUT') {
                         const body = JSON.parse(req.postData() || '{}');
                         const target = ownItems.find(i => i.reviewId === 101);
@@ -264,6 +280,12 @@ const profileDto = (own, handle = own ? 'owner' : 'other') => ({
                 const overflowOther = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
                 assert.equal(overflowOther, false);
                 await page.screenshot({ path: `${output}/${name}-${width}-${theme}-other.png`, fullPage: true });
+
+                // Clicar no álbum na coleção navega para pages/album.html?albumId=<spotifyId> e carrega a página do álbum
+                await page.locator('#panel-collection .collection-card [data-album="alb-202"]').click();
+                await page.waitForURL(url => url.pathname.endsWith('/pages/album.html') && url.searchParams.get('albumId') === 'alb-202');
+                await page.locator('.album-title').waitFor();
+                assert.equal(await page.locator('.album-title').textContent(), 'Terceiro Um');
 
                 // 3. Perfil vazio
                 await page.goto(`${base}/pages/profile.html?handle=empty&tab=collection`);

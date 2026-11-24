@@ -173,4 +173,148 @@ describe('album: page states and interactions', () => {
             expect(document.querySelector('.album-title').textContent).toBe('Neon Horizons');
         });
     });
+
+    // Verify HTTP-integrated behaviors: zero vs null average, unavailable community list, delete re-fetch, Retry-After, share, and stale response guard.
+    it('handles HTTP mode: zero average, unavailable community list, delete aggregate refresh, Retry-After, share, and stale responses', async () => {
+        let deleted = false;
+        const loadAlbum = vi.fn(async ({ albumId }) => ({
+            album: {
+                spotifyId: albumId || '4aawyAB9vmqN3uQ7FjRGTy',
+                name: 'Discovery',
+                artist: 'Daft Punk',
+                releaseOn: '2001-03',
+                releasePrecision: 'mes',
+                releaseLabel: 'Mar 2001',
+                totalTracks: 14,
+                coverUrl: null,
+                spotifyUrl: `https://open.spotify.com/album/${albumId || '4aawyAB9vmqN3uQ7FjRGTy'}`,
+                averageRating: deleted ? null : 0,
+                reviewCount: deleted ? 0 : 1
+            },
+            userReview: deleted ? null : {
+                reviewId: 500,
+                authorName: 'Pablo',
+                authorHandle: 'pablo',
+                publishedLabel: '1h',
+                rating: 0,
+                reviewText: ''
+            },
+            reviews: [],
+            communityReviewsAvailable: false
+        }));
+        const deleteReview = vi.fn(async () => { deleted = true; });
+        const httpLikeAdapter = {
+            isDemo: false,
+            communityReviewsAvailable: false,
+            routes: { home: 'feed.html', echoes: 'echoes.html', review: 'album-review.html', login: 'login.html' },
+            getSessionKey: () => 'tok-1',
+            loadAlbum,
+            deleteReview
+        };
+
+        const instance = mount(httpLikeAdapter, '?albumId=4aawyAB9vmqN3uQ7FjRGTy');
+        await instance.ready;
+
+        // Zero average with 1 review is distinct from null average (no reviews).
+        expect(document.querySelector('#album-demo').hidden).toBe(true);
+        expect(document.querySelector('.album-submeta').textContent).toBe('Mar 2001 · 14 faixas');
+        expect(document.querySelector('.album-rating-average').textContent).toBe('0.0');
+        expect(document.querySelector('.album-rating-empty-label')).toBeNull();
+        expect(document.querySelector('.album-rating-count').textContent).toBe('(1 avaliação)');
+        expect(document.querySelector('[data-community-unavailable]')).not.toBeNull();
+        expect(document.querySelector('#album-sort')).toBeNull();
+
+        // Native share uses real Sonarfy URL.
+        const shareSpy = vi.fn(async () => {});
+        Object.defineProperty(navigator, 'share', { value: shareSpy, configurable: true });
+        document.querySelector('[data-share-album]').click();
+        await vi.waitFor(() => {
+            expect(shareSpy).toHaveBeenCalledWith(expect.objectContaining({
+                url: expect.stringContaining('albumId=4aawyAB9vmqN3uQ7FjRGTy')
+            }));
+        });
+        delete navigator.share;
+
+        // Deleting own review marks reviews dirty and re-queries album details for updated aggregates.
+        document.querySelector('[data-request-delete]').click();
+        document.querySelector('[data-confirm-delete]').click();
+        await vi.waitFor(() => {
+            expect(deleteReview).toHaveBeenCalledWith(500);
+            expect(document.querySelector('.album-rating-empty-label')?.textContent).toBe('Sem avaliações ainda');
+        });
+        expect(localStorage.getItem('sonarfy_reviews_dirty')).toBeTruthy();
+        expect(loadAlbum).toHaveBeenCalledTimes(2);
+        instance.destroy();
+
+        // 503 with Retry-After disables retry button during cooldown without auto-retrying.
+        const retryAfterAdapter = {
+            isDemo: false,
+            routes: { echoes: 'echoes.html' },
+            loadAlbum: vi.fn(async () => {
+                const err = new Error('O serviço do catálogo está temporariamente indisponível. Aguarde 30s e tente novamente.');
+                err.status = 503;
+                err.retryAfterSeconds = 30;
+                err.retryable = true;
+                throw err;
+            })
+        };
+        const retryInstance = mount(retryAfterAdapter, '?albumId=4aawyAB9vmqN3uQ7FjRGTy');
+        await retryInstance.ready;
+        const retryBtn = document.querySelector('[data-retry-album]');
+        expect(retryBtn.disabled).toBe(true);
+        expect(retryBtn.textContent).toContain('Aguarde');
+        retryBtn.click();
+        expect(retryAfterAdapter.loadAlbum).toHaveBeenCalledTimes(1);
+        retryInstance.destroy();
+
+        // Stale response from previous album does not overwrite current album state.
+        let resolveFirst;
+        const raceAdapter = {
+            isDemo: false,
+            communityReviewsAvailable: false,
+            loadAlbum: vi.fn(({ albumId }) => {
+                if (albumId === 'album-old-111111111111') {
+                    return new Promise(resolve => { resolveFirst = resolve; });
+                }
+                return Promise.resolve({
+                    album: {
+                        spotifyId: albumId,
+                        name: 'New Album',
+                        artist: 'New Artist',
+                        releaseOn: '2026',
+                        releasePrecision: 'ano',
+                        releaseLabel: '2026',
+                        totalTracks: 8,
+                        coverUrl: null,
+                        averageRating: null,
+                        reviewCount: 0
+                    },
+                    userReview: null,
+                    reviews: [],
+                    communityReviewsAvailable: false
+                });
+            })
+        };
+        const raceInstance = mount(raceAdapter, '?albumId=album-old-111111111111');
+        history.pushState(null, '', '/pages/album.html?albumId=album-new-222222222222');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        await vi.waitFor(() => {
+            expect(document.querySelector('.album-title')?.textContent).toBe('New Album');
+        });
+        resolveFirst({
+            album: {
+                spotifyId: 'album-old-111111111111',
+                name: 'Old Album',
+                artist: 'Old Artist',
+                averageRating: 5,
+                reviewCount: 9
+            },
+            userReview: null,
+            reviews: [],
+            communityReviewsAvailable: false
+        });
+        await Promise.resolve();
+        expect(document.querySelector('.album-title').textContent).toBe('New Album');
+        raceInstance.destroy();
+    });
 });

@@ -140,7 +140,8 @@ function makeFeedItem(reviewId, { authorId = 7, handle = 'marina_som', displayNa
                 assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
                 assert.equal(await page.locator('[role="tab"]').count(), 0);
                 assert.equal(await page.locator('#feed-refresh').count(), 0);
-                assert.equal(await page.locator('[data-album], [data-edit-review], [data-delete-review]').count(), 0);
+                assert.equal(await page.locator('[data-edit-review], [data-delete-review]').count(), 0);
+                assert.equal(await page.locator('.activity-card [data-album]').count(), 2);
                 assert.equal(await page.locator('.activity-card').count(), 2);
                 assert.equal(await page.locator('.activity-social.is-unavailable [data-like][aria-disabled="true"]').count(), 2);
                 assert.equal(await page.locator('.activity-social.is-unavailable [data-comments][aria-disabled="true"]').count(), 2);
@@ -173,6 +174,11 @@ function makeFeedItem(reviewId, { authorId = 7, handle = 'marina_som', displayNa
                     await page.keyboard.press('Escape');
                     assert.equal(await page.locator('#open-menu').evaluate(el => el === document.activeElement), true);
                 }
+
+                // Clicar no álbum do card navega para pages/album.html?albumId=<spotifyId>.
+                const firstAlbumId = await page.locator('.activity-card [data-album]').first().getAttribute('data-album');
+                await page.locator('.activity-card [data-album]').first().click();
+                await page.waitForURL(u => u.pathname.endsWith('/pages/album.html') && u.searchParams.get('albumId') === firstAlbumId);
 
                 // 2. Estado de carregamento (skeleton + reduced-motion).
                 mode = 'loading';

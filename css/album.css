@@ -261,6 +261,11 @@
     box-sizing: border-box;
 }
 
+.album-primary-cta:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .album-spotify-cta {
     display: inline-flex;
     align-items: center;
