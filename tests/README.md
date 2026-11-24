@@ -176,3 +176,9 @@ Valida `404.html` e `js/not-found.js` (resolução da rota inicial por sessão, 
 ## Limitações
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.
+
+## Resolução da base HTTP
+
+`tests/auth-http.test.js` verifica a base na mesma origem em ambiente publicado e a preservação de `http://localhost:8080/api` no desenvolvimento local. A validação usa localização simulada, sem acessar o proxy de produção.
+
+Validação em 24/11/2026: `npm test` passou com 285 testes em 31 arquivos; `node tests/browser/logout.cjs` passou nas oito combinações de Microsoft Edge 158.0.4370.33 e Firefox 153.0, desktop 1440px/mobile 390px, claro/escuro. Navegadores headless, mobile emulado e HTTP simulado; o proxy de produção não foi exercitado. A suíte unitária emitiu mensagens de conexão recusada à porta 8080, sem falhas de testes.

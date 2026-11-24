@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAuthClient } from '../js/auth-http.js';
+import { createAuthClient, resolveApiBaseUrl } from '../js/auth-http.js';
 import { logoutAccount } from '../js/account-state.js';
 import { logout as logoutFeed } from '../js/feed-state.js';
 
@@ -168,5 +168,17 @@ describe('auth-http: ciclo de vida de sessão (refresh e logout)', () => {
         expect(fetcher).toHaveBeenCalledTimes(2);
         expect(fetcher.mock.calls[0][0]).toBe('https://api.example.invalid/api/auth/logout');
         expect(fetcher.mock.calls[1][0]).toBe('https://api.example.invalid/api/auth/logout');
+    });
+
+    // Resolve /api na mesma origem fora de localhost/127.0.0.1 para operar atrás do proxy reverso Nginx.
+    it('resolve API_BASE_URL na mesma origem fora de localhost', () => {
+        const prevApiBase = globalThis.API_BASE_URL;
+        delete globalThis.API_BASE_URL;
+        vi.stubGlobal('location', { hostname: 'sonarfymusic.duckdns.org', origin: 'https://sonarfymusic.duckdns.org' });
+        expect(resolveApiBaseUrl()).toBe('https://sonarfymusic.duckdns.org/api');
+        vi.stubGlobal('location', { hostname: 'localhost', origin: 'http://localhost:3000' });
+        expect(resolveApiBaseUrl()).toBe('http://localhost:8080/api');
+        vi.unstubAllGlobals();
+        if (prevApiBase !== undefined) globalThis.API_BASE_URL = prevApiBase;
     });
 });

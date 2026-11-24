@@ -7,9 +7,12 @@ export function resolveApiBaseUrl(baseUrl) {
         return globalThis.API_BASE_URL.trim().replace(/\/$/, '');
     }
     const host = typeof location !== 'undefined' ? location.hostname : '';
+    const origin = typeof location !== 'undefined' && typeof location.origin === 'string' && location.origin !== 'null'
+        ? location.origin.replace(/\/$/, '')
+        : '';
     const fallback = host === 'localhost' || host === '127.0.0.1'
         ? 'http://localhost:8080/api'
-        : 'https://api.sonarfy.com/api';
+        : (origin ? `${origin}/api` : '/api');
     return fallback;
 }
 
