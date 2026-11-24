@@ -3,7 +3,7 @@ import { createProfileState } from './profile-state.js';
 import { createDialogs, containFocus } from './profile-dialogs.js';
 import { icon } from './profile-icons.js';
 import { sidebar, skeleton, globalHeader, globalFooter, emptyState } from './profile-shell.js';
-import { profileHeader, activityFeed, collectionView, socialActions } from './profile-views.js';
+import { profileHeader, activityFeed, collectionView, socialActions, reviewsPanel } from './profile-views.js';
 import { sortOptions } from './profile-utils.js';
 import { clearAccessToken, logoutSession } from './auth-http.js';
 
@@ -32,6 +32,12 @@ function render() {
     header.innerHTML = profileHeader(profile, own(), state.pending.has('follow'));
     if (focusedAction) header.querySelector(`[data-action="${focusedAction}"]`)?.focus();
     document.title = `${profile.displayName} (@${profile.handle}) – Sonarfy`;
+    if (typeof adapter.loadReviews === 'function') {
+        document.getElementById('panel-activities').innerHTML = reviewsPanel(state.reviews, profile, state.pending);
+        document.getElementById('panel-replies').innerHTML = emptyState('Conteúdo ainda não disponível', 'Respostas ainda não estão integradas.');
+        document.getElementById('panel-collection').innerHTML = emptyState('Conteúdo ainda não disponível', 'A coleção ainda não está integrada.');
+        return;
+    }
     if (state.data.contentAvailable === false) {
         tabs.forEach(tab => { document.getElementById(`panel-${tab}`).innerHTML = emptyState('Conteúdo ainda não disponível', 'Avaliações, respostas e coleção ainda não estão integradas.'); });
         return;
@@ -93,6 +99,7 @@ document.addEventListener('click', event => {
     if (target.dataset.navigation) { run(() => navigation(target.dataset.navigation)); if (drawer.open) drawer.close(); }
     if (target.dataset.unavailable) notify(`${target.dataset.unavailable} ainda não está disponível neste frontend.`);
     if (target.dataset.like) run(async () => {
+        if (typeof adapter.like !== 'function') { notify('Curtidas ainda não estão integradas neste frontend.'); return; }
         const id = target.dataset.like;
         const expanded = target.closest('#expanded-social');
         await store.like(id);
@@ -106,6 +113,12 @@ document.addEventListener('click', event => {
         if (!adapter.actions?.album) { notify('A página do álbum ainda não está disponível neste frontend.'); return; }
         await adapter.actions.album(target.dataset.album);
     });
+    if (target.dataset.loadMoreReviews !== undefined || target.dataset.retryLoadMore !== undefined) {
+        run(() => store.loadReviews({ reset: false }));
+    }
+    if (target.dataset.retryReviews !== undefined) {
+        run(() => store.loadReviews({ reset: true }));
+    }
     if (target.dataset.review && state.data) dialogs.review(state.collection.find(item => item.id === target.dataset.review));
     if (target.dataset.action === 'edit') dialogs.edit();
     if (target.dataset.action === 'share') dialogs.share();
@@ -174,12 +187,20 @@ async function load() {
         if (state.sort !== 'recent') await store.sort(state.sort);
         document.getElementById('profile-sidebar').innerHTML = sidebar(own(), adapter.routes);
         document.getElementById('profile-demo').hidden = !adapter.demo;
+        if (typeof adapter.loadReviews === 'function') {
+            await store.loadReviews({ reset: true });
+        }
     } catch (error) {
         header.replaceChildren(); tabs.forEach(tab => document.getElementById(`panel-${tab}`).replaceChildren());
         notify(error.message || 'Não foi possível carregar o perfil.');
         const retry = document.createElement('button'); retry.className = 'profile-secondary'; retry.textContent = 'Tentar novamente'; retry.addEventListener('click', load); status.append(retry);
     }
 }
+window.addEventListener('pageshow', event => {
+    if (event.persisted && !adapter.demo && typeof adapter.loadReviews === 'function' && state.data?.profile?.handle) {
+        run(() => store.loadReviews({ reset: true }));
+    }
+});
 window.addEventListener('storage', event => {
     if (!adapter.demo && (event.key === 'sonarfy_token' || event.key === null)) location.reload();
 });

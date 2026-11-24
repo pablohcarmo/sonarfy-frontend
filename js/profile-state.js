@@ -1,11 +1,91 @@
+const createEmptyReviewsState = (handle = null) => ({
+    handle,
+    items: [],
+    nextBeforeId: null,
+    loading: false,
+    loadingMore: false,
+    error: null,
+    loaded: false
+});
+
 export function createProfileState(adapter) {
-    const state = { data: null, tab: 'activities', sort: 'recent', collection: [], pending: new Set() };
+    const state = {
+        data: null,
+        tab: 'activities',
+        sort: 'recent',
+        collection: [],
+        pending: new Set(),
+        reviews: createEmptyReviewsState()
+    };
+    let reviewsRequestSeq = 0;
     const listeners = new Set();
     const emit = () => listeners.forEach(listener => listener(state));
     return {
         state,
         subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-        setData(data) { state.data = data; state.collection = data.collection; emit(); },
+        setData(data) {
+            reviewsRequestSeq += 1;
+            state.data = data;
+            state.collection = data.collection;
+            state.reviews = createEmptyReviewsState(data?.profile?.handle || null);
+            emit();
+        },
+        async loadReviews({ reset = false } = {}) {
+            if (typeof adapter?.loadReviews !== 'function' || !state.data?.profile?.handle) return;
+            if (!reset && (state.reviews.loading || state.reviews.loadingMore || state.reviews.nextBeforeId == null)) return;
+            const requestId = ++reviewsRequestSeq;
+            const activeData = state.data;
+            const targetHandle = activeData.profile.handle;
+            const sessionUserId = activeData.session?.userId ?? null;
+            const beforeId = reset ? null : state.reviews.nextBeforeId;
+            if (reset) {
+                state.reviews = {
+                    ...createEmptyReviewsState(targetHandle),
+                    loading: true
+                };
+            } else {
+                state.reviews = {
+                    ...state.reviews,
+                    loadingMore: true,
+                    error: null
+                };
+            }
+            emit();
+            const isStale = () => requestId !== reviewsRequestSeq
+                || state.data !== activeData
+                || state.data?.profile?.handle !== targetHandle
+                || (state.data?.session?.userId ?? null) !== sessionUserId;
+            try {
+                const page = await adapter.loadReviews(targetHandle, { limit: 20, beforeId });
+                if (isStale()) return;
+                const existing = reset ? [] : state.reviews.items;
+                const seen = new Set(existing.map(item => item.id));
+                const appended = page.items.filter(item => !seen.has(item.id));
+                state.reviews = {
+                    handle: targetHandle,
+                    items: reset ? page.items : [...existing, ...appended],
+                    nextBeforeId: page.nextBeforeId ?? null,
+                    loading: false,
+                    loadingMore: false,
+                    error: null,
+                    loaded: true
+                };
+            } catch (error) {
+                if (isStale()) return;
+                state.reviews = {
+                    ...state.reviews,
+                    loading: false,
+                    loadingMore: false,
+                    error: {
+                        message: error?.message || 'Não foi possível carregar as avaliações. Tente novamente.',
+                        status: error?.status ?? null
+                    }
+                };
+                if (error?.status === 401) throw error;
+            } finally {
+                if (!isStale()) emit();
+            }
+        },
         async mutate(key, operation, reconcile) {
             if (state.pending.has(key)) return;
             state.pending.add(key); emit();
