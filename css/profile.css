@@ -92,8 +92,8 @@
 .profile-tabs [aria-selected="true"]::after { content: ''; position: absolute; height: 4px; width: min(102px,90%); border-radius: 999px; background: var(--accent-color); bottom: -1px; left: 50%; transform: translateX(-50%); }
 .profile-footer { margin-top: auto; min-height: 124px; }
 .profile-footer .footer-links { gap: 8px; }
-.profile-footer button { border: 0; padding: 0; background: transparent; color: inherit; font-size: inherit; white-space: nowrap; }
-.profile-footer button:hover { text-decoration: underline; }
+.profile-footer a, .profile-footer button { border: 0; padding: 0; background: transparent; color: inherit; font-size: inherit; text-decoration: none; white-space: nowrap; }
+.profile-footer a:hover, .profile-footer button:hover { text-decoration: underline; }
 .profile-status:empty { display: none; }
 .profile-status { color: var(--error-color); font-size: 14px; overflow-wrap: anywhere; }
 .profile-status button { margin: 8px; }

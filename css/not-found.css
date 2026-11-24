@@ -1,0 +1,176 @@
+/* 404 Page (Figma 693:2 — 695:2/47/92/139); base tokens, header, card, CTA and footer come from login.css. */
+.not-found-page {
+    --not-found-badge-bg: #f7f8fa;
+    --not-found-pill-bg: #e8f5fe;
+    --not-found-secondary-border: #8c8d90;
+    --not-found-secondary-hover: #f7f8fa;
+    --not-found-secondary-active: #ebecef;
+}
+
+[data-theme="dark"] .not-found-page {
+    --not-found-badge-bg: #2a2a2a;
+    --not-found-pill-bg: #1c2a38;
+    --not-found-secondary-border: #65676b;
+    --not-found-secondary-hover: #2a2a2a;
+    --not-found-secondary-active: #343434;
+}
+
+.not-found-page .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    z-index: 100;
+}
+
+.not-found-page .skip-link:focus {
+    left: 8px;
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.not-found-main {
+    min-height: 644px;
+    padding: 40px 24px;
+}
+
+.not-found-card {
+    align-items: center;
+    text-align: center;
+    gap: var(--space-3);
+}
+
+.not-found-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.not-found-badge {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-card);
+    background: var(--not-found-badge-bg);
+}
+
+.not-found-badge img {
+    display: block;
+    width: 28px;
+    height: 28px;
+}
+
+.not-found-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--not-found-pill-bg);
+    color: var(--accent-color);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+}
+
+.not-found-copy {
+    width: 100%;
+    text-align: center;
+    gap: 8px;
+}
+
+.not-found-copy h1 {
+    font-size: 32px;
+    line-height: 38px;
+}
+
+.not-found-copy p {
+    font-size: 15px;
+    line-height: 24px;
+}
+
+.not-found-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.not-found-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 20px;
+}
+
+.not-found-primary img {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex: none;
+}
+
+.not-found-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border: 1px solid var(--not-found-secondary-border);
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.not-found-secondary:hover {
+    background: var(--not-found-secondary-hover);
+    text-decoration: none;
+}
+
+.not-found-secondary:active {
+    background: var(--not-found-secondary-active);
+}
+
+.not-found-secondary:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+    .not-found-card {
+        padding: 24px;
+    }
+
+    .not-found-copy h1 {
+        font-size: 28px;
+        line-height: 34px;
+    }
+}
+
+@media (forced-colors: active) {
+    .not-found-badge,
+    .not-found-pill,
+    .not-found-secondary {
+        border: 1px solid CanvasText;
+    }
+}

@@ -164,6 +164,15 @@ node tests/browser/account-deactivation.cjs
 
 Valida o modal de solicitação em `pages/account.html` (`POST /api/users/me/account-deactivation-request`, `202`/`400`/`401`/`404`/`429`, validação de senha obrigatória e limite de 72 bytes UTF-8, manutenção de `sonarfy_token` e cooldown) e a página de confirmação explícita `pages/confirm-account-deactivation.html#token=...` (`POST /api/auth/account-deactivation-confirmation` sem `Authorization`/`X-Sonarfy-CSRF`, limpeza do fragmento via `replaceState`, remoção de `sonarfy_token` preservando `sonarfy_theme` em `204` e tratamento de `400`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
 
+### Página não encontrada (404)
+
+```sh
+npm test -- tests/not-found.test.js
+node tests/browser/not-found.cjs
+```
+
+Valida `404.html` e `js/not-found.js` (resolução da rota inicial por sessão, retorno por `history.back()` com fallback, caminhos de assets a partir da raiz em rotas aninhadas com status HTTP `404`, dimensões do card `480px`/`342px`, carregamento de SVGs e ausência de overflow horizontal) no Edge e Firefox (`1440px`/`390px`, claro/escuro). Referência: [Figma — 404](../docs/figma-references.md#not-found).
+
 ## Limitações
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.

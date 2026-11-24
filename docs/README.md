@@ -22,6 +22,7 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 | Página | Arquivo | Documentação de referência | Testes automatizados |
 | --- | --- | --- | --- |
 | Home / Landing | `index.html` | [figma-references.md](figma-references.md#home-index) | `tests/browser/login-home-assets.cjs`, `tests/browser/shared-brand.cjs` |
+| Página não encontrada (404) | `404.html` | [figma-references.md](figma-references.md#not-found) | `tests/not-found.test.js`, `tests/browser/not-found.cjs` |
 | Login | `pages/login.html` | [figma-references.md](figma-references.md#login) | `tests/login.test.js`, `tests/login-theme.test.js`, `tests/browser/login-home-assets.cjs` |
 | Logout | `pages/logout.html` | [figma-references.md](figma-references.md#logout) | `tests/logout.test.js`, `tests/auth-http.test.js`, `tests/browser/logout.cjs` |
 | Recuperação de Senha | `pages/reset-password.html` | [account-page.md](account-page.md) | `tests/password-flows.test.js`, `tests/browser/password-flows.cjs` |
