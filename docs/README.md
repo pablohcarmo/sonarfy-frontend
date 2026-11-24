@@ -2,6 +2,10 @@
 
 Este diretório concentra as especificações visuais, contratos de adapter, regras de estado e registros de verificação do frontend do Sonarfy (HTML5, CSS3 e JavaScript Vanilla).
 
+## Base HTTP
+
+`js/api.js` e o fallback de `resolveApiBaseUrl` em `js/auth-http.js` usam a origem da página seguida de `/api` fora de `localhost`/`127.0.0.1`. O ambiente publicado precisa de proxy reverso para o backend nesse caminho. Localmente, permanece `http://localhost:8080/api`. Bases explicitamente fornecidas ao cliente de autenticação mantêm precedência. Esta configuração usa integração HTTP; não ativa fixtures ou modo demonstração.
+
 ---
 
 ## Índice de Documentação
