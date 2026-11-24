@@ -1,4 +1,50 @@
 import { getPostLoginDestination } from './spotify-sync-state.js';
+import { clearAccessToken, resolveApiBaseUrl } from './auth-http.js';
+
+const MAX_BCRYPT_PASSWORD_BYTES = 72;
+
+// Calcula o tamanho em bytes UTF-8 sem truncar a senha.
+function getUtf8ByteLength(value) {
+    return new TextEncoder().encode(value).length;
+}
+
+// Configura a alternância acessível de visibilidade para um campo de senha.
+function bindPasswordToggle(button, field) {
+    if (!button || !field) return;
+    button.addEventListener('click', () => {
+        const isPassword = field.type === 'password';
+        field.type = isPassword ? 'text' : 'password';
+
+        const label = isPassword ? 'Ocultar senha' : 'Mostrar senha';
+        button.setAttribute('aria-label', label);
+        button.setAttribute('title', label);
+        button.setAttribute('aria-pressed', String(isPassword));
+    });
+}
+
+// Restaura o campo de senha para o modo oculto após limpar seu valor.
+function resetPasswordVisibility(button, field) {
+    if (!field) return;
+    field.value = '';
+    field.type = 'password';
+    if (!button) return;
+    button.setAttribute('aria-label', 'Mostrar senha');
+    button.setAttribute('title', 'Mostrar senha');
+    button.setAttribute('aria-pressed', 'false');
+}
+
+// Atualiza o estado visual e acessível de erro de um campo individual.
+function setFieldError(field, message) {
+    if (!field) return;
+    const hasError = Boolean(message);
+    if (hasError) field.setAttribute('aria-invalid', 'true');
+    else field.removeAttribute('aria-invalid');
+    const feedback = document.getElementById(`${field.id}-error`);
+    if (feedback) {
+        feedback.textContent = message || '';
+        feedback.hidden = !hasError;
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
@@ -10,7 +56,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
 
+    const btnOpenReactivation = document.getElementById('btnOpenReactivation');
+    const reactivationForm = document.getElementById('reactivationForm');
+    const reactivationLogin = document.getElementById('reactivationLogin');
+    const reactivationPassword = document.getElementById('reactivationPassword');
+    const btnToggleReactivationPassword = document.getElementById('btnToggleReactivationPassword');
+    const btnSubmitReactivation = document.getElementById('btnSubmitReactivation');
+    const btnCancelReactivation = document.getElementById('btnCancelReactivation');
+    const reactivationError = document.getElementById('reactivationError');
+
     const REMEMBER_KEY = 'sonarfy_remember_login';
+    let reactivationPending = false;
+
+    // Resolve a URL base da API respeitando API_BASE_URL quando presente.
+    const getBaseUrl = () => resolveApiBaseUrl(typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : undefined);
 
     // 1. Mensagens visuais com acessibilidade
     const showError = (htmlOrText, trustedMarkup = false) => {
@@ -21,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (successMessage) successMessage.style.display = 'none';
     };
 
-    const showSuccess = (htmlOrText) => {
+    const showSuccess = (text) => {
         if (!successMessage) return;
-        successMessage.innerHTML = htmlOrText;
+        successMessage.textContent = text;
         successMessage.style.display = 'block';
         if (errorMessage) errorMessage.style.display = 'none';
     };
@@ -35,7 +94,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (successMessage) {
             successMessage.style.display = 'none';
-            successMessage.innerHTML = '';
+            successMessage.textContent = '';
+        }
+    };
+
+    // Exibe mensagem de erro segura na área de reativação.
+    const showReactivationError = (text) => {
+        if (!reactivationError) return;
+        reactivationError.textContent = text;
+        reactivationError.style.display = 'block';
+    };
+
+    // Limpa mensagens e estados de validação do formulário de reativação.
+    const clearReactivationFeedback = () => {
+        if (reactivationError) {
+            reactivationError.style.display = 'none';
+            reactivationError.textContent = '';
+        }
+        setFieldError(reactivationLogin, '');
+        setFieldError(reactivationPassword, '');
+    };
+
+    // Alterna entre o formulário de login e o formulário explícito de reativação.
+    const openReactivationView = () => {
+        if (!loginForm || !reactivationForm) return;
+        clearMessages();
+        clearReactivationFeedback();
+        resetPasswordVisibility(btnToggleReactivationPassword, reactivationPassword);
+        const currentLogin = (loginField?.value || '').trim();
+        if (reactivationLogin && currentLogin && !reactivationLogin.value.trim()) {
+            reactivationLogin.value = currentLogin;
+        }
+        loginForm.hidden = true;
+        reactivationForm.hidden = false;
+        const focusTarget = reactivationLogin?.value.trim() ? reactivationPassword : reactivationLogin;
+        focusTarget?.focus();
+    };
+
+    // Retorna para o formulário de login limpando a senha da reativação.
+    const closeReactivationView = ({ focusTarget = btnOpenReactivation } = {}) => {
+        if (!loginForm || !reactivationForm) return;
+        clearReactivationFeedback();
+        resetPasswordVisibility(btnToggleReactivationPassword, reactivationPassword);
+        reactivationForm.hidden = true;
+        loginForm.hidden = false;
+        focusTarget?.focus();
+    };
+
+    // Bloqueia ou libera os controles durante a requisição de reativação.
+    const setReactivationLoading = (loading) => {
+        reactivationPending = loading;
+        const controls = [
+            btnSubmitReactivation,
+            reactivationLogin,
+            reactivationPassword,
+            btnToggleReactivationPassword,
+            btnCancelReactivation
+        ];
+        controls.forEach(control => {
+            if (control) control.disabled = loading;
+        });
+        if (btnSubmitReactivation) {
+            btnSubmitReactivation.textContent = loading ? 'Reativando...' : 'Reativar conta';
+        }
+        if (reactivationForm) {
+            if (loading) reactivationForm.setAttribute('aria-busy', 'true');
+            else reactivationForm.removeAttribute('aria-busy');
         }
     };
 
@@ -61,31 +185,42 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
 
     // 4. Alternar visibilidade da senha (Show/Hide Password)
-    if (btnTogglePassword && passwordField) {
-        btnTogglePassword.addEventListener('click', () => {
-            const isPassword = passwordField.type === 'password';
-            passwordField.type = isPassword ? 'text' : 'password';
-
-            const label = isPassword ? 'Ocultar senha' : 'Mostrar senha';
-            btnTogglePassword.setAttribute('aria-label', label);
-            btnTogglePassword.setAttribute('title', label);
-            btnTogglePassword.setAttribute('aria-pressed', String(isPassword));
-        });
-    }
+    bindPasswordToggle(btnTogglePassword, passwordField);
+    bindPasswordToggle(btnToggleReactivationPassword, reactivationPassword);
 
     // 5. Limpar mensagem de erro enquanto o usuário digita
     [loginField, passwordField].forEach(field => {
         if (field) {
             field.addEventListener('input', () => {
-                field.removeAttribute('aria-invalid');
-                const feedback = document.getElementById(`${field.id}-error`);
-                if (feedback) feedback.hidden = true;
+                setFieldError(field, '');
                 if (errorMessage && errorMessage.style.display !== 'none') {
                     errorMessage.style.display = 'none';
                 }
             });
         }
     });
+
+    [reactivationLogin, reactivationPassword].forEach(field => {
+        if (field) {
+            field.addEventListener('input', () => {
+                setFieldError(field, '');
+                if (reactivationError && reactivationError.style.display !== 'none') {
+                    reactivationError.style.display = 'none';
+                }
+            });
+        }
+    });
+
+    if (btnOpenReactivation) {
+        btnOpenReactivation.addEventListener('click', openReactivationView);
+    }
+
+    if (btnCancelReactivation) {
+        btnCancelReactivation.addEventListener('click', () => {
+            if (reactivationPending) return;
+            closeReactivationView();
+        });
+    }
 
     // 6. Submissão do formulário de Login
     if (loginForm) {
@@ -99,12 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!login || !password) {
                 [[loginField, login, 'Informe seu e-mail ou nome de usuário.'],
                     [passwordField, password, 'Informe sua senha.']].forEach(([field, value, message]) => {
-                    field.setAttribute('aria-invalid', String(!value));
-                    const feedback = document.getElementById(`${field.id}-error`);
-                    if (feedback) {
-                        feedback.textContent = value ? '' : message;
-                        feedback.hidden = Boolean(value);
-                    }
+                    setFieldError(field, value ? '' : message);
                 });
                 showError('Por favor, informe seu e-mail/usuário e senha.');
                 (!login ? loginField : passwordField).focus();
@@ -130,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearMessages();
 
             try {
-                const baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8080/api';
+                const baseUrl = getBaseUrl();
                 const rememberMe = Boolean(rememberMeCheckbox && rememberMeCheckbox.checked);
                 const response = await fetch(`${baseUrl}/auth/login`, {
                     method: 'POST',
@@ -205,6 +335,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 showError('Erro ao conectar com o servidor. Verifique sua conexão e tente novamente.');
             } finally {
                 loginForm.removeAttribute('aria-busy');
+            }
+        });
+    }
+
+    // 7. Submissão da reativação explícita de conta (POST /api/auth/reactivation)
+    if (reactivationForm) {
+        reactivationForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            if (reactivationPending || btnSubmitReactivation?.disabled) return;
+
+            const login = (reactivationLogin?.value || '').trim();
+            const password = reactivationPassword?.value || '';
+
+            if (!login || !password.trim()) {
+                setFieldError(reactivationLogin, login ? '' : 'Informe seu e-mail ou nome de usuário.');
+                setFieldError(reactivationPassword, password.trim() ? '' : 'Informe sua senha atual.');
+                showReactivationError('Por favor, informe seu e-mail/usuário e sua senha atual.');
+                (!login ? reactivationLogin : reactivationPassword)?.focus();
+                return;
+            }
+
+            if (getUtf8ByteLength(password) > MAX_BCRYPT_PASSWORD_BYTES) {
+                setFieldError(reactivationPassword, 'A senha excede o limite de 72 bytes em UTF-8.');
+                showReactivationError('A senha informada excede o limite permitido de 72 bytes em UTF-8.');
+                reactivationPassword?.focus();
+                return;
+            }
+
+            clearReactivationFeedback();
+            setReactivationLoading(true);
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/auth/reactivation`, {
+                    method: 'POST',
+                    credentials: 'omit',
+                    cache: 'no-store',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Sonarfy-CSRF': '1'
+                    },
+                    body: JSON.stringify({ login, password })
+                });
+
+                if (response.status === 204) {
+                    clearAccessToken();
+                    resetPasswordVisibility(btnTogglePassword, passwordField);
+                    if (loginField) loginField.value = login;
+                    closeReactivationView({ focusTarget: passwordField || loginField });
+                    showSuccess('Conta reativada com sucesso! A reativação não inicia sessão automaticamente. Entre agora com seu e-mail ou nome de usuário e sua senha.');
+                    return;
+                }
+
+                if (response.status === 401) {
+                    showReactivationError('Credenciais inválidas ou não foi possível reativar a conta. Verifique os dados informados e tente novamente.');
+                } else if (response.status === 403) {
+                    showReactivationError('Requisição de reativação bloqueada pela verificação de segurança. Verifique o endereço de acesso e tente novamente.');
+                } else if (response.status === 400) {
+                    showReactivationError('Dados inválidos. Informe seu e-mail ou nome de usuário e sua senha atual.');
+                } else if (response.status === 429) {
+                    showReactivationError('Muitas tentativas de reativação. Aguarde alguns instantes antes de tentar novamente.');
+                } else {
+                    showReactivationError('Não foi possível reativar a conta no momento. Tente novamente mais tarde.');
+                }
+            } catch {
+                showReactivationError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+            } finally {
+                setReactivationLoading(false);
             }
         });
     }

@@ -45,9 +45,9 @@ const assert = require('node:assert/strict');
                         assert.equal(await page.locator('#btnTogglePassword').getAttribute('aria-label'), 'Ocultar senha');
                         await page.locator('#rememberMeCheckbox').check();
                         assert(await page.locator('#rememberMeCheckbox').isChecked());
-                        if (await page.locator('.eye-off').count()) {
-                            assert(await page.locator('.eye-off').isVisible());
-                            assert.equal(await page.locator('.eye-open').isVisible(), false);
+                        if (await page.locator('#loginForm .eye-off').count()) {
+                            assert(await page.locator('#loginForm .eye-off').isVisible());
+                            assert.equal(await page.locator('#loginForm .eye-open').isVisible(), false);
                             assert.equal(await page.locator('.checkbox-check').evaluate(el => getComputedStyle(el).visibility), 'visible');
                         }
                         await page.screenshot({ path: `${output}/${key}-states.png`, fullPage: true });
@@ -55,6 +55,29 @@ const assert = require('node:assert/strict');
                         assert.equal(await page.locator('#passwordField').getAttribute('type'), 'password');
                         await page.locator('#btnSubmitLogin').click();
                         assert.equal(await page.evaluate(() => document.activeElement.id), 'loginField');
+
+                        // Verifica fluxo explícito de reativação de conta (POST /api/auth/reactivation) sem overflow.
+                        let capturedHeaders = null;
+                        await page.route('**/api/auth/reactivation', async route => {
+                            capturedHeaders = route.request().headers();
+                            await route.fulfill({ status: 204, body: '' });
+                        });
+                        await page.evaluate(() => localStorage.setItem('sonarfy_token', 'stale-token'));
+                        await page.locator('#btnOpenReactivation').click();
+                        assert.equal(await page.locator('#reactivationForm').isVisible(), true);
+                        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
+                        await page.locator('#reactivationLogin').fill('@usuario');
+                        await page.locator('#reactivationPassword').fill('SenhaAtual123!');
+                        await page.locator('#btnToggleReactivationPassword').click();
+                        assert.equal(await page.locator('#reactivationPassword').getAttribute('type'), 'text');
+                        await page.locator('#btnSubmitReactivation').click();
+                        await page.locator('#successMessage').waitFor({ state: 'visible' });
+                        assert.equal(capturedHeaders['x-sonarfy-csrf'], '1');
+                        assert.equal(capturedHeaders.authorization, undefined);
+                        assert.equal(await page.evaluate(() => localStorage.getItem('sonarfy_token')), null);
+                        assert.equal(await page.locator('#reactivationForm').isVisible(), false);
+                        assert.equal(await page.locator('#loginForm').isVisible(), true);
+                        assert.equal(await page.locator('#passwordField').inputValue(), '');
                     } else {
                         await page.locator('a[href="#saiba-mais"]').click();
                         assert.equal(new URL(page.url()).hash, '#saiba-mais');

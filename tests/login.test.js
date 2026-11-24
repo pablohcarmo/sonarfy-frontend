@@ -1,4 +1,5 @@
 import { getPostLoginDestination } from '../js/spotify-sync-state.js';
+import { clearAccessToken, resolveApiBaseUrl } from '../js/auth-http.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,8 +36,9 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
             };
         });
 
-        // Limpa localStorage
+        // Limpa armazenamentos locais
         localStorage.clear();
+        sessionStorage.clear();
 
         // Carrega o script
         const jsPath = path.resolve(__dirname, '../js/login.js');
@@ -49,7 +51,12 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
     });
 
     function loadScript() {
-        new Function('getPostLoginDestination', jsContent.replace(/^import .*;\r?\n/m, ''))(getPostLoginDestination);
+        const runnable = jsContent.replace(/^import .*;\r?\n/gm, '');
+        new Function('getPostLoginDestination', 'clearAccessToken', 'resolveApiBaseUrl', runnable)(
+            getPostLoginDestination,
+            clearAccessToken,
+            resolveApiBaseUrl
+        );
         document.dispatchEvent(new Event('DOMContentLoaded'));
     }
 
@@ -362,5 +369,178 @@ describe('Fluxo Completo da Tela de Login (login.js)', () => {
         document.getElementById('passwordField').value = 'senha';
         document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true }));
         await vi.waitFor(() => expect(window.location.pathname).toBe('/pages/spotify-sync.html'));
+    });
+
+    // Verifica envio seguro de POST /api/auth/reactivation, limpeza de token em 204 e segurança da senha.
+    it('deve reativar conta com 204 usando credentials omit, sem Authorization/refresh e limpando sonarfy_token e senha', async () => {
+        localStorage.setItem('sonarfy_token', 'old-access-token');
+        sessionStorage.setItem('sonarfy_token', 'old-session-token');
+        localStorage.setItem('sonarfy_theme', 'dark');
+        loadScript();
+
+        document.getElementById('loginField').value = '  @Pablo  ';
+        document.getElementById('passwordField').value = 'SenhaLoginAntiga123!';
+        document.getElementById('btnOpenReactivation').click();
+
+        const loginForm = document.getElementById('loginForm');
+        const reactivationForm = document.getElementById('reactivationForm');
+        const reactivationLogin = document.getElementById('reactivationLogin');
+        const reactivationPassword = document.getElementById('reactivationPassword');
+
+        expect(loginForm.hidden).toBe(true);
+        expect(reactivationForm.hidden).toBe(false);
+        expect(reactivationLogin.value).toBe('@Pablo');
+        expect(reactivationPassword.value).toBe('');
+
+        reactivationPassword.value = 'SenhaAtualSecreta@72';
+        backendHandler = () => ({ ok: true, status: 204, text: async () => '' });
+
+        reactivationForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+        await vi.waitFor(() => {
+            expect(reactivationForm.hidden).toBe(true);
+            expect(loginForm.hidden).toBe(false);
+            expect(document.getElementById('successMessage').style.display).toBe('block');
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        const [url, options] = globalThis.fetch.mock.calls[0];
+        expect(url).toBe('http://localhost:8080/api/auth/reactivation');
+        expect(url).not.toContain('SenhaAtualSecreta@72');
+        expect(options.method).toBe('POST');
+        expect(options.credentials).toBe('omit');
+        expect(options.cache).toBe('no-store');
+        expect(options.headers).toEqual({
+            'Content-Type': 'application/json',
+            'X-Sonarfy-CSRF': '1'
+        });
+        expect(options.headers.Authorization).toBeUndefined();
+        expect(JSON.parse(options.body)).toEqual({
+            login: '@Pablo',
+            password: 'SenhaAtualSecreta@72'
+        });
+
+        expect(localStorage.getItem('sonarfy_token')).toBeNull();
+        expect(sessionStorage.getItem('sonarfy_token')).toBeNull();
+        expect(localStorage.getItem('sonarfy_theme')).toBe('dark');
+        expect(reactivationPassword.value).toBe('');
+        expect(document.getElementById('passwordField').value).toBe('');
+        expect(document.getElementById('successMessage').textContent).toContain('Conta reativada com sucesso');
+        expect(document.getElementById('successMessage').textContent).not.toContain('SenhaAtualSecreta@72');
+        expect(document.getElementById('successMessage').textContent.toLowerCase()).not.toContain('e-mail enviado');
+        expect(globalThis.fetch.mock.calls.some(([calledUrl]) => String(calledUrl).includes('/auth/refresh'))).toBe(false);
+    });
+
+    // Valida bloqueio local de campos obrigatórios e limite BCrypt de 72 bytes UTF-8 na reativação.
+    it('deve validar campos vazios e limite de 72 bytes UTF-8 antes de enviar reativação', async () => {
+        loadScript();
+        document.getElementById('btnOpenReactivation').click();
+
+        const form = document.getElementById('reactivationForm');
+        const loginInput = document.getElementById('reactivationLogin');
+        const passwordInput = document.getElementById('reactivationPassword');
+
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(loginInput.getAttribute('aria-invalid')).toBe('true');
+        expect(passwordInput.getAttribute('aria-invalid')).toBe('true');
+        expect(document.activeElement).toBe(loginInput);
+
+        // 37 caracteres 'é' = 74 bytes UTF-8 (> 72 bytes)
+        loginInput.value = 'conta@sonarfy.com';
+        passwordInput.value = 'é'.repeat(37);
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(passwordInput.getAttribute('aria-invalid')).toBe('true');
+        expect(document.getElementById('reactivationPassword-error').textContent).toContain('72 bytes');
+        expect(document.getElementById('reactivationError').textContent).toContain('72 bytes');
+        expect(document.activeElement).toBe(passwordInput);
+
+        // 36 caracteres 'é' = 72 bytes UTF-8 exatos (aceito)
+        passwordInput.value = 'é'.repeat(36);
+        backendHandler = () => ({ ok: true, status: 204, text: async () => '' });
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+        await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1));
+    });
+
+    // Valida respostas de erro 401 (uniforme), 400, 403, 429, 500 e falha de rede na reativação.
+    it.each([
+        [401, 'Credenciais inválidas ou não foi possível reativar a conta'],
+        [400, 'Dados inválidos'],
+        [403, 'bloqueada pela verificação de segurança'],
+        [429, 'Muitas tentativas de reativação'],
+        [500, 'Não foi possível reativar a conta no momento']
+    ])('deve tratar status HTTP %s com mensagem segura na reativação', async (status, expectedSnippet) => {
+        loadScript();
+        document.getElementById('btnOpenReactivation').click();
+        document.getElementById('reactivationLogin').value = 'conta@sonarfy.com';
+        document.getElementById('reactivationPassword').value = 'SenhaSecreta@123';
+
+        backendHandler = () => ({ ok: false, status, text: async () => JSON.stringify({ message: 'Raw backend detail' }) });
+        document.getElementById('reactivationForm').dispatchEvent(new Event('submit', { cancelable: true }));
+
+        await vi.waitFor(() => {
+            const errorEl = document.getElementById('reactivationError');
+            expect(errorEl.style.display).toBe('block');
+            expect(errorEl.textContent).toContain(expectedSnippet);
+            expect(errorEl.textContent).not.toContain('Raw backend detail');
+            expect(errorEl.textContent).not.toContain('SenhaSecreta@123');
+            expect(errorEl.textContent.toLowerCase()).not.toContain('não verificada');
+            expect(errorEl.textContent.toLowerCase()).not.toContain('inexistente');
+        });
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    // Garante tratamento amigável em falha de rede sem expor exceção técnica nem a senha.
+    it('deve exibir mensagem amigável em falha de rede na reativação', async () => {
+        loadScript();
+        document.getElementById('btnOpenReactivation').click();
+        document.getElementById('reactivationLogin').value = 'conta@sonarfy.com';
+        document.getElementById('reactivationPassword').value = 'SenhaSecreta@123';
+
+        backendHandler = () => {
+            throw new TypeError('Failed to fetch internal stack');
+        };
+        document.getElementById('reactivationForm').dispatchEvent(new Event('submit', { cancelable: true }));
+
+        await vi.waitFor(() => {
+            const errorEl = document.getElementById('reactivationError');
+            expect(errorEl.style.display).toBe('block');
+            expect(errorEl.textContent).toContain('Não foi possível conectar ao servidor');
+            expect(errorEl.textContent).not.toContain('Failed to fetch');
+            expect(errorEl.textContent).not.toContain('SenhaSecreta@123');
+        });
+    });
+
+    // Impede envios concorrentes enquanto uma reativação estiver em andamento.
+    it('deve bloquear envios duplicados e indicar aria-busy durante reativação pendente', async () => {
+        loadScript();
+        document.getElementById('btnOpenReactivation').click();
+        document.getElementById('reactivationLogin').value = 'conta@sonarfy.com';
+        document.getElementById('reactivationPassword').value = 'SenhaAtual@123';
+
+        let resolveFetch;
+        backendHandler = () => new Promise(resolve => { resolveFetch = resolve; });
+
+        const form = document.getElementById('reactivationForm');
+        const submitBtn = document.getElementById('btnSubmitReactivation');
+        const cancelBtn = document.getElementById('btnCancelReactivation');
+
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(form.getAttribute('aria-busy')).toBe('true');
+        expect(submitBtn.disabled).toBe(true);
+        expect(cancelBtn.disabled).toBe(true);
+
+        resolveFetch({ ok: true, status: 204, text: async () => '' });
+
+        await vi.waitFor(() => {
+            expect(form.hasAttribute('aria-busy')).toBe(false);
+            expect(submitBtn.disabled).toBe(false);
+            expect(cancelBtn.disabled).toBe(false);
+            expect(form.hidden).toBe(true);
+        });
     });
 });

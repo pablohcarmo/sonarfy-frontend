@@ -321,11 +321,36 @@ h1 {
     opacity: .65;
     cursor: wait;
 }
+.login-field:disabled, .btn-toggle-password:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+.auth-footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
 .auth-links {
     text-align: center;
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 24px;
+}
+.link-button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent-color);
+    font-weight: 600;
+    line-height: inherit;
+    text-decoration: none;
+}
+.link-button:hover {
+    text-decoration: underline;
+}
+.link-button:disabled {
+    opacity: .65;
+    cursor: wait;
 }
 .feedback {
     display: none;
