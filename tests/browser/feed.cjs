@@ -66,12 +66,16 @@ function makeFeedItem(reviewId, { authorId = 7, handle = 'marina_som', displayNa
                 const page = await context.newPage();
                 const errors = [];
                 page.on('pageerror', error => errors.push(error.message));
+                const apiRequests = [];
+                page.on('request', request => {
+                    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+                });
 
                 let mode = 'populated';
                 let retryFailedOnce = false;
                 let releaseLoading = null;
 
-                await page.route('http://localhost:8080/api/**', async route => {
+                await page.route('**/api/**', async route => {
                     const url = new URL(route.request().url());
                     const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' };
                     if (route.request().method() === 'OPTIONS') {
@@ -223,7 +227,28 @@ function makeFeedItem(reviewId, { authorId = 7, handle = 'marina_som', displayNa
                 await page.locator(`${width === 390 ? '#profile-drawer' : '#profile-sidebar'} .review-cta`).click();
                 await page.waitForURL(/\/pages\/album-review\.html$/);
                 await page.locator('#album-query').waitFor();
-                results.push({ browser: name, version: browser.version(), width, theme, scenarios: ['populated-paginated', 'loading', 'empty-zero', 'empty-following', 'error-retry'], assets: assets.length, passed: true });
+                // Serve a build local sob a origem publicada sem enviar tokens ou chamadas à produção.
+                const publishedOrigin = 'https://sonarfymusic.duckdns.org';
+                await page.route(`${publishedOrigin}/**`, async route => {
+                    const requested = new URL(route.request().url());
+                    if (requested.pathname.startsWith('/api/')) return route.fallback();
+                    const response = await page.request.get(`${base}${requested.pathname}${requested.search}`);
+                    await route.fulfill({ response });
+                });
+                mode = 'populated';
+                apiRequests.length = 0;
+                await page.goto(`${publishedOrigin}/pages/feed.html`);
+                await page.locator('.activity-author').first().waitFor();
+                assert.equal(await page.evaluate(() => typeof API_BASE_URL), 'undefined');
+                await page.locator('[data-feed-load-more]').click();
+                await page.waitForFunction(() => document.querySelectorAll('.activity-card').length === 3);
+                assert(apiRequests.some(url => url.startsWith(`${publishedOrigin}/api/feed?`)));
+                assert(apiRequests.includes(`${publishedOrigin}/api/profile/me`));
+                assert(apiRequests.every(url => new URL(url).origin === publishedOrigin), JSON.stringify(apiRequests));
+                await noOverflow(page, width);
+                await page.screenshot({ path: `${output}/${prefix}-published-origin.png`, fullPage: true });
+                assert.deepEqual(errors, []);
+                results.push({ browser: name, version: browser.version(), width, theme, scenarios: ['populated-paginated', 'loading', 'empty-zero', 'empty-following', 'error-retry', 'published-origin'], publishedApiRequests: apiRequests, assets: assets.length, passed: true });
                 await context.close();
                 console.log(`PASS ${prefix}`);
             }

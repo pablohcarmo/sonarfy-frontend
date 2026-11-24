@@ -69,7 +69,7 @@ export function mapFeedPage(dto) {
 
 // Cria o adapter HTTP real do feed consumindo GET /api/feed, GET /api/profile/me e rotas próprias de avaliação.
 export function createHttpFeedAdapter({
-    baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8080/api',
+    baseUrl,
     fetcher = (...args) => fetch(...args),
     getToken = () => getAccessToken(),
     setToken = token => setAccessToken(token),

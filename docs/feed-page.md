@@ -19,6 +19,13 @@ seguidos, consumindo o contrato real do backend (`GET /api/feed`).
 
 ## Contrato HTTP real e mapeamento
 
+A base é resolvida por `resolveApiBaseUrl()` de `auth-http.js`, via
+`createAuthClient`, sem fallback próprio do Feed. Uma opção `baseUrl` explícita
+tem precedência sobre `globalThis.API_BASE_URL`; sem configuração, usa a origem
+da página + `/api` em produção (`https://sonarfymusic.duckdns.org/api`) e
+`http://localhost:8080/api` em desenvolvimento (`localhost`/`127.0.0.1`).
+Isso também se aplica às consultas de perfil e à renovação da sessão.
+
 O adapter padrão (`js/feed-http.js`) consome:
 
 - `GET /api/feed?limit=20&cursor=<token>` com `Authorization: Bearer <accessToken>`, `credentials: 'omit'` e `cache: 'no-store'` (via `js/auth-http.js`).
@@ -59,6 +66,22 @@ Arquivo `kgOOkp9lzghCJtlBpSQtIj`, página [Feed Page](https://www.figma.com/desi
 Reutiliza `profile-shell.js` (header, footer, sidebar com Home ativo, skeleton), `profile-views.js` (`activityCard` com `socialUnavailable: true` e `interactiveAlbum: true`), `profile-dialogs.js` (`containFocus`), tokens de `login.css`/`login-theme.js` e SVGs locais.
 
 ## Verificação
+
+Correção de resolução da base em 24/11/2026 (`fix/feed-api-origin`):
+
+- `npm test`: **32 arquivos / 298 testes aprovados**, incluindo cinco regressões
+  de origem/base do adapter; a suíte inicial antes da correção tinha 293 testes.
+- `node tests/browser/feed.cjs`: **8/8 combinações aprovadas**, seis cenários por
+  combinação (incluindo `published-origin`), Edge **158.0.4370.33** e Firefox
+  **153.0**, desktop 1440px/mobile 390px, claro/escuro. Verificados foco visível,
+  SVGs, ausência de overflow e o uso exclusivo de
+  `https://sonarfymusic.duckdns.org/api` para Feed, perfil e paginação quando a
+  página está nessa origem e não define `API_BASE_URL`.
+- Limitações desta execução: navegadores headless, mobile emulado e respostas
+  HTTP interceptadas. A origem HTTPS publicada foi simulada servindo a build
+  local; não houve teste autenticado ou publicação no servidor real.
+- Capturas e URLs efetivamente requisitadas: `test-results/feed/` e
+  `test-results/feed/results.json` (ignorados pelo Git).
 
 Comandos executados em 24/11/2026:
 

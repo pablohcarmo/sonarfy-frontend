@@ -11,6 +11,11 @@ Em 24/11/2026, a entrada de **Avaliar Álbum** passou a incluir busca automátic
 Feed: [nós, componentes, adapter e verificação](feed-page.md), referência
 [Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862).
 
+Correção de base HTTP do Feed em 24/11/2026: o adapter passa a usar a resolução
+compartilhada de `auth-http.js` sem fallback próprio para localhost. Layout,
+assets e referências Figma permanecem os mesmos; nenhuma consulta ou edição do
+Figma foi necessária. Regressão local e de origem publicada em [Feed](feed-page.md).
+
 Ecos: [nós, componentes, adapter e verificação](ecos-page.md), referência
 [Ecos Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=543-2).
 

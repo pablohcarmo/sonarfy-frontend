@@ -4,6 +4,10 @@ Este diretório concentra as especificações visuais, contratos de adapter, reg
 
 ## Base HTTP
 
+O Feed (`js/feed-http.js`) delega a seleção da base ao cliente compartilhado de
+`auth-http.js`, incluindo quando `feed.html` não define `API_BASE_URL`; não mantém
+um fallback próprio para localhost. Regressão e verificação em [Feed](feed-page.md).
+
 `js/api.js` e o fallback de `resolveApiBaseUrl` em `js/auth-http.js` usam a origem da página seguida de `/api` fora de `localhost`/`127.0.0.1`. O ambiente publicado precisa de proxy reverso para o backend nesse caminho. Localmente, permanece `http://localhost:8080/api`. Bases explicitamente fornecidas ao cliente de autenticação mantêm precedência. Esta configuração usa integração HTTP; não ativa fixtures ou modo demonstração.
 
 ---
