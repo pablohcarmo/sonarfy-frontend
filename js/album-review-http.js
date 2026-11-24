@@ -1,4 +1,4 @@
-import { createAuthClient, getAccessToken, clearAccessToken } from './auth-http.js';
+import { createAuthClient, getAccessToken, setAccessToken, clearAccessToken } from './auth-http.js';
 
 // Convert 0..5 star UI rating into 0..10 API rating in 0.5 increments.
 export function starsToApiRating(stars) {
@@ -41,19 +41,49 @@ function mapReviewDto(dto) {
 
 // Create the HTTP adapter for /api/albums/{spotifyId}/reviews and /api/reviews/{reviewId}.
 export function createHttpAlbumReviewAdapter({
-    apiBaseUrl = typeof API_BASE_URL === 'string' ? API_BASE_URL : 'http://localhost:8080/api',
-    fetchImpl = (...args) => fetch(...args),
-    authClient = createAuthClient({ apiBaseUrl, fetchImpl }),
+    baseUrl,
+    apiBaseUrl,
+    fetcher,
+    fetchImpl,
+    getToken = () => getAccessToken(),
+    setToken = token => setAccessToken(token),
+    clearToken = () => clearAccessToken(),
+    expire = () => {
+        clearToken();
+        if (typeof location !== 'undefined' && typeof location.assign === 'function') {
+            location.assign('login.html');
+        }
+    },
+    authClient,
     routes = { home: 'feed.html', profile: 'profile.html', settings: 'account.html', echoes: 'echoes.html', login: 'login.html' }
 } = {}) {
+    const resolvedBaseUrl = baseUrl ?? apiBaseUrl ?? (typeof API_BASE_URL === 'string' ? API_BASE_URL : 'http://localhost:8080/api');
+    const resolvedFetcher = fetcher ?? fetchImpl ?? ((...args) => fetch(...args));
+    const client = authClient || createAuthClient({
+        baseUrl: resolvedBaseUrl,
+        fetcher: resolvedFetcher,
+        getToken,
+        setToken,
+        clearToken,
+        expire
+    });
+
     async function request(path, options = {}) {
-        const headers = { ...(options.headers || {}) };
-        const token = getAccessToken();
-        if (token) headers.Authorization = `Bearer ${token}`;
-        const response = await fetchImpl(`${apiBaseUrl}${path}`, { ...options, headers });
-        if (response.status === 401) {
-            clearAccessToken();
+        const token = getToken();
+        if (!token) {
+            expire();
             throw createReviewError('Sua sessão expirou. Faça login novamente.', 401);
+        }
+        const { response, token: usedToken } = await client.authorizedFetch(path, {
+            credentials: 'omit',
+            cache: 'no-store',
+            ...options
+        });
+        if (response.status === 401) {
+            throw createReviewError('Sua sessão expirou. Faça login novamente.', 401);
+        }
+        if (getToken() !== usedToken) {
+            throw createReviewError('A sessão mudou. Tente novamente.', 409, { code: 'SESSION_CHANGED' });
         }
         return response;
     }
@@ -108,8 +138,11 @@ export function createHttpAlbumReviewAdapter({
     }
 
     async function logout() {
-        await authClient.logout();
-        clearAccessToken();
+        if (typeof client.logoutSession === 'function') {
+            await client.logoutSession();
+        } else {
+            clearToken();
+        }
     }
 
     return {
