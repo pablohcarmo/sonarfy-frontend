@@ -387,7 +387,8 @@ describe('coleção pública do perfil', () => {
             rating: 4.75,
             reviewText: 'Texto editado'
         }));
-        await vi.waitFor(() => expect(notify).toHaveBeenCalledWith('Avaliação atualizada com sucesso.'));
+        await vi.waitFor(() => expect(dialog.open).toBe(false));
+        expect(notify).not.toHaveBeenCalled();
 
         store.setData({ profile: { id: '99', handle: 'other' }, session: { userId: '7' }, collection: [] });
         const otherDto = mapProfileCollection({

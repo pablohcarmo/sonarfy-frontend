@@ -111,6 +111,26 @@ export function createAlbumFixturesAdapter({ scenario = 'rated', albumOverride =
         async fetchCommunityReviews(_spotifyId, { sort = 'recent' } = {}) {
             return { items: sortReviews(sort), nextCursor: null };
         },
+        async createReview(_spotifyId, { rating, reviewText }) {
+            currentUserReview = {
+                ...demoUserReview,
+                reviewId: Date.now(),
+                rating: Number(rating) || 0,
+                reviewText: typeof reviewText === 'string' ? reviewText.trim() : '',
+                publishedLabel: 'Agora',
+                createdAt: new Date().toISOString()
+            };
+            return { ...currentUserReview };
+        },
+        async updateReview(reviewId, { rating, reviewText }) {
+            currentUserReview = {
+                ...(currentUserReview || demoUserReview),
+                reviewId,
+                rating: Number(rating) || 0,
+                reviewText: typeof reviewText === 'string' ? reviewText.trim() : ''
+            };
+            return { ...currentUserReview };
+        },
         async deleteReview(reviewId) {
             if (currentUserReview && currentUserReview.reviewId === reviewId) {
                 currentUserReview = null;

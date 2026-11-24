@@ -40,6 +40,7 @@ function mount(adapter, search = '') {
     document.body.innerHTML = html.split('<body class="album-page">')[1].split('</body>')[0];
     polyfillDialog(document.querySelector('#profile-drawer'));
     polyfillDialog(document.querySelector('#album-cover-dialog'));
+    polyfillDialog(document.querySelector('#album-review-dialog'));
     mounted = mountAlbumPage({ adapter });
     return mounted;
 }
@@ -405,6 +406,83 @@ describe('album: page states and interactions', () => {
         document.querySelector('[data-retry-community]').click();
         await vi.waitFor(() => {
             expect(document.querySelector('.album-review-card')).not.toBeNull();
+        });
+        instance.destroy();
+    });
+
+    // Verify Album Page uses inline review modal (create and edit) instead of navigating to album-review.html.
+    it('opens inline review modal for creating and editing without linking to album-review.html', async () => {
+        let currentReview = {
+            reviewId: 42,
+            authorName: 'Pablo',
+            authorHandle: 'pablo',
+            publishedLabel: '1h',
+            rating: 4,
+            reviewText: 'Texto original'
+        };
+        const updateReview = vi.fn(async (id, payload) => {
+            currentReview = { ...currentReview, reviewId: id, rating: payload.rating, reviewText: payload.reviewText };
+            return currentReview;
+        });
+        const createReview = vi.fn(async (_id, payload) => {
+            currentReview = { reviewId: 99, authorName: 'Pablo', authorHandle: 'pablo', publishedLabel: 'Agora', rating: payload.rating, reviewText: payload.reviewText };
+            return currentReview;
+        });
+        const adapter = {
+            isDemo: false,
+            communityReviewsAvailable: true,
+            routes: { home: 'feed.html', echoes: 'echoes.html', review: 'album-review.html', login: 'login.html' },
+            getSessionKey: () => 'tok-1',
+            loadAlbum: vi.fn(async () => ({
+                album: {
+                    spotifyId: '4aawyAB9vmqN3uQ7FjRGTy',
+                    name: 'Contra',
+                    artist: 'Vampire Weekend',
+                    releaseLabel: '2010',
+                    totalTracks: 10,
+                    coverUrl: null,
+                    averageRating: currentReview ? currentReview.rating : null,
+                    reviewCount: currentReview ? 1 : 0
+                },
+                userReview: currentReview,
+                reviews: [],
+                nextCursor: null,
+                communityReviewsAvailable: true
+            })),
+            createReview,
+            updateReview
+        };
+
+        const instance = mount(adapter, '?albumId=4aawyAB9vmqN3uQ7FjRGTy');
+        await instance.ready;
+
+        expect(document.querySelectorAll('a[href*="album-review.html"]')).toHaveLength(0);
+        document.querySelector('.album-my-review-card [data-open-review-modal]').click();
+        const dialog = document.querySelector('#album-review-dialog');
+        expect(dialog.open).toBe(true);
+        const textarea = dialog.querySelector('#edit-review-text');
+        expect(textarea.value).toBe('Texto original');
+        textarea.value = 'Texto editado no modal';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        dialog.querySelector('#edit-review-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        await vi.waitFor(() => {
+            expect(updateReview).toHaveBeenCalledWith(42, { rating: 4, reviewText: 'Texto editado no modal' });
+            expect(dialog.open).toBe(false);
+        });
+        expect(document.querySelector('.album-my-review-card .album-review-text').textContent).toBe('Texto editado no modal');
+
+        // Also works for creating a new review when user has not rated yet.
+        currentReview = null;
+        await instance.reload();
+        document.querySelector('[data-rate-album]').click();
+        expect(dialog.open).toBe(true);
+        const starsEl = dialog.querySelector('#edit-review-stars-preview');
+        starsEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        dialog.querySelector('#edit-review-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await vi.waitFor(() => {
+            expect(createReview).toHaveBeenCalledWith('4aawyAB9vmqN3uQ7FjRGTy', { rating: 5, reviewText: '' });
+            expect(dialog.open).toBe(false);
         });
         instance.destroy();
     });

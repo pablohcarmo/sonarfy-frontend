@@ -62,6 +62,8 @@ async function loadedAssets(page) {
 
                     // Intercept HTTP API endpoints for integrated Album Page verification.
                     let deletedReview = false;
+                    let ownReviewText = 'Excelente disco para ouvir sem pular faixas.';
+                    let ownReviewRating = 10;
                     const corsHeaders = {
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
@@ -155,10 +157,27 @@ async function loadedAssets(page) {
                                 contentType: 'application/json',
                                 body: JSON.stringify({
                                     reviewId: 42,
-                                    rating: 10,
-                                    reviewText: 'Excelente disco para ouvir sem pular faixas.',
+                                    rating: ownReviewRating,
+                                    reviewText: ownReviewText,
                                     createdAt: '2026-11-24T05:00:00Z',
                                     updatedAt: '2026-11-24T05:00:00Z'
+                                })
+                            });
+                        }
+                        if (pathname === '/api/reviews/42' && method === 'PUT') {
+                            const body = route.request().postDataJSON() || {};
+                            ownReviewRating = Number(body.rating ?? ownReviewRating);
+                            ownReviewText = body.reviewText || '';
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({
+                                    reviewId: 42,
+                                    rating: ownReviewRating,
+                                    reviewText: ownReviewText || null,
+                                    createdAt: '2026-11-24T05:00:00Z',
+                                    updatedAt: '2026-11-24T06:00:00Z'
                                 })
                             });
                         }
@@ -249,6 +268,18 @@ async function loadedAssets(page) {
                     await noOverflow(page, width);
                     await page.locator('[data-close-cover]').click();
                     assert.equal(await page.locator('#album-cover-dialog[open]').count(), 0);
+
+                    // Edit own review inline via modal without navigating to album-review.html.
+                    assert.equal(await page.locator('a[href*="album-review.html"]').count(), 0);
+                    await page.locator('.album-my-review-card [data-open-review-modal]').click();
+                    await page.waitForSelector('#album-review-dialog[open]');
+                    await noOverflow(page, width);
+                    await page.fill('#edit-review-text', 'Resenha atualizada inline.');
+                    await page.locator('#save-review').click();
+                    await page.waitForFunction(() => !document.querySelector('#album-review-dialog[open]'));
+                    await page.waitForFunction(() => document.querySelector('.album-my-review-card .album-review-text')?.textContent === 'Resenha atualizada inline.');
+                    assert(page.url().includes('/pages/album.html'), 'Remains on Album Page after inline edit');
+                    await noOverflow(page, width);
 
                     // Delete own review and verify aggregate refreshes to null/unrated and community list becomes empty.
                     await page.locator('[data-request-delete]').click();
