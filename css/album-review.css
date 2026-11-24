@@ -160,6 +160,24 @@
     color: var(--review-muted);
 }
 
+.album-summary-spotify {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-top: 8px;
+    color: var(--review-muted);
+    font-size: 13px;
+    line-height: 21px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.album-summary-spotify:hover {
+    color: var(--review-text);
+    text-decoration: underline;
+}
+
 .review-rating-section {
     display: flex;
     flex-direction: column;

@@ -43,6 +43,13 @@ function formatPlayTimeHHmm(value) {
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+function spotifyTrackLink(item) {
+    const trackId = item.track?.spotifyId;
+    if (typeof trackId !== 'string' || !trackId.trim()) return '';
+    const href = `https://open.spotify.com/track/${encodeURIComponent(trackId.trim())}`;
+    return `<a class="eco-track-spotify-link" href="${e(href)}" target="_blank" rel="noopener noreferrer" aria-label="Ouvir ${e(item.trackName || 'faixa')} no Spotify"><img src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true"><span>Ouvir no Spotify</span></a>`;
+}
+
 function renderTrackItem(item) {
     const duration = formatDuration(item.track?.durationMs);
     const hhmm = formatPlayTimeHHmm(item.playedAt);
@@ -52,7 +59,7 @@ function renderTrackItem(item) {
     const timeLabel = item.isPlaying
         ? '<span class="eco-track-live">Ouvindo agora</span>'
         : `<time class="eco-track-time" datetime="${e(item.playedAt)}">${e(ecoTimestamp(item.playedAt))}</time>${hhmm ? ` · <span class="eco-track-hhmm">${e(hhmm)}</span>` : ''}`;
-    return `<li class="eco-track-item" data-echo-id="${e(item.id)}"><div class="eco-track-primary"><span class="eco-track-name">${e(item.trackName)}${duration ? `<span class="eco-track-duration">${e(duration)}</span>` : ''}</span>${artists ? `<span class="eco-track-artists">${e(artists)}</span>` : ''}</div><span class="eco-track-meta">${timeLabel}</span></li>`;
+    return `<li class="eco-track-item" data-echo-id="${e(item.id)}"><div class="eco-track-primary"><span class="eco-track-name">${e(item.trackName)}${duration ? `<span class="eco-track-duration">${e(duration)}</span>` : ''}</span>${artists ? `<span class="eco-track-artists">${e(artists)}</span>` : ''}${spotifyTrackLink(item)}</div><span class="eco-track-meta">${timeLabel}</span></li>`;
 }
 
 function renderExpandedDetails(spotifyId, detail) {
@@ -83,14 +90,17 @@ function renderAlbumRow(item, detail) {
     const rateLabel = isRated ? 'Avaliado' : 'Avaliar';
     const rateAriaLabel = isRated ? `Editar avaliação de ${album.name}` : `Avaliar ${album.name}`;
     const timeHtml = isPlaying
-        ? '<span class="eco-live-badge"><img src="../assets/icons/ecos/spotify-dot.svg" width="8" height="8" alt="" aria-hidden="true"><span>Ouvindo agora</span></span>'
+        ? '<span class="eco-live-badge"><span class="eco-live-dot" aria-hidden="true"></span><span>Ouvindo agora</span></span>'
         : `<time class="eco-time" datetime="${e(lastPlayedAt)}">${e(ecoTimestamp(lastPlayedAt))}</time>`;
     const countLabel = `${listenCount} ${listenCount === 1 ? 'reprodução' : 'reproduções'}`;
     const chevron = isExpanded ? '▾' : '▸';
     const artistHtml = album.artist ? `<span class="eco-artist">${e(album.artist)}</span>` : '';
+    const spotifyHtml = typeof album.spotifyId === 'string' && album.spotifyId.trim()
+        ? `<a class="eco-spotify-link" href="${e(`https://open.spotify.com/album/${encodeURIComponent(album.spotifyId.trim())}`)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${e(album.name)} no Spotify"><img src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true"><span>Abrir no Spotify</span></a>`
+        : '';
     const detailsHtml = renderExpandedDetails(album.spotifyId, detail);
 
-    return `<li class="eco-row${isExpanded ? ' is-expanded' : ''}" data-album-id="${e(album.spotifyId)}"><div class="eco-row-main">${renderCover(album)}<div class="eco-info"><button type="button" class="eco-toggle" data-toggle-album="${e(album.spotifyId)}" aria-expanded="${String(isExpanded)}"><span class="eco-album">${e(album.name)}</span>${artistHtml}<span class="eco-summary">${e(countLabel)}</span></button></div><div class="eco-actions">${timeHtml}<button type="button" class="eco-rate-btn${isRated ? ' is-rated' : ''}" data-album="${e(album.spotifyId)}" aria-label="${e(rateAriaLabel)}"><span class="eco-rate-label">${rateLabel}</span><span class="eco-rate-chevron" aria-hidden="true">›</span></button><span class="eco-group-chevron" aria-hidden="true">${chevron}</span></div></div>${detailsHtml}</li>`;
+    return `<li class="eco-row${isExpanded ? ' is-expanded' : ''}" data-album-id="${e(album.spotifyId)}"><div class="eco-row-main">${renderCover(album)}<div class="eco-info"><button type="button" class="eco-toggle" data-toggle-album="${e(album.spotifyId)}" aria-expanded="${String(isExpanded)}"><span class="eco-album">${e(album.name)}</span>${artistHtml}<span class="eco-summary">${e(countLabel)}</span></button>${spotifyHtml}</div><div class="eco-actions">${timeHtml}<button type="button" class="eco-rate-btn${isRated ? ' is-rated' : ''}" data-album="${e(album.spotifyId)}" aria-label="${e(rateAriaLabel)}"><span class="eco-rate-label">${rateLabel}</span><span class="eco-rate-chevron" aria-hidden="true">›</span></button><span class="eco-group-chevron" aria-hidden="true">${chevron}</span></div></div>${detailsHtml}</li>`;
 }
 
 function renderEmpty(connection, syncUrl) {
@@ -168,7 +178,7 @@ export function mountEcos(adapter = resolveEcosAdapter()) {
         const disconnectedStyle = isDisconnected || state.status === 'error' || (connection && !state.data?.connected);
         const dot = disconnectedStyle
             ? '<span class="ecos-status-dot is-disconnected" aria-hidden="true"></span>'
-            : '<span class="ecos-status-dot" aria-hidden="true"><img src="../assets/icons/ecos/spotify-dot.svg" width="8" height="8" alt=""></span>';
+            : '<img class="ecos-status-icon" src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true">';
         const showRefresh = !isDisconnected && connection?.status !== 'REAUTHORIZATION_REQUIRED' && !(connection?.status === 'CONNECTED' && !connection?.recentListensAuthorized);
         const disabled = busy || cooldown > 0 ? 'disabled' : '';
         const refreshHtml = showRefresh

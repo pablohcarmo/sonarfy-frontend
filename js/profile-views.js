@@ -26,6 +26,16 @@ export function cover(album) {
 export function socialActions(item, pending = new Set()) {
     return `<div class="activity-social"><button data-like="${e(item.id)}" aria-label="${item.liked ? 'Descurtir' : 'Curtir'} publicação" aria-pressed="${Boolean(item.liked)}" ${pending.has(`like:${item.id}`) ? 'disabled' : ''}>${icon(item.liked ? 'liked' : 'heart')}${item.likeCount > 0 ? `<span>${count(item.likeCount)}</span>` : ''}</button><button data-comments="${e(item.id)}" aria-label="Abrir comentários">${icon('comment')}${item.commentCount > 0 ? `<span>${count(item.commentCount)}</span>` : ''}</button></div>`;
 }
+function spotifyAttribution(album) {
+    const rawUrl = typeof album?.spotifyUrl === 'string' ? album.spotifyUrl.trim() : '';
+    const href = /^https:\/\/open\.spotify\.com\//i.test(rawUrl)
+        ? rawUrl
+        : typeof album?.spotifyId === 'string' && album.spotifyId.trim()
+            ? `https://open.spotify.com/album/${encodeURIComponent(album.spotifyId.trim())}`
+            : '';
+    if (!href) return '';
+    return `<a class="album-spotify-link" href="${e(href)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${e(album?.title || 'álbum')} no Spotify"><img src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true"><span>Abrir no Spotify</span></a>`;
+}
 export function albumDetails(album) {
     return `<button class="album-details" data-album="${e(album.id)}">${cover(album)}<strong>'${e(album.title)}'</strong><span>por ${e(album.artist)}</span></button>`;
 }
@@ -33,13 +43,15 @@ export function albumDetails(album) {
 export function activityCard(item, pending) {
     const author = item.author;
     validateReview(item.review);
-    return `<article class="activity-card ${!item.review ? 'rating-only' : ''}" data-publication="${e(item.id)}"><div class="activity-left"><a class="activity-avatar-link" href="${e(profileURL(author.handle))}" aria-label="Ver perfil de ${e(author.displayName)}">${avatar(author, 'activity-avatar')}</a><div class="activity-content"><div class="activity-publication"><header class="activity-author"><a href="${e(profileURL(author.handle))}">${e(author.displayName)}</a><span class="activity-author-meta"><a href="${e(profileURL(author.handle))}">@${e(author.handle)}</a><span aria-hidden="true">·</span><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></span></header>${item.replyTo ? `<p class="activity-reply">Em resposta a <a href="${e(profileURL(item.replyTo))}">@${e(item.replyTo)}</a></p>` : ''}${item.review ? `<p class="activity-review">${e(item.review)}</p>` : ''}${item.replyTo ? '' : stars(item.rating)}</div>${socialActions(item, pending)}</div></div>${albumDetails(item.album)}</article>`;
+    const spotifyLink = spotifyAttribution(item.album);
+    const albumBlock = spotifyLink ? `<div class="album-column">${albumDetails(item.album)}${spotifyLink}</div>` : albumDetails(item.album);
+    return `<article class="activity-card ${!item.review ? 'rating-only' : ''}" data-publication="${e(item.id)}"><div class="activity-left"><a class="activity-avatar-link" href="${e(profileURL(author.handle))}" aria-label="Ver perfil de ${e(author.displayName)}">${avatar(author, 'activity-avatar')}</a><div class="activity-content"><div class="activity-publication"><header class="activity-author"><a href="${e(profileURL(author.handle))}">${e(author.displayName)}</a><span class="activity-author-meta"><a href="${e(profileURL(author.handle))}">@${e(author.handle)}</a><span aria-hidden="true">·</span><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></span></header>${item.replyTo ? `<p class="activity-reply">Em resposta a <a href="${e(profileURL(item.replyTo))}">@${e(item.replyTo)}</a></p>` : ''}${item.review ? `<p class="activity-review">${e(item.review)}</p>` : ''}${item.replyTo ? '' : stars(item.rating)}</div>${socialActions(item, pending)}</div></div>${albumBlock}</article>`;
 }
 export function activityFeed(items, pending) {
     return items.length ? `<div class="activity-feed">${items.map(item => activityCard(item, pending)).join('')}</div>` : emptyState('Nenhuma publicação ainda');
 }
 export function collectionCard(item) {
-    return `<article class="collection-card">${albumDetails(item.album)}${stars(item.rating)}<button class="collection-preview ${item.review ? '' : 'no-review'}" data-review="${e(item.id)}" aria-label="Ver ${item.review ? 'resenha completa' : 'avaliação'} de ${e(item.album.title)}">${item.review ? e(item.review) : '<span class="visually-hidden">Ver avaliação</span>'}</button></article>`;
+    return `<article class="collection-card">${albumDetails(item.album)}${spotifyAttribution(item.album)}${stars(item.rating)}<button class="collection-preview ${item.review ? '' : 'no-review'}" data-review="${e(item.id)}" aria-label="Ver ${item.review ? 'resenha completa' : 'avaliação'} de ${e(item.album.title)}">${item.review ? e(item.review) : '<span class="visually-hidden">Ver avaliação</span>'}</button></article>`;
 }
 export function collectionView(items, profile, sort, busy, total) {
     if (!total) return emptyState('Nenhuma avaliação na coleção ainda', `@${profile.handle} ainda não avaliou nenhum álbum. Assim que publicar uma avaliação ou resenha, os álbuns aparecerão organizados aqui.`);

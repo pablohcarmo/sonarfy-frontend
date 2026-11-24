@@ -103,6 +103,13 @@
     flex: none;
 }
 
+.ecos-status-icon {
+    width: 21px;
+    height: 21px;
+    flex: none;
+    display: block;
+}
+
 .ecos-status-dot {
     width: 8px;
     height: 8px;
@@ -370,6 +377,42 @@
     line-height: 18px;
     font-weight: 600;
     white-space: nowrap;
+}
+
+.eco-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1ed760;
+    flex: none;
+}
+
+.eco-spotify-link,
+.eco-track-spotify-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-top: 4px;
+    color: var(--ecos-muted);
+    font-size: 12px;
+    line-height: 21px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.eco-spotify-link:hover,
+.eco-track-spotify-link:hover {
+    color: var(--ecos-text);
+    text-decoration: underline;
+}
+
+.eco-track-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
 .eco-time {

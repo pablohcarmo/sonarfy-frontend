@@ -150,6 +150,15 @@ describe('ecos: states, concurrency lock, navigation, and logout', () => {
 
         const app = mount(adapter);
         await app.ready;
+        expect(document.querySelector('img[src*="spotify-dot.svg"]')).toBeNull();
+        const statusIcon = document.querySelector('.ecos-status-icon');
+        expect(statusIcon?.getAttribute('src')).toContain('assets/icons/account/spotify.svg');
+        expect(Number(statusIcon?.getAttribute('width'))).toBeGreaterThanOrEqual(21);
+        const spotifyLink = document.querySelector('.eco-spotify-link');
+        expect(spotifyLink?.getAttribute('href')).toBe('https://open.spotify.com/album/alb-1');
+        expect(spotifyLink?.getAttribute('target')).toBe('_blank');
+        expect(spotifyLink?.getAttribute('rel')).toBe('noopener noreferrer');
+        expect(Number(spotifyLink?.querySelector('img')?.getAttribute('width'))).toBeGreaterThanOrEqual(21);
         const rateBtn = document.querySelector('.eco-rate-btn');
         rateBtn.click();
         expect(onAlbum).toHaveBeenCalledExactlyOnceWith('alb-1');
