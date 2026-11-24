@@ -150,6 +150,15 @@ node tests/browser/email-change.cjs
 
 Valida o modal de solicitação em `pages/account.html` (`POST /api/users/me/email-change-request`, `202`/`400`/`401`/`404`/`409`/`429`) e a página de confirmação explícita `pages/confirm-email-change.html#token=...` (`POST /api/auth/email-change-confirmation` com limpeza do fragmento via `replaceState` e limpeza de `sonarfy_token`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
 
+### Desativação de conta
+
+```sh
+npm test -- tests/account-deactivation.test.js
+node tests/browser/account-deactivation.cjs
+```
+
+Valida o modal de solicitação em `pages/account.html` (`POST /api/users/me/account-deactivation-request`, `202`/`400`/`401`/`404`/`429`, validação de senha obrigatória e limite de 72 bytes UTF-8, manutenção de `sonarfy_token` e cooldown) e a página de confirmação explícita `pages/confirm-account-deactivation.html#token=...` (`POST /api/auth/account-deactivation-confirmation` sem `Authorization`/`X-Sonarfy-CSRF`, limpeza do fragmento via `replaceState`, remoção de `sonarfy_token` preservando `sonarfy_theme` em `204` e tratamento de `400`) no Edge e Firefox (`1440px`/`390px`, claro/escuro).
+
 ## Limitações
 
 Os testes de navegador executam em modo headless; viewports mobile não substituem dispositivos físicos. Respostas simuladas não verificam entrega de e-mails, ativação real de contas ou disponibilidade de serviços externos.
