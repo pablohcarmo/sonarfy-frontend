@@ -209,4 +209,56 @@ describe('album-review-http: REST contract and 409 conflict recovery', () => {
             reviewText: 'Nota zero válida'
         });
     });
+
+    // Verify 401 triggers single-flight refresh and retry, failed refresh expires session, and logout revokes via logoutSession.
+    it('refreshes session on 401, expires when refresh fails, and revokes session on logout', async () => {
+        localStorage.setItem('sonarfy_token', 'expired-jwt');
+        const expire = vi.fn(() => localStorage.removeItem('sonarfy_token'));
+        const fetcher = vi.fn()
+            .mockResolvedValueOnce({ status: 401, ok: false })
+            .mockResolvedValueOnce({
+                status: 200,
+                ok: true,
+                json: async () => ({ accessToken: 'fresh-jwt' })
+            })
+            .mockResolvedValueOnce({
+                status: 200,
+                ok: true,
+                json: async () => ({
+                    reviewId: 91,
+                    album: { spotifyId: 'alb-2', name: 'Refreshed', coverUrl: null, artist: { spotifyId: 'a2', name: 'Artist' } },
+                    rating: 8,
+                    reviewText: 'Renovado'
+                })
+            })
+            .mockResolvedValueOnce({ status: 204, ok: true });
+
+        const adapter = createHttpAlbumReviewAdapter({ baseUrl: 'http://localhost:8080/api', fetcher, expire });
+        const loaded = await adapter.loadAlbumReview('alb-2');
+
+        expect(loaded.review).toMatchObject({ reviewId: 91, rating: 4, reviewText: 'Renovado' });
+        expect(localStorage.getItem('sonarfy_token')).toBe('fresh-jwt');
+        expect(expire).not.toHaveBeenCalled();
+        expect(fetcher.mock.calls[1][0]).toBe('http://localhost:8080/api/auth/refresh');
+        expect(fetcher.mock.calls[1][1]).toMatchObject({
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            headers: { 'X-Sonarfy-CSRF': '1' }
+        });
+        expect(fetcher.mock.calls[2][1].headers.Authorization).toBe('Bearer fresh-jwt');
+
+        await adapter.logout();
+        expect(fetcher.mock.calls[3][0]).toBe('http://localhost:8080/api/auth/logout');
+        expect(localStorage.getItem('sonarfy_token')).toBeNull();
+
+        localStorage.setItem('sonarfy_token', 'stale-jwt');
+        const failFetcher = vi.fn()
+            .mockResolvedValueOnce({ status: 401, ok: false })
+            .mockResolvedValueOnce({ status: 401, ok: false });
+        const failingAdapter = createHttpAlbumReviewAdapter({ baseUrl: 'http://localhost:8080/api', fetcher: failFetcher, expire });
+        await expect(failingAdapter.loadAlbumReview('alb-2')).rejects.toMatchObject({ status: 401 });
+        expect(expire).toHaveBeenCalledTimes(1);
+        expect(localStorage.getItem('sonarfy_token')).toBeNull();
+    });
 });
