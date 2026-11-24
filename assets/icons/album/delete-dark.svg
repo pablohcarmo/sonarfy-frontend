@@ -1,0 +1,7 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Delete Icon Button">
+<rect x="0.5" y="0.5" width="35" height="35" rx="9.5" fill="#2A2A2A"/>
+<rect x="0.5" y="0.5" width="35" height="35" rx="9.5" stroke="#65676B"/>
+<path id="Trash Icon" d="M9 11.7692H27M14.5385 11.7692V9H21.4615V11.7692M11.0769 11.7692L12.4615 27H23.5385L24.9231 11.7692M15.9231 16.6154V22.8462M20.0769 16.6154V22.8462" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#FDA29B"/>
+</g>
+</svg>

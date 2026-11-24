@@ -70,6 +70,11 @@ resultados: [Ecos](../docs/ecos-page.md).
 `npm test` inclui `tests/album-review.test.js` em Vitest + Happy DOM.
 `node tests/browser/album-review.cjs` inicia seu próprio servidor e verifica `pages/album-review.html?demo=true` no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo seleção de meia estrela (clique e teclado), contador de 255 caracteres, modal `Avaliação publicada!`, alternância `Favoritar álbum` / `Desfavoritar álbum`, drawer mobile (`296px` e `Escape`), foco visível, carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/album-review/`. Contrato e resultados: [Avaliar Álbum](../docs/album-review-page.md).
 
+### Página do Álbum
+
+`npm test` inclui `tests/album.test.js` em Vitest + Happy DOM.
+`node tests/browser/album.cjs` inicia seu próprio servidor e verifica `pages/album.html` (cenários `rated`, `already-rated`, `empty`, `loading`) no Edge e Firefox, em `1440px`/`390px` e claro/escuro, cobrindo hero do álbum, modal de capa expandida, card `Sua Avaliação`, estado vazio, skeleton loading, drawer mobile (`296px` e `Escape`), carregamento de SVGs e ausência de overflow horizontal. Relatórios/capturas: `test-results/album/`. Contrato e resultados: [Página do Álbum](../docs/album-page.md).
+
 Sirva a raiz do projeto:
 
 ```sh

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Álbum – Sonarfy</title>
+    <link rel="icon" href="../assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="../css/profile-activity.css">
+    <link rel="stylesheet" href="../css/profile-dialogs.css">
+    <link rel="stylesheet" href="../css/album.css">
+    <script src="../js/api.js"></script>
+    <script src="../js/login-theme.js"></script>
+    <script type="module" src="../js/album.js"></script>
+</head>
+<body class="album-page">
+    <a class="skip-link" href="#album-main">Ir para informações do álbum</a>
+    <header class="site-header profile-global-header"></header>
+    <div class="profile-layout album-layout">
+        <aside id="profile-sidebar" class="profile-sidebar" aria-label="Menu principal"></aside>
+        <main id="album-main" class="profile-main album-main" tabindex="-1">
+            <p id="album-demo" class="profile-notice" hidden>Modo esqueleto / demonstração local · aguardando integração com o endpoint de álbum do backend.</p>
+            <p id="album-status" class="profile-status" role="status" aria-live="polite"></p>
+            <div id="album-content" class="album-content"></div>
+        </main>
+    </div>
+    <dialog id="profile-drawer" class="profile-drawer" aria-label="Menu principal"></dialog>
+    <dialog id="album-cover-dialog" class="album-cover-dialog" aria-labelledby="album-cover-dialog-title"></dialog>
+    <footer class="site-footer profile-footer"></footer>
+</body>
+</html>
