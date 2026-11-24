@@ -69,6 +69,15 @@ export function createAlbumFixturesAdapter({ scenario = 'rated', albumOverride =
             ? demoCommunityReviews.slice(1).map(item => ({ ...item }))
             : demoCommunityReviews.map(item => ({ ...item }));
 
+    function sortReviews(sort) {
+        const sorted = [...currentReviews];
+        if (sort === 'highest') sorted.sort((a, b) => (b.rating - a.rating) || (b.reviewId - a.reviewId));
+        else if (sort === 'lowest') sorted.sort((a, b) => (a.rating - b.rating) || (a.reviewId - b.reviewId));
+        else if (sort === 'oldest') sorted.sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)) || (a.reviewId - b.reviewId));
+        else sorted.sort((a, b) => (new Date(b.createdAt) - new Date(a.createdAt)) || (b.reviewId - a.reviewId));
+        return sorted;
+    }
+
     return {
         isDemo: true,
         routes: {
@@ -91,16 +100,16 @@ export function createAlbumFixturesAdapter({ scenario = 'rated', albumOverride =
                 baseAlbum.averageRating = null;
                 baseAlbum.reviewCount = 0;
             }
-            const sorted = [...currentReviews];
-            if (sort === 'highest') sorted.sort((a, b) => b.rating - a.rating);
-            else if (sort === 'lowest') sorted.sort((a, b) => a.rating - b.rating);
-            else sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
             return {
                 album: baseAlbum,
                 userReview: currentUserReview ? { ...currentUserReview } : null,
-                reviews: sorted
+                reviews: sortReviews(sort),
+                nextCursor: null
             };
+        },
+        async fetchCommunityReviews(_spotifyId, { sort = 'recent' } = {}) {
+            return { items: sortReviews(sort), nextCursor: null };
         },
         async deleteReview(reviewId) {
             if (currentUserReview && currentUserReview.reviewId === reviewId) {

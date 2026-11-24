@@ -3,6 +3,7 @@ import {
     createHttpAlbumAdapter,
     formatReleaseDate,
     mapAlbumDetails,
+    mapCommunityReview,
     mapOwnReview
 } from '../js/album-http.js';
 
@@ -92,10 +93,12 @@ describe('album-http: date precision and DTO mapping', () => {
 });
 
 describe('album-http: HTTP client contracts and error handling', () => {
-    // Verify GET /api/albums/{spotifyId} with 404 on /reviews/me does not treat album as missing.
-    it('loads album details when own review returns 404 and marks community reviews unavailable', async () => {
+    // Verify GET /api/albums/{spotifyId} chains community reviews after details resolve and handles 404 on /reviews/me.
+    it('loads album details, chains community reviews after details, and maps community DTOs', async () => {
         localStorage.setItem('sonarfy_token', 'jwt-1');
+        const callOrder = [];
         const fetcher = vi.fn(async url => {
+            callOrder.push(url);
             if (url.endsWith('/albums/4aawyAB9vmqN3uQ7FjRGTy')) {
                 return jsonResponse(200, {
                     spotifyId: '4aawyAB9vmqN3uQ7FjRGTy',
@@ -105,8 +108,8 @@ describe('album-http: HTTP client contracts and error handling', () => {
                     releaseOn: '2012-11-16',
                     releasePrecision: 'dia',
                     totalTracks: 18,
-                    averageRating: null,
-                    reviewCount: 0
+                    averageRating: 4.25,
+                    reviewCount: 2
                 });
             }
             if (url.endsWith('/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews/me')) {
@@ -115,27 +118,86 @@ describe('album-http: HTTP client contracts and error handling', () => {
             if (url.endsWith('/profile/me')) {
                 return jsonResponse(200, { identity: { id: 1, handle: 'pablo', displayName: 'Pablo' } });
             }
+            if (url.includes('/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews?')) {
+                return jsonResponse(200, {
+                    items: [
+                        {
+                            reviewId: 42,
+                            author: { id: 7, handle: 'musicfan', displayName: 'Music Fan', avatarUrl: null },
+                            rating: 8.5,
+                            reviewText: 'Ótimo álbum',
+                            createdAt: '2026-11-24T12:00:00Z',
+                            updatedAt: '2026-11-24T12:00:00Z'
+                        },
+                        {
+                            reviewId: 41,
+                            author: { id: 8, handle: 'zero_user', displayName: 'Zero User', avatarUrl: null },
+                            rating: 0,
+                            reviewText: null,
+                            createdAt: '2026-11-24T11:00:00Z',
+                            updatedAt: '2026-11-24T11:00:00Z'
+                        }
+                    ],
+                    nextCursor: 'cursor-page-2'
+                });
+            }
             throw new Error(`Unexpected URL: ${url}`);
         });
 
         const adapter = createHttpAlbumAdapter({ baseUrl: 'http://localhost:8080/api', fetcher });
-        const result = await adapter.loadAlbum({ albumId: '4aawyAB9vmqN3uQ7FjRGTy' });
+        const result = await adapter.loadAlbum({ albumId: '4aawyAB9vmqN3uQ7FjRGTy', sort: 'oldest' });
 
         expect(result.album.name).toBe('Global Warming');
         expect(result.album.releaseLabel).toBe('16 Nov 2012');
-        expect(result.album.averageRating).toBeNull();
         expect(result.userReview).toBeNull();
-        expect(result.reviews).toEqual([]);
-        expect(result.communityReviewsAvailable).toBe(false);
-        expect(fetcher).toHaveBeenCalledWith(
-            'http://localhost:8080/api/albums/4aawyAB9vmqN3uQ7FjRGTy',
-            expect.objectContaining({
-                method: 'GET',
-                cache: 'no-store',
-                credentials: 'omit',
-                headers: expect.objectContaining({ Authorization: 'Bearer jwt-1' })
-            })
-        );
+        expect(result.communityReviewsAvailable).toBe(true);
+        expect(result.nextCursor).toBe('cursor-page-2');
+        expect(result.reviews).toHaveLength(2);
+        expect(result.reviews[0]).toMatchObject({
+            reviewId: 42,
+            authorName: 'Music Fan',
+            authorHandle: 'musicfan',
+            rating: 4.25,
+            reviewText: 'Ótimo álbum'
+        });
+        expect(result.reviews[1]).toMatchObject({ reviewId: 41, rating: 0, reviewText: '' });
+        const detailsIndex = callOrder.findIndex(u => u.endsWith('/albums/4aawyAB9vmqN3uQ7FjRGTy'));
+        const communityIndex = callOrder.findIndex(u => u.includes('/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews?'));
+        expect(detailsIndex).toBeGreaterThanOrEqual(0);
+        expect(communityIndex).toBeGreaterThan(detailsIndex);
+        expect(callOrder[communityIndex]).toContain('sort=oldest&limit=20');
+    });
+
+    // Verify fetchCommunityReviews cursor forwarding, error mappings, and mapCommunityReview validation.
+    it('fetches paginated community reviews with opaque cursor and maps 400/404/500 errors', async () => {
+        localStorage.setItem('sonarfy_token', 'jwt-1');
+        const mapped = mapCommunityReview({
+            reviewId: 99,
+            author: { id: 3, handle: 'bia', displayName: 'Beatriz', avatarUrl: 'https://cdn.example/a.png' },
+            rating: 10,
+            reviewText: null,
+            createdAt: '2026-11-24T12:00:00Z',
+            updatedAt: '2026-11-24T12:00:00Z'
+        });
+        expect(mapped).toMatchObject({ reviewId: 99, rating: 5, reviewText: '', authorName: 'Beatriz', authorHandle: 'bia' });
+
+        const fetcher = vi.fn()
+            .mockResolvedValueOnce(jsonResponse(200, { items: [], nextCursor: null }))
+            .mockResolvedValueOnce(jsonResponse(400, {}))
+            .mockResolvedValueOnce(jsonResponse(404, {}))
+            .mockResolvedValueOnce(jsonResponse(500, {}));
+
+        const adapter = createHttpAlbumAdapter({ baseUrl: 'http://localhost:8080/api', fetcher });
+        const page = await adapter.fetchCommunityReviews('4aawyAB9vmqN3uQ7FjRGTy', { sort: 'highest', limit: 10, cursor: 'tok-abc' });
+        expect(page).toEqual({ items: [], nextCursor: null });
+        expect(fetcher.mock.calls[0][0]).toContain('/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews?sort=highest&limit=10&cursor=tok-abc');
+
+        await expect(adapter.fetchCommunityReviews('4aawyAB9vmqN3uQ7FjRGTy', { cursor: 'bad' }))
+            .rejects.toMatchObject({ status: 400, code: 'INVALID_COMMUNITY_QUERY' });
+        await expect(adapter.fetchCommunityReviews('4aawyAB9vmqN3uQ7FjRGTy'))
+            .rejects.toMatchObject({ status: 404, code: 'ALBUM_NOT_FOUND' });
+        await expect(adapter.fetchCommunityReviews('4aawyAB9vmqN3uQ7FjRGTy'))
+            .rejects.toMatchObject({ status: 500, retryable: true });
     });
 
     // Verify 400, 404, 502, 503 with Retry-After, and 504 error mappings without asking for Spotify OAuth.

@@ -8,6 +8,7 @@ import { escapeHTML as e, safeImage } from './profile-utils.js';
 
 const SORT_OPTIONS = [
     ['recent', 'Ordenar: Mais recentes'],
+    ['oldest', 'Ordenar: Mais antigas'],
     ['highest', 'Ordenar: Maior nota'],
     ['lowest', 'Ordenar: Menor nota']
 ];
@@ -313,6 +314,10 @@ export function mountAlbumPage(options = {}) {
         album: null,
         userReview: null,
         reviews: [],
+        nextCursor: null,
+        communityLoading: false,
+        loadingMore: false,
+        communityError: '',
         communityReviewsAvailable: adapter.communityReviewsAvailable !== false,
         sort: 'recent',
         confirmingDelete: false,
@@ -321,6 +326,8 @@ export function mountAlbumPage(options = {}) {
 
     let requestToken = 0;
     let activeController = null;
+    let communityRequestToken = 0;
+    let communityController = null;
     let retryTimer = null;
     let lastDirtyMarker = readDirtyMarker();
 
@@ -380,21 +387,49 @@ export function mountAlbumPage(options = {}) {
 
         const communityAvailable = state.communityReviewsAvailable !== false && adapter.communityReviewsAvailable !== false;
         const hasReviews = communityAvailable && state.reviews.length > 0;
-        const sortHtml = hasReviews
-            ? `<div class="album-sort-pill"><select id="album-sort" class="album-sort-select" aria-label="Ordenar avaliações">${SORT_OPTIONS.map(([val, label]) => `<option value="${val}"${state.sort === val ? ' selected' : ''}>${e(label)}</option>`).join('')}</select></div>`
+        const showSort = communityAvailable && (hasReviews || state.communityLoading || Boolean(state.communityError));
+        const sortHtml = showSort
+            ? `<div class="album-sort-pill"><select id="album-sort" class="album-sort-select" aria-label="Ordenar avaliações" ${state.communityLoading ? 'disabled' : ''}>${SORT_OPTIONS.map(([val, label]) => `<option value="${val}"${state.sort === val ? ' selected' : ''}>${e(label)}</option>`).join('')}</select></div>`
             : '';
-        const reviewsBody = !communityAvailable
-            ? `<div class="album-empty-card album-unavailable-card" data-community-unavailable>
+        const reviewSkeleton = `<div class="album-review-card" aria-hidden="true">
+            <div class="album-sk album-sk-header"></div>
+            <div class="album-sk album-sk-line"></div>
+            <div class="album-sk album-sk-line-short"></div>
+        </div>`;
+        let reviewsBody = '';
+        if (!communityAvailable) {
+            reviewsBody = `<div class="album-empty-card album-unavailable-card" data-community-unavailable>
                 <h3>Avaliações da comunidade em breve</h3>
                 <p>A listagem de avaliações da comunidade para este álbum ainda não está disponível.</p>
-            </div>`
-            : hasReviews
-                ? state.reviews.map(renderReviewCard).join('')
-                : `<div class="album-empty-card">
-                    <h3>Nenhuma avaliação para este álbum ainda</h3>
-                    <p>Seja o primeiro a compartilhar o que achou deste disco.</p>
-                    <a class="album-primary-cta" href="${e(buildReviewHref(state.album, adapter))}">Avaliar agora</a>
-                </div>`;
+            </div>`;
+        } else if (state.communityLoading) {
+            reviewsBody = reviewSkeleton.repeat(3);
+        } else if (state.communityError && !hasReviews) {
+            reviewsBody = `<div class="album-error-card" role="alert">
+                <h2>Não foi possível carregar as avaliações</h2>
+                <p>${e(state.communityError)}</p>
+                <button type="button" class="album-primary-cta" data-retry-community>Tentar novamente</button>
+            </div>`;
+        } else if (hasReviews) {
+            const inlineErrorHtml = state.communityError
+                ? `<div class="album-community-inline-error" role="alert">
+                    <p>${e(state.communityError)}</p>
+                    <button type="button" class="album-load-more-btn" data-retry-community>Tentar novamente</button>
+                </div>`
+                : '';
+            const loadMoreHtml = state.nextCursor
+                ? `<div class="album-load-more-row">
+                    <button type="button" class="album-load-more-btn" data-load-more-reviews ${state.loadingMore ? 'disabled' : ''}>${state.loadingMore ? 'Carregando...' : 'Carregar mais avaliações'}</button>
+                </div>`
+                : '';
+            reviewsBody = `${state.reviews.map(renderReviewCard).join('')}${inlineErrorHtml}${loadMoreHtml}`;
+        } else {
+            reviewsBody = `<div class="album-empty-card">
+                <h3>Nenhuma avaliação para este álbum ainda</h3>
+                <p>Seja o primeiro a compartilhar o que achou deste disco.</p>
+                <a class="album-primary-cta" href="${e(buildReviewHref(state.album, adapter))}">Avaliar agora</a>
+            </div>`;
+        }
 
         contentEl.innerHTML = `${renderHeroCard(state.album, state.userReview, adapter)}
             ${state.userReview ? renderMyReviewCard(state.userReview, state.album, adapter, state.confirmingDelete, state.deleting) : ''}
@@ -403,7 +438,7 @@ export function mountAlbumPage(options = {}) {
                     <h2 id="community-reviews-heading" class="album-section-title">Avaliações da Comunidade</h2>
                     ${sortHtml}
                 </div>
-                <div class="album-reviews-stack">${reviewsBody}</div>
+                <div class="album-reviews-stack"${state.communityLoading ? ' aria-busy="true"' : ''}>${reviewsBody}</div>
             </section>`;
     }
 
@@ -425,7 +460,10 @@ export function mountAlbumPage(options = {}) {
     function resetState() {
         activeController?.abort();
         activeController = null;
+        communityController?.abort();
+        communityController = null;
         requestToken += 1;
+        communityRequestToken += 1;
         stopRetryTimer();
         state.loading = false;
         state.error = '';
@@ -435,13 +473,92 @@ export function mountAlbumPage(options = {}) {
         state.album = null;
         state.userReview = null;
         state.reviews = [];
+        state.nextCursor = null;
+        state.communityLoading = false;
+        state.loadingMore = false;
+        state.communityError = '';
         state.confirmingDelete = false;
         state.deleting = false;
+    }
+
+    async function loadCommunity({ append = false } = {}) {
+        if (!state.album || typeof adapter.fetchCommunityReviews !== 'function') {
+            if (!append) await load();
+            return;
+        }
+        if (append && (state.loadingMore || !state.nextCursor)) return;
+
+        communityController?.abort();
+        communityController = new AbortController();
+        const { signal } = communityController;
+        const token = ++communityRequestToken;
+        const sessionKey = typeof adapter.getSessionKey === 'function' ? adapter.getSessionKey() : null;
+        const albumId = state.album.spotifyId || state.albumId;
+
+        state.communityError = '';
+        if (append) {
+            state.loadingMore = true;
+        } else {
+            state.communityLoading = true;
+            state.nextCursor = null;
+        }
+        render();
+
+        try {
+            const page = await adapter.fetchCommunityReviews(albumId, {
+                sort: state.sort,
+                cursor: append ? state.nextCursor : null,
+                signal
+            });
+            if (token !== communityRequestToken || signal.aborted || controller.signal.aborted) return;
+            if (typeof adapter.getSessionKey === 'function' && adapter.getSessionKey() !== sessionKey) return;
+
+            const incoming = Array.isArray(page?.items) ? page.items : [];
+            if (append) {
+                const seen = new Set(state.reviews.map(item => String(item.reviewId)));
+                state.reviews = [...state.reviews, ...incoming.filter(item => !seen.has(String(item.reviewId)))];
+            } else {
+                state.reviews = incoming;
+            }
+            state.nextCursor = typeof page?.nextCursor === 'string' && page.nextCursor ? page.nextCursor : null;
+            state.communityLoading = false;
+            state.loadingMore = false;
+            state.communityError = '';
+            render();
+        } catch (err) {
+            if (token !== communityRequestToken || signal.aborted || controller.signal.aborted || err?.name === 'AbortError') return;
+            if (err?.code === 'SESSION_CHANGED') {
+                resetState();
+                if (typeof adapter.getSessionKey === 'function' && adapter.getSessionKey()) load();
+                return;
+            }
+            if (err?.status === 401 && !adapter.isDemo) {
+                resetState();
+                state.error = err.message || 'Sessão expirada. Entre novamente.';
+                state.errorStatus = 401;
+                state.retryable = false;
+                render();
+                return;
+            }
+            if (append && err?.status === 400) {
+                state.loadingMore = false;
+                state.nextCursor = null;
+                await loadCommunity({ append: false });
+                return;
+            }
+            state.communityLoading = false;
+            state.loadingMore = false;
+            state.communityError = err?.message || 'Não foi possível carregar as avaliações da comunidade.';
+            render();
+        }
     }
 
     async function load({ preserveStatus = false } = {}) {
         activeController?.abort();
         activeController = new AbortController();
+        communityController?.abort();
+        communityController = null;
+        communityRequestToken += 1;
         const { signal } = activeController;
         const token = ++requestToken;
         const albumId = readAlbumFromSearch()?.spotifyId || '';
@@ -452,6 +569,10 @@ export function mountAlbumPage(options = {}) {
         state.error = '';
         state.errorStatus = null;
         state.retryable = true;
+        state.nextCursor = null;
+        state.communityLoading = false;
+        state.loadingMore = false;
+        state.communityError = '';
         state.confirmingDelete = false;
         if (!preserveStatus) notify('');
         render();
@@ -464,6 +585,8 @@ export function mountAlbumPage(options = {}) {
             state.album = data?.album || null;
             state.userReview = data?.userReview || null;
             state.reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+            state.nextCursor = typeof data?.nextCursor === 'string' && data.nextCursor ? data.nextCursor : null;
+            state.communityError = typeof data?.communityReviewsError === 'string' ? data.communityReviewsError : '';
             state.communityReviewsAvailable = data?.communityReviewsAvailable !== undefined
                 ? Boolean(data.communityReviewsAvailable)
                 : adapter.communityReviewsAvailable !== false;
@@ -544,7 +667,8 @@ export function mountAlbumPage(options = {}) {
     on(contentEl, 'change', event => {
         if (event.target.id !== 'album-sort') return;
         state.sort = event.target.value;
-        load();
+        state.nextCursor = null;
+        loadCommunity({ append: false });
     });
 
     on(document, 'click', async event => {
@@ -556,6 +680,14 @@ export function mountAlbumPage(options = {}) {
         if (target.hasAttribute('data-retry-album')) {
             if (remainingRetrySeconds() > 0) return;
             load();
+            return;
+        }
+        if (target.hasAttribute('data-load-more-reviews')) {
+            loadCommunity({ append: true });
+            return;
+        }
+        if (target.hasAttribute('data-retry-community')) {
+            loadCommunity({ append: state.reviews.length > 0 && Boolean(state.nextCursor) });
             return;
         }
         if (target.hasAttribute('data-request-delete')) {
@@ -728,6 +860,7 @@ export function mountAlbumPage(options = {}) {
         reload: load,
         destroy() {
             activeController?.abort();
+            communityController?.abort();
             stopRetryTimer();
             authChannel?.close();
             controller.abort();

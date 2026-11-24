@@ -317,4 +317,95 @@ describe('album: page states and interactions', () => {
         expect(document.querySelector('.album-title').textContent).toBe('New Album');
         raceInstance.destroy();
     });
+
+    // Verify integrated community reviews: 4 sort options, cursor pagination, deduplication, and isolated community error retry.
+    it('supports all four community sort orders, cursor pagination, and isolated community retry in HTTP mode', async () => {
+        let failOnce = false;
+        const fetchCommunityReviews = vi.fn(async (_id, { sort, cursor }) => {
+            if (failOnce) {
+                failOnce = false;
+                throw new Error('Falha ao carregar comunidade');
+            }
+            if (cursor === 'cursor-2') {
+                return {
+                    items: [
+                        { reviewId: 2, authorName: 'Marina', authorHandle: 'marina', publishedLabel: '2h', rating: 0, reviewText: '' }
+                    ],
+                    nextCursor: null
+                };
+            }
+            return {
+                items: [
+                    { reviewId: sort === 'oldest' ? 1 : 3, authorName: sort === 'oldest' ? 'Antigo' : 'Recente', authorHandle: 'fan', publishedLabel: '1h', rating: 4.5, reviewText: 'Bom disco' }
+                ],
+                nextCursor: sort === 'recent' ? 'cursor-2' : null
+            };
+        });
+        const adapter = {
+            isDemo: false,
+            communityReviewsAvailable: true,
+            routes: { home: 'feed.html', echoes: 'echoes.html', review: 'album-review.html', login: 'login.html' },
+            getSessionKey: () => 'tok-1',
+            loadAlbum: vi.fn(async () => ({
+                album: {
+                    spotifyId: '4aawyAB9vmqN3uQ7FjRGTy',
+                    name: 'Album One',
+                    artist: 'Artist One',
+                    releaseLabel: 'Mai 2024',
+                    totalTracks: 10,
+                    coverUrl: null,
+                    averageRating: 4.5,
+                    reviewCount: 2
+                },
+                userReview: null,
+                reviews: [
+                    { reviewId: 3, authorName: 'Recente', authorHandle: 'fan', publishedLabel: '1h', rating: 4.5, reviewText: 'Bom disco' }
+                ],
+                nextCursor: 'cursor-2',
+                communityReviewsAvailable: true
+            })),
+            fetchCommunityReviews
+        };
+
+        const instance = mount(adapter, '?albumId=4aawyAB9vmqN3uQ7FjRGTy');
+        await instance.ready;
+
+        expect(document.querySelector('[data-community-unavailable]')).toBeNull();
+        const options = [...document.querySelectorAll('#album-sort option')].map(o => o.value);
+        expect(options).toEqual(['recent', 'oldest', 'highest', 'lowest']);
+        expect(document.querySelectorAll('.album-review-card')).toHaveLength(1);
+        expect(document.querySelector('[data-load-more-reviews]')).not.toBeNull();
+
+        // Load next page via cursor without reloading album details.
+        document.querySelector('[data-load-more-reviews]').click();
+        await vi.waitFor(() => {
+            expect(document.querySelectorAll('.album-review-card')).toHaveLength(2);
+        });
+        expect(document.querySelector('[data-load-more-reviews]')).toBeNull();
+        expect(adapter.loadAlbum).toHaveBeenCalledTimes(1);
+
+        // Change sort to oldest without wiping album hero.
+        const sort = document.querySelector('#album-sort');
+        sort.value = 'oldest';
+        sort.dispatchEvent(new Event('change', { bubbles: true }));
+        await vi.waitFor(() => {
+            expect(document.querySelector('.album-review-author')?.textContent).toContain('Antigo');
+        });
+        expect(adapter.loadAlbum).toHaveBeenCalledTimes(1);
+
+        // Isolated community error preserves album hero and allows retry.
+        failOnce = true;
+        const sortAgain = document.querySelector('#album-sort');
+        sortAgain.value = 'highest';
+        sortAgain.dispatchEvent(new Event('change', { bubbles: true }));
+        await vi.waitFor(() => {
+            expect(document.querySelector('[data-retry-community]')).not.toBeNull();
+        });
+        expect(document.querySelector('.album-title').textContent).toBe('Album One');
+        document.querySelector('[data-retry-community]').click();
+        await vi.waitFor(() => {
+            expect(document.querySelector('.album-review-card')).not.toBeNull();
+        });
+        instance.destroy();
+    });
 });

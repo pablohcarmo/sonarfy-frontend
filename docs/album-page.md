@@ -50,12 +50,16 @@ Um host pode sobrescrever o adapter injetando `window.sonarfyAlbumAdapter` **ant
 
 ### Seção de avaliações da comunidade
 
-A listagem e ordenação de avaliações da comunidade ainda não está disponível no backend. Em modo HTTP (`communityReviewsAvailable: false`), a seção exibe um estado explícito de funcionalidade em breve (`data-community-unavailable`), sem dados fictícios, sem seletor de ordenação e sem confundir indisponibilidade com ausência de avaliações.
+Integrada diretamente ao endpoint `GET /api/albums/{spotifyId}/reviews?sort=recent&limit=20&cursor=...` (`communityReviewsAvailable: true`), encadeada após a resolução de `GET /api/albums/{spotifyId}` para evitar corrida `404` na primeira abertura de álbuns ainda não persistidos localmente:
+
+- **Ordenações**: suporta as quatro ordenações globais do backend — `recent` (Mais recentes), `oldest` (Mais antigas), `highest` (Maior nota) e `lowest` (Menor nota), recarregando apenas a seção da comunidade ao trocar a ordenação sem perder o cabeçalho do álbum.
+- **Paginação por cursor opaco**: exibe o botão `Carregar mais avaliações` enquanto `nextCursor` não for nulo, reenvia `cursor` intacto, deduplica por `reviewId` e reinicia automaticamente a partir da página 1 em caso de `400` por cursor inválido/expirado.
+- **Dados e estados**: normaliza `rating` (`0–10` → `0–5`), exibe nota zero e avaliações sem texto (`reviewText: null`), preserva identidade pública do autor (`displayName`, `@handle`), mantém curtidas/comentários indisponíveis sem contadores fictícios, trata erro isolado da seção com botão `Tentar novamente` e exibe estado vazio quando `items` retorna vazio.
 
 ## Verificação
 
-- **Suíte unitária (`npm test`)**: **280 testes em 31 arquivos** aprovados em Vitest + Happy DOM (incluindo `tests/album-http.test.js`, `tests/album.test.js` e `tests/profile-collection.test.js`).
-- **Verificação de navegador (`node tests/browser/album.cjs`)**: 8 combinações aprovadas sem erros de página e sem overflow horizontal, interceptando `GET /api/albums/{spotifyId}`, `GET /api/albums/{spotifyId}/reviews/me`, `DELETE /api/reviews/{reviewId}` e `GET /api/profile/me`:
+- **Suíte unitária (`npm test`)**: **282 testes em 31 arquivos** aprovados em Vitest + Happy DOM (incluindo `tests/album-http.test.js`, `tests/album.test.js` e `tests/profile-collection.test.js`).
+- **Verificação de navegador (`node tests/browser/album.cjs`)**: 8 combinações aprovadas sem erros de página e sem overflow horizontal, interceptando `GET /api/albums/{spotifyId}`, `GET /api/albums/{spotifyId}/reviews`, `GET /api/albums/{spotifyId}/reviews/me`, `DELETE /api/reviews/{reviewId}` e `GET /api/profile/me`:
   - **Microsoft Edge `158.0.4370.33`**: `1440px` e `390px`, temas claro e escuro.
   - **Firefox `159.0`**: `1440px` e `390px`, temas claro e escuro.
-- **Limitações**: mobile verificado por viewport emulado em navegador headless; testes automatizados de navegador e unidade interceptam/simulam respostas HTTP e não executam contra o backend real em execução. **Lista de avaliações da comunidade**, **curtidas, comentários, respostas**, **Pesquisas**, **Notificações** e **páginas institucionais do rodapé** ficam fora desta entrega.
+- **Limitações**: mobile verificado por viewport emulado em navegador headless; testes automatizados de navegador e unidade interceptam/simulam respostas HTTP e não executam contra o backend real em execução. **Curtidas, comentários, respostas**, **Pesquisas**, **Notificações** e **páginas institucionais do rodapé** ficam fora desta entrega.
