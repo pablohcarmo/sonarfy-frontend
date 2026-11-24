@@ -67,13 +67,16 @@ O desenvolvimento considera navegação por teclado, foco visível, rótulos ace
 - [Referências visuais do Figma](docs/figma-references.md)
 - [Perfis Sonarfy](docs/profile-page.md)
 - [Feed Sonarfy](docs/feed-page.md)
+- [Página do Álbum](docs/album-page.md)
 - [Configurações da Conta](docs/account-page.md)
 - [Guia de testes](tests/README.md)
 
 <details>
 <summary><strong>Direção do produto</strong></summary>
 
-As próximas etapas incluem concluir os fluxos internos da plataforma, desenvolver as experiências de avaliações e comunidade e integrar a sincronização musical.
+As próximas etapas incluem concluir os fluxos internos da plataforma, finalizar a integração da página do álbum e evoluir as experiências de avaliações e comunidade.
+
+**Pesquisas**, **Notificações**, **curtidas/comentários/respostas em avaliações** e as **páginas institucionais do rodapé** (`Termos de Uso`, `Privacidade`, `Diretrizes`, `Apoie o Sonarfy`) não serão entregues nesta versão do Sonarfy e ficam planejadas para implementações futuras.
 
 A expansão para outros idiomas prevê interfaces em português, inglês e espanhol, com rotas como `/pt-br/register`, `/en/register` e `/es/register`. Traduções, seletor de idioma e regras de hospedagem dessas rotas ainda não estão implementados.
 

@@ -15,7 +15,7 @@ seguidos, consumindo o contrato real do backend (`GET /api/feed`).
 - A ordem recebida do servidor (`reviewId` decrescente) é preservada integralmente; editar nota ou texto não reposiciona o card.
 - Novas publicações são carregadas ao carregar a página ou clicar no logo do Sonarfy (reiniciando a paginação), sem inserção automática durante a navegação.
 - Não exige conexão Spotify.
-- Likes, comentários, respostas e notificações não estão ativos nesta versão; os botões de curtir e comentar são exibidos no card em estado indisponível (`aria-disabled="true"`, `.activity-social.is-unavailable`, sem contadores fictícios), seguindo o layout global do Figma e o padrão já adotado em Atividades do Perfil.
+- Likes, comentários e respostas não estão ativos nesta versão; os botões de curtir e comentar são exibidos no card em estado indisponível (`aria-disabled="true"`, `.activity-social.is-unavailable`, sem contadores fictícios), seguindo o layout global do Figma e o padrão já adotado em Atividades do Perfil. **Pesquisas** e **Notificações** ficam fora desta versão (implementações futuras).
 
 ## Contrato HTTP real e mapeamento
 
@@ -76,4 +76,4 @@ Comandos executados em 24/11/2026:
 - Testes de navegador rodam em modo headless com viewport mobile emulado (`390px`), que não substitui dispositivos físicos.
 - O backend local não estava em execução na porta `8080` durante a verificação; os testes HTTP em navegador validaram o contrato real por interceptação de rede, sem alterar banco ou servidor.
 - CI remota não foi executada nem verificada nesta entrega.
-- Likes, comentários, respostas, notificações, página de álbum e busca de perfis permanecem fora desta versão.
+- **Curtidas, comentários, respostas**, **Pesquisas**, **Notificações** e as **páginas institucionais do rodapé** permanecem fora desta versão do Sonarfy (implementações futuras).

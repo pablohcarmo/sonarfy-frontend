@@ -55,6 +55,14 @@ Os contratos HTTP autoritativos residem no repositório do backend (`sonarfy`, e
 | Avaliar Álbum | `js/album-review-http.js` / `window.sonarfyAlbumReviewAdapter` | Integrado ao contrato HTTP (`GET /api/albums/{spotifyId}/reviews/me`, `POST /api/albums/{spotifyId}/reviews`, `PUT /api/reviews/{reviewId}`, `DELETE /api/reviews/{reviewId}`); botão `Favoritar álbum` alterna estado local/opcional sem endpoint dedicado; modo demonstração explícito em `?demo=true` | `docs/api/reviews.md`, `docs/integrations/reviews.md` |
 | Configurações da Conta | `js/account-http.js` / `window.sonarfyAccountAdapter` | Integrado via HTTP para `GET/PUT /api/users/me`, `GET /api/locations/cities`, `GET/DELETE /api/spotify/connection`, recuperação/troca de senha, troca de e-mail (`POST /api/users/me/email-change-request`, `POST /api/auth/email-change-confirmation`) e desativação de conta (`POST /api/users/me/account-deactivation-request`, `POST /api/auth/account-deactivation-confirmation`); exclusão permanente de conta ainda indisponível em HTTP; modo demonstração explícito em `?demo=true` | `docs/api/users-and-profile.md`, `docs/integrations/user-settings.md`, `docs/api/locations.md`, `docs/integrations/spotify.md`, `docs/api/passwords.md`, `docs/integrations/password-change.md`, `docs/api/email-changes.md`, `docs/integrations/email-change.md`, `docs/api/account-deactivation-http.md`, `docs/integrations/account-deactivation.md` |
 
+## Fora do Escopo desta Versão (Implementações Futuras)
+
+As funcionalidades abaixo não serão entregues nesta versão do Sonarfy e ficam planejadas para implementações futuras:
+
+- **Pesquisas** e **Notificações**: mantidas em estado desabilitado na navegação global (`js/profile-shell.js`).
+- **Curtidas, comentários e respostas em avaliações**: exibidos em estado indisponível/não interativo nos cards (`socialActions` / `.activity-social.is-unavailable`, sem contadores fictícios) e aba de respostas sem endpoint.
+- **Páginas institucionais do rodapé** (`Termos de Uso`, `Privacidade`, `Diretrizes`, `Apoie o Sonarfy`): controles mantidos no rodapé global (`Footer / Global`) informando indisponibilidade, sem arquivos HTML dedicados nesta versão.
+
 ---
 
 ## Convenções de Documentação

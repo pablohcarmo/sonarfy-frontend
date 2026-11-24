@@ -50,4 +50,4 @@ Funcionalidades implementadas no esqueleto:
 - **Verificação de navegador (`node tests/browser/album.cjs`)**: 8 combinações aprovadas sem erros de página e sem overflow horizontal:
   - **Microsoft Edge `158.0.4370.33`**: `1440px` e `390px`, temas claro e escuro.
   - **Firefox `159.0`**: `1440px` e `390px`, temas claro e escuro.
-- **Limitações**: mobile verificado por viewport emulado em navegador headless; dados de álbum e avaliações são simulados por fixtures locais enquanto o endpoint do backend está em desenvolvimento.
+- **Limitações**: mobile verificado por viewport emulado em navegador headless; dados de álbum e avaliações são simulados por fixtures locais enquanto o endpoint do backend está em desenvolvimento. **Curtidas, comentários, respostas**, **Pesquisas**, **Notificações** e **páginas institucionais do rodapé** ficam fora desta versão do Sonarfy (implementações futuras).
