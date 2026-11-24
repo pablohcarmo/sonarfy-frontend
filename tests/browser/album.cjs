@@ -102,6 +102,49 @@ async function loadedAssets(page) {
                                 })
                             });
                         }
+                        if (pathname === '/api/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews' && method === 'GET') {
+                            const sort = reqUrl.searchParams.get('sort') || 'recent';
+                            const cursor = reqUrl.searchParams.get('cursor');
+                            if (deletedReview) {
+                                return route.fulfill({
+                                    status: 200,
+                                    headers: corsHeaders,
+                                    contentType: 'application/json',
+                                    body: JSON.stringify({ items: [], nextCursor: null })
+                                });
+                            }
+                            const all = [
+                                {
+                                    reviewId: 42,
+                                    author: { id: 1, handle: 'usuario', displayName: 'Nome Sobrenome', avatarUrl: null },
+                                    rating: 10,
+                                    reviewText: 'Excelente disco para ouvir sem pular faixas.',
+                                    createdAt: '2026-11-24T05:00:00Z',
+                                    updatedAt: '2026-11-24T05:00:00Z'
+                                },
+                                {
+                                    reviewId: 41,
+                                    author: { id: 2, handle: 'marina_som', displayName: 'Marina Costa', avatarUrl: null },
+                                    rating: 6.5,
+                                    reviewText: null,
+                                    createdAt: '2026-11-23T18:00:00Z',
+                                    updatedAt: '2026-11-23T18:00:00Z'
+                                }
+                            ];
+                            const ordered = [...all];
+                            if (sort === 'oldest') ordered.sort((a, b) => a.reviewId - b.reviewId);
+                            else if (sort === 'highest') ordered.sort((a, b) => (b.rating - a.rating) || (b.reviewId - a.reviewId));
+                            else if (sort === 'lowest') ordered.sort((a, b) => (a.rating - b.rating) || (a.reviewId - b.reviewId));
+                            else ordered.sort((a, b) => b.reviewId - a.reviewId);
+                            const pageItems = cursor === 'page-2' ? ordered.slice(1) : ordered.slice(0, 1);
+                            const nextCursor = cursor === 'page-2' ? null : 'page-2';
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({ items: pageItems, nextCursor })
+                            });
+                        }
                         if (pathname === '/api/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews/me' && method === 'GET') {
                             if (deletedReview) {
                                 return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
@@ -141,6 +184,26 @@ async function loadedAssets(page) {
                                 })
                             });
                         }
+                        if (pathname === '/api/albums/0000000000000000000000/reviews' && method === 'GET') {
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({
+                                    items: [
+                                        {
+                                            reviewId: 51,
+                                            author: { id: 9, handle: 'zero_fan', displayName: 'Zero Fan', avatarUrl: null },
+                                            rating: 0,
+                                            reviewText: null,
+                                            createdAt: '2026-11-24T04:00:00Z',
+                                            updatedAt: '2026-11-24T04:00:00Z'
+                                        }
+                                    ],
+                                    nextCursor: null
+                                })
+                            });
+                        }
                         if (pathname === '/api/albums/0000000000000000000000/reviews/me' && method === 'GET') {
                             return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
                         }
@@ -153,20 +216,32 @@ async function loadedAssets(page) {
                         return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
                     });
 
-                    // 1. Integrated HTTP mode: loaded album + own review + unavailable community list + delete refresh.
+                    // 1. Integrated HTTP mode: loaded album + own review + paginated community list + sort + delete refresh.
                     await page.goto(`${base}/pages/album.html?albumId=4aawyAB9vmqN3uQ7FjRGTy`);
-                    await page.waitForSelector('.album-my-review-card');
+                    await page.waitForSelector('.album-review-card');
                     assert.equal(await page.locator('#album-demo').isHidden(), true, 'Demo banner hidden in HTTP mode');
                     assert.equal(await page.locator('.album-title').textContent(), 'Album One');
                     assert.equal(await page.locator('.album-submeta').textContent(), 'Mai 2024 · 18 faixas');
                     assert.equal(await page.locator('.album-rating-average').textContent(), '4.1');
-                    assert.equal(await page.locator('[data-community-unavailable]').count(), 1);
+                    assert.equal(await page.locator('[data-community-unavailable]').count(), 0);
+                    assert.equal(await page.locator('.album-review-card').count(), 1);
+                    assert.equal(await page.locator('[data-load-more-reviews]').count(), 1);
+                    const sortValues = await page.locator('#album-sort option').evaluateAll(opts => opts.map(o => o.value));
+                    assert.deepEqual(sortValues, ['recent', 'oldest', 'highest', 'lowest']);
                     const spotifyIcon = await page.locator('.album-spotify-cta img').boundingBox();
                     assert(spotifyIcon && spotifyIcon.width >= 21 && spotifyIcon.height >= 21, `Spotify icon >= 21px: ${JSON.stringify(spotifyIcon)}`);
                     assert(Math.abs(spotifyIcon.width - spotifyIcon.height) < 0.5, `Spotify icon 1:1 aspect ratio: ${JSON.stringify(spotifyIcon)}`);
                     const assets = await loadedAssets(page);
                     await noOverflow(page, width);
                     await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-http-rated.png`), fullPage: true });
+
+                    // Load next page via cursor and verify sort switch to oldest.
+                    await page.locator('[data-load-more-reviews]').click();
+                    await page.waitForFunction(() => document.querySelectorAll('.album-review-card').length === 2);
+                    assert.equal(await page.locator('[data-load-more-reviews]').count(), 0);
+                    await page.selectOption('#album-sort', 'oldest');
+                    await page.waitForFunction(() => document.querySelector('.album-review-card .album-review-author')?.textContent.includes('Marina Costa'));
+                    await noOverflow(page, width);
 
                     // Expand cover modal.
                     await page.locator('[data-expand-cover]').click();
@@ -175,12 +250,13 @@ async function loadedAssets(page) {
                     await page.locator('[data-close-cover]').click();
                     assert.equal(await page.locator('#album-cover-dialog[open]').count(), 0);
 
-                    // Delete own review and verify aggregate refreshes to null/unrated.
+                    // Delete own review and verify aggregate refreshes to null/unrated and community list becomes empty.
                     await page.locator('[data-request-delete]').click();
                     await page.locator('[data-confirm-delete]').click();
                     await page.waitForSelector('.album-rating-empty-label');
                     assert.equal(await page.locator('.album-my-review-card').count(), 0);
-                    assert.equal(await page.locator('.album-primary-cta').textContent(), 'Avaliar este álbum');
+                    assert.equal(await page.locator('[data-rate-album]').textContent(), 'Avaliar este álbum');
+                    assert.equal(await page.locator('.album-empty-card').count(), 1);
                     await noOverflow(page, width);
 
                     // 2. Zero average rating vs null + 404 own review does not fail album.

@@ -132,7 +132,38 @@ export function mapOwnReview(dto, viewer = null) {
     };
 }
 
-// Create the authenticated HTTP adapter for Album details and own review lifecycle.
+// Normalize a community review item from GET /api/albums/{spotifyId}/reviews.
+export function mapCommunityReview(dto) {
+    if (!dto || dto.reviewId == null) {
+        throw createAlbumError('Resposta de avaliação da comunidade inválida.');
+    }
+    const rawRating = Number(dto.rating);
+    if (!Number.isFinite(rawRating) || rawRating < 0 || rawRating > 10) {
+        throw createAlbumError('Resposta de avaliação da comunidade inválida.');
+    }
+    const author = dto.author && typeof dto.author === 'object' ? dto.author : {};
+    const authorName = typeof author.displayName === 'string' && author.displayName.trim()
+        ? author.displayName.trim()
+        : (typeof author.handle === 'string' && author.handle.trim() ? author.handle.trim() : 'Usuário');
+    const authorHandle = typeof author.handle === 'string' ? author.handle.trim() : '';
+    const authorAvatarUrl = typeof author.avatarUrl === 'string' && author.avatarUrl.trim() ? author.avatarUrl.trim() : null;
+    const reviewText = typeof dto.reviewText === 'string' ? validateReview(dto.reviewText) : '';
+    return {
+        reviewId: dto.reviewId,
+        rating: apiRatingToStars(rawRating),
+        ratingApi: rawRating,
+        reviewText,
+        createdAt: dto.createdAt || null,
+        updatedAt: dto.updatedAt || null,
+        publishedLabel: dto.createdAt ? timestamp(dto.createdAt) : '',
+        authorId: author.id != null ? String(author.id) : null,
+        authorName,
+        authorHandle,
+        authorAvatarUrl
+    };
+}
+
+// Create the authenticated HTTP adapter for Album details, community reviews, and own review lifecycle.
 export function createHttpAlbumAdapter({
     baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8080/api',
     fetcher = (...args) => fetch(...args),
@@ -285,7 +316,51 @@ export function createHttpAlbumAdapter({
         return mapOwnReview(dto, viewer);
     }
 
-    async function loadAlbum({ albumId, signal } = {}) {
+    async function fetchCommunityReviews(spotifyId, { sort = 'recent', limit = 20, cursor = null, signal } = {}) {
+        const safeId = typeof spotifyId === 'string' ? spotifyId.trim() : '';
+        if (!safeId) {
+            throw createAlbumError('Identificador do álbum inválido.', 400, { code: 'INVALID_ALBUM_ID', retryable: false });
+        }
+        const safeSort = ['recent', 'oldest', 'highest', 'lowest'].includes(sort) ? sort : 'recent';
+        const params = new URLSearchParams({ sort: safeSort, limit: String(limit) });
+        if (typeof cursor === 'string' && cursor.trim()) {
+            params.set('cursor', cursor.trim());
+        }
+        const response = await authorizedRequest(`/albums/${encodeURIComponent(safeId)}/reviews?${params.toString()}`, {
+            method: 'GET',
+            signal
+        });
+        if (response.status === 401) {
+            throw createAlbumError('Sessão expirada. Entre novamente.', 401, { retryable: false });
+        }
+        if (response.status === 400) {
+            throw createAlbumError('Parâmetros de ordenação ou paginação inválidos.', 400, {
+                code: 'INVALID_COMMUNITY_QUERY',
+                retryable: false
+            });
+        }
+        if (response.status === 404) {
+            throw createAlbumError('Álbum não encontrado.', 404, { code: 'ALBUM_NOT_FOUND', retryable: false });
+        }
+        if (response.status !== 200) {
+            throw createAlbumError('Não foi possível carregar as avaliações da comunidade.', response.status, { retryable: true });
+        }
+        let dto;
+        try {
+            dto = await response.json();
+        } catch (cause) {
+            throw createAlbumError('Resposta de avaliações da comunidade inválida.', undefined, { cause, retryable: true });
+        }
+        if (!Array.isArray(dto?.items)) {
+            throw createAlbumError('Resposta de avaliações da comunidade inválida.', undefined, { retryable: true });
+        }
+        return {
+            items: dto.items.map(mapCommunityReview),
+            nextCursor: typeof dto.nextCursor === 'string' && dto.nextCursor ? dto.nextCursor : null
+        };
+    }
+
+    async function loadAlbum({ albumId, sort = 'recent', limit = 20, signal } = {}) {
         const safeId = typeof albumId === 'string' ? albumId.trim() : '';
         if (!safeId) {
             throw createAlbumError('Identificador do álbum inválido.', 400, { code: 'INVALID_ALBUM_ID', retryable: false });
@@ -327,12 +402,29 @@ export function createHttpAlbumAdapter({
             ? (ownReviewResult.reason?.message || 'Não foi possível verificar sua avaliação agora.')
             : '';
 
+        // Chain community reviews after album details resolve to avoid a 404 race on first catalog lookup.
+        let reviews = [];
+        let nextCursor = null;
+        let communityReviewsError = '';
+        try {
+            const community = await fetchCommunityReviews(safeId, { sort, limit, signal });
+            reviews = community.items;
+            nextCursor = community.nextCursor;
+        } catch (err) {
+            if (err?.name === 'AbortError' || err?.status === 401 || err?.code === 'SESSION_CHANGED') {
+                throw err;
+            }
+            communityReviewsError = err?.message || 'Não foi possível carregar as avaliações da comunidade.';
+        }
+
         return {
             album: albumResult.value,
             userReview,
             userReviewError,
-            reviews: [],
-            communityReviewsAvailable: false
+            reviews,
+            nextCursor,
+            communityReviewsError,
+            communityReviewsAvailable: true
         };
     }
 
@@ -400,12 +492,13 @@ export function createHttpAlbumAdapter({
 
     return {
         isDemo: false,
-        communityReviewsAvailable: false,
+        communityReviewsAvailable: true,
         routes,
         getSessionKey: () => getToken() || null,
         loadAlbum,
         fetchAlbumDetails,
         fetchOwnReview,
+        fetchCommunityReviews,
         createReview,
         updateReview,
         deleteReview

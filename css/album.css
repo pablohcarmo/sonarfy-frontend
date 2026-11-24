@@ -436,6 +436,52 @@
     width: 100%;
 }
 
+.album-load-more-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 8px;
+}
+
+.album-load-more-btn {
+    min-height: 44px;
+    padding: 10px 24px;
+    border: 1px solid var(--album-border);
+    border-radius: 10px;
+    background: var(--album-surface);
+    color: var(--album-text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.album-load-more-btn:hover:not(:disabled) {
+    border-color: var(--album-accent);
+}
+
+.album-load-more-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.album-community-inline-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--album-border);
+    border-radius: 12px;
+    background: var(--album-subtle-bg);
+    color: var(--album-muted);
+    font-size: 14px;
+}
+
+.album-community-inline-error p {
+    margin: 0;
+}
+
 .album-review-card {
     background: var(--album-surface);
     border: 1px solid var(--album-border);
