@@ -17,16 +17,19 @@ Para alterações de HTML, CSS ou JavaScript que afetem a interface:
 - Documentação, diagramas, imagens, SVGs de assets e capturas de tela não entram no cômputo restrito dessas ~300 linhas.
 - O tamanho do diff é um guia interno de planejamento e revisão; não inclua seção, contagem ou checklist de tamanho na mensagem do PR. Se ultrapassar significativamente o alvo, avalie internamente a justificativa técnica ou a divisão em PRs menores.
 - Sempre que trocar de branch, execute imediatamente a suíte de testes (`npm test`).
+- Nunca realizar commits ou pushes diretamente na branch `main`; toda alteração deve ser feita em uma branch separada e integrada via Pull Request.
 
 ### 2. Padrões de Código, Comentários e Documentação
 - Manter a implementação em HTML5 semântico, CSS3 e JavaScript Vanilla (módulos ES quando aplicável), sem introduzir frameworks ou dependências de produção sem aprovação explícita.
 - Em JavaScript, utilize comentários concisos explicativos usando exclusivamente `//` (nunca blocos `/* ... */`), posicionados acima de funções e testes relevantes, alinhados com o estilo do projeto.
 - Alterações de telas, rotas, tokens visuais, adapters ou contratos de integração com o backend devem atualizar a documentação correspondente em `docs/` (incluindo `docs/README.md`, `docs/figma-references.md`, documentos de página), `tests/README.md` e `README.md` quando aplicável.
 - Sempre documentar explicitamente quando uma funcionalidade usa modo demonstração/fixtures locais em vez de integração real com o backend.
+- **Consulta ao backend (somente leitura)**: o repositório local do backend (`C:\Projetos\sonarfy`, especialmente `docs/api/`, `docs/integrations/`, controllers e DTOs) pode ser inspecionado **exclusivamente em modo somente leitura** para conferir contratos HTTP, cabeçalhos, payloads e códigos de resposta. Nunca modifique arquivos no repositório do backend durante tarefas do `sonarfy-frontend`.
 
 ### 3. Mensagens de Commit
 - Todos os commits devem seguir rigorosamente o padrão **Conventional Commits 1.0.0**:
   `<type>[optional scope]: <description>`
+- A `<description>` deve ser escrita obrigatoriamente em **inglês**.
 - Tipos usuais: `feat`, `fix`, `docs`, `test`, `refactor`, `style`, `perf`, `build`, `ci`, `chore`.
 - Escopos comuns: `feed`, `profile`, `auth`, `login`, `register`, `verify`, `spotify`, `home`, `account`, `ui`, `assets`, `tests`, `docs`.
 </WORKFLOW_AND_CONVENTIONS>
@@ -36,6 +39,7 @@ Sempre que gerar a descrição/mensagem de um Pull Request, use a estrutura abai
 - Não inclua seção ou contagem de tamanho do diff na mensagem; esse controle é somente interno.
 - Inclua “Integração e contratos” somente quando houver alterações em adapters, rotas ou contratos com o backend. Caso contrário, omita a seção, sem escrever “Nenhuma” ou “N/A”.
 - Inclua “Issue relacionada” somente quando existir uma issue relacionada. Caso contrário, omita a seção, sem escrever “N/A”.
+- Ao criar PRs no GitHub (`gh pr create` / `gh pr edit`), adicione por padrão: labels `documentation`, `frontend` e `enhancement`; assignee `pablohcarmo`; projeto `Sonarfy`.
 
 ```markdown
 ## Contexto e objetivo
