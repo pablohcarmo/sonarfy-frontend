@@ -1,6 +1,6 @@
 import { icon } from './profile-icons.js';
 import { escapeHTML as e, safeImage, count, timestamp, joined, profileURL, sortOptions, validateReview } from './profile-utils.js';
-import { waveform, emptyState } from './profile-shell.js';
+import { waveform, emptyState, skeleton } from './profile-shell.js';
 
 export function avatar(profile, className = '') {
     const src = safeImage(profile.avatar);
@@ -17,14 +17,23 @@ export function profileHeader(profile, own, busy = false) {
         </div></article>`;
 }
 export function stars(rating) {
-    const value = Math.max(0, Math.min(5, Number(rating) || 0));
-    return `<span class="profile-stars" role="img" aria-label="${value} de 5 estrelas">${'★'.repeat(Math.floor(value))}${'☆'.repeat(5 - Math.floor(value))}</span>`;
+    const raw = Math.max(0, Math.min(5, Number(rating) || 0));
+    const value = Math.round(raw * 100) / 100;
+    const items = Array.from({ length: 5 }, (_, index) => {
+        const fill = Math.max(0, Math.min(1, value - index));
+        const pct = Math.round(fill * 100);
+        return `<span class="profile-star" aria-hidden="true" style="--star-fill:${pct}%">★</span>`;
+    }).join('');
+    return `<span class="profile-stars" role="img" aria-label="${value} de 5 estrelas">${items}</span>`;
 }
 export function cover(album) {
     return `<span class="album-cover">${safeImage(album.cover) ? `<img src="${safeImage(album.cover)}" alt="Capa de ${e(album.title)}" data-image-fallback>` : `<span>${e(album.mark || album.title?.slice(0, 2))}</span>`}</span>`;
 }
 export function socialActions(item, pending = new Set()) {
-    return `<div class="activity-social"><button data-like="${e(item.id)}" aria-label="${item.liked ? 'Descurtir' : 'Curtir'} publicação" aria-pressed="${Boolean(item.liked)}" ${pending.has(`like:${item.id}`) ? 'disabled' : ''}>${icon(item.liked ? 'liked' : 'heart')}${item.likeCount > 0 ? `<span>${count(item.likeCount)}</span>` : ''}</button><button data-comments="${e(item.id)}" aria-label="Abrir comentários">${icon('comment')}${item.commentCount > 0 ? `<span>${count(item.commentCount)}</span>` : ''}</button></div>`;
+    const unavailable = item.socialAvailable === false;
+    const likeHint = 'Curtidas estarão disponíveis em breve';
+    const commentHint = 'Comentários estarão disponíveis em breve';
+    return `<div class="activity-social${unavailable ? ' is-unavailable' : ''}"><button data-like="${e(item.id)}" aria-label="${item.liked ? 'Descurtir' : 'Curtir'} publicação" aria-pressed="${Boolean(item.liked)}" ${unavailable ? `aria-disabled="true" title="${likeHint}" data-tooltip="${likeHint}"` : ''} ${pending.has(`like:${item.id}`) ? 'disabled' : ''}>${icon(item.liked ? 'liked' : 'heart')}${item.likeCount > 0 ? `<span>${count(item.likeCount)}</span>` : ''}</button><button data-comments="${e(item.id)}" aria-label="Abrir comentários" ${unavailable ? `aria-disabled="true" title="${commentHint}" data-tooltip="${commentHint}"` : ''}>${icon('comment')}${item.commentCount > 0 ? `<span>${count(item.commentCount)}</span>` : ''}</button></div>`;
 }
 function spotifyAttribution(album) {
     const rawUrl = typeof album?.spotifyUrl === 'string' ? album.spotifyUrl.trim() : '';
@@ -49,6 +58,29 @@ export function activityCard(item, pending) {
 }
 export function activityFeed(items, pending) {
     return items.length ? `<div class="activity-feed">${items.map(item => activityCard(item, pending)).join('')}</div>` : emptyState('Nenhuma publicação ainda');
+}
+export function reviewsPanel(reviewsState, profile, pending = new Set()) {
+    if (reviewsState.loading && !reviewsState.items.length) return skeleton('activities');
+    if (reviewsState.error && !reviewsState.items.length) {
+        const retryButton = reviewsState.error.status !== 400
+            ? '<button type="button" class="profile-secondary" data-retry-reviews>Tentar novamente</button>'
+            : '';
+        return `<div class="profile-reviews-error" role="alert"><p>${e(reviewsState.error.message)}</p>${retryButton}</div>`;
+    }
+    if (!reviewsState.items.length) {
+        return emptyState('Nenhuma avaliação ainda', `@${profile.handle} ainda não publicou avaliações.`);
+    }
+    const cards = reviewsState.items.map(item => activityCard(item, pending)).join('');
+    let footer = '';
+    if (reviewsState.error) {
+        const retryMore = reviewsState.error.status !== 400
+            ? '<button type="button" class="profile-secondary" data-retry-load-more>Tentar novamente</button>'
+            : '';
+        footer = `<div class="profile-reviews-error" role="alert"><p>${e(reviewsState.error.message)}</p>${retryMore}</div>`;
+    } else if (reviewsState.nextBeforeId != null) {
+        footer = `<div class="profile-load-more"><button type="button" class="profile-secondary" data-load-more-reviews ${reviewsState.loadingMore ? 'disabled' : ''}>${reviewsState.loadingMore ? 'Carregando avaliações…' : 'Carregar mais avaliações'}</button></div>`;
+    }
+    return `<div class="activity-feed">${cards}</div>${footer}`;
 }
 export function collectionCard(item) {
     return `<article class="collection-card">${albumDetails(item.album)}${spotifyAttribution(item.album)}${stars(item.rating)}<button class="collection-preview ${item.review ? '' : 'no-review'}" data-review="${e(item.id)}" aria-label="Ver ${item.review ? 'resenha completa' : 'avaliação'} de ${e(item.album.title)}">${item.review ? e(item.review) : '<span class="visually-hidden">Ver avaliação</span>'}</button></article>`;

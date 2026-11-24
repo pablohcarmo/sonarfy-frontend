@@ -12,13 +12,14 @@ Para acompanhar alterações, use `npm run test:watch`.
 
 ## Perfis
 
-`npm test -- tests/profile.test.js tests/profile-http.test.js tests/avatar-upload.test.js tests/wallpaper-upload.test.js` verifica limites, datas, ordenação,
-permissões, recorte circular/EXIF e uploads de avatar e capa/wallpaper, adapter HTTP de perfil/relacionamentos e reconciliação de mutações. Execute também:
+`npm test -- tests/profile.test.js tests/profile-http.test.js tests/profile-reviews.test.js tests/avatar-upload.test.js tests/wallpaper-upload.test.js` verifica limites, datas, ordenação,
+permissões, recorte circular/EXIF e uploads de avatar e capa/wallpaper, adapter HTTP de perfil/relacionamentos/avaliações e reconciliação de mutações. Execute também:
 
 ```sh
 node tests/browser/profile.cjs
 node tests/browser/profile-states.cjs
 node tests/browser/profile-following.cjs
+node tests/browser/profile-reviews.cjs
 ```
 
 Os scripts iniciam seus servidores e testam Firefox/Edge, 1440/390px,

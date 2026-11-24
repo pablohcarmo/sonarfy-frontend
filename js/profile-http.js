@@ -13,6 +13,50 @@ export function mapProfile(dto) {
         isFollowing: viewer.isFollowing, followUncertain: false, editable: Boolean(viewer.canEdit) };
 }
 
+// Normaliza a resposta paginada de GET /api/profile/by-handle/{handle}/reviews preservando a ordem do servidor.
+export function mapProfileReviews(dto) {
+    const { author: rawAuthor, items: rawItems, nextBeforeId } = dto || {};
+    if (!rawAuthor?.id || !rawAuthor.handle || typeof rawAuthor.displayName !== 'string' || !Array.isArray(rawItems)
+        || (nextBeforeId !== null && nextBeforeId !== undefined && (!Number.isSafeInteger(nextBeforeId) || nextBeforeId <= 0))) {
+        throw new Error('Resposta de avaliações inválida. Tente novamente.');
+    }
+    const author = {
+        id: String(rawAuthor.id),
+        handle: rawAuthor.handle,
+        displayName: rawAuthor.displayName,
+        avatar: rawAuthor.avatarUrl || null
+    };
+    const items = rawItems.map(entry => {
+        const rawRating = Number(entry?.rating);
+        if (entry?.reviewId == null || !entry?.album || !Number.isFinite(rawRating) || rawRating < 0 || rawRating > 10) {
+            throw new Error('Resposta de avaliações inválida. Tente novamente.');
+        }
+        const title = entry.album.name || '';
+        return {
+            id: String(entry.reviewId),
+            reviewId: entry.reviewId,
+            author,
+            album: {
+                id: entry.album.spotifyId || '',
+                spotifyId: entry.album.spotifyId || '',
+                title,
+                artist: entry.album.artist?.name || '',
+                cover: entry.album.coverUrl || null,
+                mark: (title || 'S').slice(0, 2).toUpperCase()
+            },
+            rating: Math.round((rawRating / 2) * 100) / 100,
+            review: typeof entry.reviewText === 'string' ? entry.reviewText : '',
+            createdAt: entry.createdAt || null,
+            updatedAt: entry.updatedAt || null,
+            liked: false,
+            likeCount: 0,
+            commentCount: 0,
+            socialAvailable: false
+        };
+    });
+    return { author, items, nextBeforeId: nextBeforeId ?? null };
+}
+
 // O token é lido a cada operação e nunca entra na URL, nas fixtures ou nas mensagens.
 export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:8080/api',
     fetcher = (...args) => fetch(...args), getToken = () => getAccessToken(),
@@ -32,7 +76,7 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
         expire
     });
     // Traduz falhas de transporte e leitura JSON para mensagens seguras, sem expor erros brutos do navegador.
-    async function request(path, method = 'GET', { body, expectedStatus = method === 'GET' ? 200 : 204 } = {}) {
+    async function request(path, method = 'GET', { body, expectedStatus = method === 'GET' ? 200 : 204, badRequestMessage } = {}) {
         const token = getToken();
         if (!token || (sessionToken && token !== sessionToken)) {
             const error = new Error('Entre novamente para acessar o perfil.'); error.status = 401;
@@ -51,7 +95,7 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
         if (response.status !== expectedStatus) {
             const error = new Error(response.status === 401 ? 'Sessão expirada. Entre novamente.'
                 : response.status === 404 ? 'Perfil indisponível.'
-                : response.status === 400 || response.status === 422 ? 'Verifique os dados informados (nome até 60 caracteres e bio até 150 caracteres).'
+                : response.status === 400 || response.status === 422 ? (badRequestMessage || 'Verifique os dados informados (nome até 60 caracteres e bio até 150 caracteres).')
                 : 'Não foi possível concluir. Tente novamente.');
             error.status = response.status; throw error;
         }
@@ -68,11 +112,30 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
         uploadPolicy: AVATAR_UPLOAD_POLICY,
         async load(handle) {
             loaded = null; needsRefresh = false; sessionToken = getToken();
+            const cleanHandle = String(handle || '').trim().replace(/^@+/, '');
             const me = mapProfile(await request('/profile/me'));
-            const profile = handle ? mapProfile(await read(handle)) : me;
+            const profile = cleanHandle ? mapProfile(await read(cleanHandle)) : me;
             loaded = { profile, session: { userId: me.id }, contentAvailable: false,
                 activities: [], replies: [], collection: [] };
             return loaded;
+        },
+        // Carrega página de avaliações públicas do perfil por handle sem @ e com cursor opcional.
+        async loadReviews(handle, { limit = 20, beforeId = null } = {}) {
+            if (!sessionToken) sessionToken = getToken();
+            const cleanHandle = String(handle || '').trim().replace(/^@+/, '');
+            if (!cleanHandle) {
+                const error = new Error('Perfil indisponível.'); error.status = 404;
+                throw error;
+            }
+            const safeLimit = Number.isInteger(limit) && limit >= 1 && limit <= 50 ? limit : 20;
+            const params = new URLSearchParams({ limit: String(safeLimit) });
+            if (beforeId != null) params.set('beforeId', String(beforeId));
+            const dto = await request(
+                `/profile/by-handle/${encodeURIComponent(cleanHandle)}/reviews?${params.toString()}`,
+                'GET',
+                { expectedStatus: 200, badRequestMessage: 'Parâmetros de paginação inválidos.' }
+            );
+            return mapProfileReviews(dto);
         },
         // Atualiza nome de exibição e biografia via PUT /api/profile/me e reconcilia o ProfileDto retornado.
         async updateProfile({ displayName, bio }) {
