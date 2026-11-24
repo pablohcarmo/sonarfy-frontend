@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Página não encontrada – Sonarfy</title>
+    <link rel="icon" type="image/png" href="/assets/images/sonarfy-symbol.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/login.css">
+    <link rel="stylesheet" href="/css/not-found.css">
+    <script src="/js/login-theme.js"></script>
+    <script type="module" src="/js/not-found.js"></script>
+</head>
+<body class="not-found-page">
+    <a class="skip-link" href="#not-found-main">Pular para o conteúdo</a>
+    <header class="site-header">
+        <a id="notFoundBrand" href="/index.html" class="brand" aria-label="Sonarfy — página inicial">
+            <svg class="brand-desktop" width="118" height="32" viewBox="0 0 118 32" role="img" aria-label="Sonarfy" focusable="false"><use href="/assets/logos/sonarfy-desktop.svg#logo"></use></svg><svg class="brand-mobile" width="95" height="24" viewBox="0 0 95 24" role="img" aria-label="Sonarfy" focusable="false"><use href="/assets/logos/sonarfy-mobile.svg#logo"></use></svg>
+        </a>
+        <nav class="header-actions" aria-label="Navegação principal">
+            <button id="theme-toggle" class="icon-button" type="button" aria-label="Ativar tema escuro" aria-pressed="false">
+                <svg class="ui-icon theme-light-only" fill="none" width="16" height="20" viewBox="-0.5 0 16 20" overflow="visible" aria-hidden="true" focusable="false"><use href="/assets/icons/shared/theme-moon.svg#icon"></use></svg>
+                <img class="ui-icon theme-dark-only" src="/assets/icons/shared/theme-sun.svg" alt="">
+            </button>
+        </nav>
+    </header>
+    <main id="not-found-main" class="auth-container not-found-main" tabindex="-1">
+        <div class="login-content">
+            <section class="login-card not-found-card" aria-labelledby="not-found-title" aria-describedby="not-found-description">
+                <div class="not-found-status">
+                    <span class="not-found-badge" aria-hidden="true">
+                        <img src="/assets/icons/not-found/broken-vinyl.svg" width="28" height="28" alt="">
+                    </span>
+                    <span class="not-found-pill">Erro 404</span>
+                </div>
+                <div class="form-introduction not-found-copy">
+                    <h1 id="not-found-title">Página não encontrada ou em construção</h1>
+                    <p id="not-found-description">O endereço que você tentou acessar não existe, foi movido ou ainda está em construção no Sonarfy. Volte para a página anterior para continuar navegando.</p>
+                </div>
+                <div class="not-found-actions">
+                    <button id="btnGoBack" class="btn-submit not-found-primary" type="button">
+                        <img src="/assets/icons/not-found/arrow-left.svg" width="16" height="16" alt="" aria-hidden="true">
+                        <span>Voltar para a página anterior</span>
+                    </button>
+                    <a id="btnGoHome" class="not-found-secondary" href="/index.html">Ir para a página inicial</a>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer class="site-footer">
+        <nav class="footer-links" aria-label="Links institucionais">
+            <a href="/404.html">Termos de Uso</a><span aria-hidden="true">•</span>
+            <a href="/404.html">Privacidade</a><span aria-hidden="true">•</span>
+            <a href="/404.html">Diretrizes</a><span aria-hidden="true">•</span>
+            <a href="/404.html">Apoie o Sonarfy</a>
+        </nav>
+        <p>© 2026 Sonarfy</p>
+    </footer>
+</body>
+</html>

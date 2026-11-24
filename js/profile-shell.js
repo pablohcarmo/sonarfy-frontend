@@ -33,7 +33,7 @@ export function globalHeader(home = 'feed.html') {
     return `<button class="profile-icon-button mobile-menu" id="open-menu" aria-label="Abrir menu" aria-haspopup="dialog" aria-expanded="false" aria-controls="profile-drawer">${icon('menu')}</button><a href="${e(home)}" class="brand" aria-label="Sonarfy — página inicial"><svg width="118" height="32" viewBox="0 0 118 32" aria-hidden="true"><use href="../assets/logos/sonarfy-desktop.svg#logo"></use></svg></a><button id="theme-toggle" class="profile-icon-button" aria-label="Ativar tema escuro" aria-pressed="false"><img class="theme-light-only" src="../assets/icons/shared/theme-moon.svg" alt=""><img class="theme-dark-only" src="../assets/icons/shared/theme-sun.svg" alt=""></button>`;
 }
 export function globalFooter() {
-    return `<nav class="footer-links" aria-label="Informações institucionais">${['Termos de Uso', 'Privacidade', 'Diretrizes', 'Apoie o Sonarfy'].map(label => `<button data-unavailable="${e(label)}">${e(label)}</button>`).join('<span aria-hidden="true">•</span>')}</nav><p>© 2026 Sonarfy</p>`;
+    return `<nav class="footer-links" aria-label="Informações institucionais">${['Termos de Uso', 'Privacidade', 'Diretrizes', 'Apoie o Sonarfy'].map(label => `<a href="../404.html">${e(label)}</a>`).join('<span aria-hidden="true">•</span>')}</nav><p>© 2026 Sonarfy</p>`;
 }
 export function waveform() {
     const heights = [22,38,30,50,34,58,44,68,40,52,30,62,46,74,34,56,43,64];

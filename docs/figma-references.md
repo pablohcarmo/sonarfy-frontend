@@ -28,6 +28,7 @@ e [Profile Page (Friend)](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/So
 - [Verify Account](#verify-account)
 - [Spotify Sync](#spotify-sync)
 - [Logout](#logout)
+- [Página não encontrada (404)](#not-found)
 
 Os valores correspondem aos frames de referência. As instruções de uso e testes estão nos documentos de cada página.
 
@@ -370,6 +371,23 @@ Em operação padrão, `js/logout.js` integra diretamente com o backend:
 - Suíte unitária (`npm test`, incluindo `tests/logout.test.js` e `tests/auth-http.test.js`): 24 arquivos, 229 testes aprovados em Vitest + Happy DOM.
 - Verificação de navegador (`node tests/browser/logout.cjs`): 8 combinações aprovadas no Microsoft Edge e Firefox, em `1440px` e `390px`, nos temas claro e escuro, validando dimensões do card (`480px`/`342px`), badge `64 × 64px`, header `88px`/`80px`, zero overflow horizontal, foco por teclado, carregamento de SVGs, preenchimento via `GET /api/profile/me` e confirmação via `POST /api/auth/logout`.
 - Limitações: mobile verificado por viewport emulado em navegador headless; respostas de `GET /api/profile/me` e `POST /api/auth/logout` nos testes automatizados são simuladas por mocks/rotas interceptadas.
+
+<a id="not-found"></a>
+## Página não encontrada (404)
+
+Referência: [404 Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=693-2), consultada via Figma MCP somente para leitura em 24/11/2026 nos quatro frames oficiais:
+
+| Tema | Desktop `1440px` (`1440 × 856`) | Mobile `390px` (`390 × 848`) |
+| --- | --- | --- |
+| Claro | `695:2` | `695:92` |
+| Escuro | `695:47` | `695:139` |
+
+- Arquivo na raiz (`404.html`), estilos em `css/not-found.css` (reutilizando `css/login.css` e `js/login-theme.js`) e lógica em `js/not-found.js`.
+- Usa caminhos absolutos a partir da raiz (`/css/...`, `/js/...`, `/assets/...`) para funcionar corretamente quando o servidor web entrega `404.html` em rotas inexistentes de qualquer profundidade (ex.: `/rota-inexistente` ou `/pages/em-construcao.html`).
+- SVGs locais em `assets/icons/not-found/`: `broken-vinyl.svg` (`28 × 28px`, no badge `64 × 64px`) e `arrow-left.svg` (`16 × 16px`, no CTA primário).
+- Card centralizado (`480px` desktop / `342px` mobile, `border-radius: 16px`, pill `Erro 404` em `#e8f5fe`/`#1c2a38` com texto `#27a9f5`), título `Página não encontrada ou em construção`, botão primário `Voltar para a página anterior` (`history.back()` com fallback para início) e secundário `Ir para a página inicial` (`/pages/feed.html` quando há `sonarfy_token` ou `/index.html` caso contrário).
+- Os links institucionais do rodapé (`Termos de Uso`, `Privacidade`, `Diretrizes`, `Apoie o Sonarfy` em `globalFooter()` e nas páginas HTML) direcionam para `404.html` / `../404.html`, enquanto **Pesquisar** e **Notificações** permanecem desabilitados na sidebar global (`js/profile-shell.js`).
+- Verificação: `npm test` (**272 testes em 30 arquivos**, incluindo `tests/not-found.test.js`) e `node tests/browser/not-found.cjs` (8 combinações aprovadas no Microsoft Edge `158.0.4370.33` e Firefox `159.0` em `1440px`/`390px` e temas claro/escuro, validando resposta HTTP `404` em rota aninhada, dimensões do card, assets SVG, zero overflow e retorno ao histórico). Mobile verificado em viewport emulado headless.
 
 <a id="profile-http"></a>
 ## Perfil — integração HTTP de relacionamentos (20/11/2026)
