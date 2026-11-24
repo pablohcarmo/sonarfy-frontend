@@ -1,0 +1,743 @@
+/* Album Page: 547:3/119/207/295/371/419/467/592/708/796/884/960/1008/1056, 552:624/750/836/962, 587:897/966/1034/1103. */
+.album-page {
+    --album-page-bg: #ffffff;
+    --album-surface: #ffffff;
+    --album-subtle-bg: #f7f8fa;
+    --album-pill-bg: #f5f7fa;
+    --album-text: #1a1a1a;
+    --album-heading: #1a1a1a;
+    --album-muted: #65676b;
+    --album-border: #ebecef;
+    --album-accent: #27a9f5;
+    --album-on-accent: #1a1a1a;
+    --album-star: #f5a624;
+    --album-star-empty: #d1d6db;
+    --album-badge-bg: #e8f5fe;
+    --album-spotify-bg: #1ed760;
+    --album-spotify-text: #000000;
+    --album-skeleton: #e8ebf0;
+    --album-danger: #b42318;
+    --album-on-danger: #ffffff;
+    --profile-page: var(--album-page-bg);
+    --profile-surface: var(--album-surface);
+    --profile-text: var(--album-text);
+    --profile-muted: var(--album-muted);
+    --profile-border: var(--album-border);
+    --profile-divider: var(--album-border);
+}
+
+[data-theme="dark"] .album-page {
+    --album-page-bg: #1a1a1a;
+    --album-surface: #242424;
+    --album-subtle-bg: #2a2a2a;
+    --album-pill-bg: #2e2e2e;
+    --album-text: #f5f5f7;
+    --album-heading: #ffffff;
+    --album-muted: #b2b3b5;
+    --album-border: #65676b;
+    --album-star-empty: #65676b;
+    --album-badge-bg: #1c2a38;
+    --album-skeleton: #2e2e2e;
+    --album-danger: #fda29b;
+    --album-on-danger: #1a1a1a;
+    --profile-field: #2a2a2a;
+}
+
+.album-page .skip-link:focus {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    background: var(--album-surface);
+    color: var(--album-text);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.album-layout {
+    grid-template-columns: 248px minmax(0, 1080px);
+    gap: 32px;
+    padding-inline: 40px;
+    min-height: 660px;
+    background: var(--album-page-bg);
+}
+
+.album-layout .profile-sidebar {
+    padding-top: 32px;
+}
+
+.album-main {
+    gap: 16px;
+    padding: 32px 0 48px;
+    width: 100%;
+    max-width: 1080px;
+}
+
+.album-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.album-reviews-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.album-hero-card {
+    position: relative;
+    background: var(--album-surface);
+    border: 1px solid var(--album-border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.album-hero-content {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding-right: 48px;
+}
+
+.album-cover-btn {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    flex: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(127deg, #1c2659 0%, #732e8c 39.29%, #26a8f5 71.43%);
+    color: #ffffff;
+    font-size: 40px;
+    font-weight: 700;
+    transition: transform 0.15s ease;
+}
+
+.album-cover-btn:hover {
+    transform: scale(1.02);
+}
+
+.album-cover-btn:focus-visible {
+    outline: 2px solid var(--album-accent);
+    outline-offset: 3px;
+}
+
+.album-cover-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.album-meta-stack {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.album-title {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.22;
+    font-weight: 700;
+    color: var(--album-text);
+    overflow-wrap: anywhere;
+}
+
+.album-meta-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.album-artist {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--album-heading);
+}
+
+.album-submeta {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.25;
+    color: var(--album-muted);
+}
+
+.album-community-rating {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.album-rating-average {
+    font-size: 18px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--album-text);
+}
+
+.album-rating-empty-label {
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 500;
+    color: var(--album-muted);
+}
+
+.album-stars {
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--album-star);
+    letter-spacing: 1px;
+}
+
+.album-stars.is-empty {
+    color: var(--album-star-empty);
+    font-weight: 400;
+}
+
+.album-rating-count {
+    font-size: 14px;
+    line-height: 1.25;
+    color: var(--album-muted);
+}
+
+.album-user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--album-subtle-bg);
+    border: 1px solid var(--album-accent);
+    color: var(--album-text);
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 600;
+}
+
+.album-cta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.album-primary-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--album-accent);
+    color: var(--album-on-accent);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.album-spotify-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    min-height: 44px;
+    padding: 11px 18px;
+    border-radius: 999px;
+    background: var(--album-spotify-bg);
+    color: var(--album-spotify-text);
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.album-spotify-cta:hover {
+    background: #3be477;
+}
+
+.album-spotify-cta:active {
+    background: #19bd54;
+}
+
+.album-spotify-cta img {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    display: block;
+}
+
+.album-share-btn,
+.album-icon-action {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: none;
+}
+
+.album-share-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+}
+
+.album-share-btn img,
+.album-icon-action img {
+    width: 36px;
+    height: 36px;
+    display: block;
+}
+
+.album-my-review-card {
+    background: var(--album-subtle-bg);
+    border: 1px solid var(--album-accent);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.album-my-review-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.album-my-review-label {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--album-accent);
+}
+
+.album-my-review-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.album-confirm-delete,
+.album-cancel-delete {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.album-confirm-delete {
+    border: 0;
+    background: var(--album-danger);
+    color: var(--album-on-danger);
+}
+
+.album-cancel-delete {
+    border: 1px solid var(--album-border);
+    background: transparent;
+    color: var(--album-text);
+}
+
+.album-section-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.album-section-title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--album-text);
+}
+
+.album-sort-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: var(--album-pill-bg);
+    border: 1px solid var(--album-border);
+    border-radius: 999px;
+    padding: 6px 12px;
+}
+
+.album-sort-select {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--album-muted);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 500;
+    padding-right: 16px;
+    cursor: pointer;
+}
+
+.album-sort-pill::after {
+    content: "▾";
+    position: absolute;
+    right: 12px;
+    font-size: 12px;
+    color: var(--album-muted);
+    pointer-events: none;
+}
+
+.album-reviews-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.album-review-card {
+    background: var(--album-surface);
+    border: 1px solid var(--album-border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.album-review-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.album-review-author {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--album-text);
+}
+
+.album-star-rating-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.album-review-stars {
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--album-star);
+    letter-spacing: 1px;
+}
+
+.album-rating-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--album-badge-bg);
+    color: var(--album-accent);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.album-review-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--album-text);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.album-empty-card,
+.album-error-card {
+    background: var(--album-surface);
+    border: 1px solid var(--album-border);
+    border-radius: 16px;
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.album-empty-card h3,
+.album-error-card h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--album-text);
+}
+
+.album-empty-card p,
+.album-error-card p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--album-muted);
+}
+
+.album-skeleton-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.album-sk {
+    background: var(--album-skeleton);
+    border-radius: 6px;
+}
+
+.album-sk-cover {
+    width: 180px;
+    height: 180px;
+    border-radius: 12px;
+    flex: none;
+}
+
+.album-sk-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.album-sk-title { width: min(280px, 100%); height: 32px; border-radius: 8px; }
+.album-sk-sub { width: min(240px, 85%); height: 18px; }
+.album-sk-rating { width: min(200px, 70%); height: 22px; }
+.album-sk-cta { width: 160px; height: 44px; border-radius: 10px; }
+.album-sk-header { width: min(180px, 60%); height: 16px; }
+.album-sk-line { width: 100%; height: 14px; }
+.album-sk-line-short { width: 75%; height: 14px; }
+
+.album-cover-dialog {
+    margin: auto;
+    padding: 16px;
+    border: 0;
+    background: transparent;
+    max-width: calc(100vw - 16px);
+    overflow: visible;
+}
+
+.album-cover-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.album-cover-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.78);
+}
+
+.album-cover-dialog-close-row {
+    width: min(500px, calc(100vw - 32px));
+    display: flex;
+    justify-content: flex-end;
+}
+
+.album-cover-dialog-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.album-cover-expanded {
+    width: min(500px, calc(100vw - 32px));
+    aspect-ratio: 1;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+    background: linear-gradient(127deg, #1c2659 0%, #732e8c 39.29%, #26a8f5 71.43%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 64px;
+    font-weight: 700;
+}
+
+.album-cover-expanded img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.album-cover-caption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+}
+
+.album-cover-caption h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.album-cover-caption p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.25;
+    color: #b2b3b5;
+}
+
+@media (max-width: 1024px) {
+    .album-layout {
+        grid-template-columns: 1fr;
+        padding-inline: 16px;
+    }
+
+    .album-layout .profile-sidebar {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .album-main {
+        padding: 24px 0 32px;
+    }
+
+    .album-hero-card {
+        padding: 16px;
+    }
+
+    .album-hero-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding-right: 0;
+    }
+
+    .album-cover-btn,
+    .album-sk-cover {
+        width: 120px;
+        height: 120px;
+        font-size: 28px;
+    }
+
+    .album-share-btn {
+        top: 16px;
+        right: 16px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .album-title {
+        font-size: 24px;
+    }
+
+    .album-artist {
+        font-size: 16px;
+    }
+
+    .album-submeta {
+        font-size: 13px;
+    }
+
+    .album-cta-row {
+        width: 100%;
+        gap: 8px;
+    }
+
+    .album-primary-cta,
+    .album-spotify-cta {
+        flex: 1 1 auto;
+        min-height: 42px;
+        padding: 10.5px 14px;
+        font-size: 13px;
+    }
+
+    .album-spotify-cta {
+        gap: 11px;
+    }
+
+    .album-spotify-cta img {
+        width: 21px;
+        height: 21px;
+    }
+
+    .album-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .album-review-card,
+    .album-my-review-card {
+        padding: 16px;
+    }
+
+    .album-review-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .album-skeleton-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+}

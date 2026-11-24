@@ -1,0 +1,7 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Edit Icon Button">
+<rect x="0.5" y="0.5" width="35" height="35" rx="9.5" fill="#F7F8FA"/>
+<rect x="0.5" y="0.5" width="35" height="35" rx="9.5" stroke="#EBECEF"/>
+<path id="Pencil Icon" d="M21.4615 11.7692L24.2308 14.5385M24.2308 9L27 11.7692L13.1538 25.6154L9 27L10.3846 22.8462L24.2308 9Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#1A1A1A"/>
+</g>
+</svg>
