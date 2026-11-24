@@ -32,7 +32,7 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 
 - Página inicial com apresentação da plataforma.
 - Cadastro com validações, requisitos de senha e busca de cidades.
-- Login com opção de lembrar o identificador e mostrar ou ocultar a senha.
+- Login com opção de lembrar o identificador, mostrar ou ocultar a senha e reativação explícita de conta integrada ao backend.
 - Confirmação de e-mail, correção do endereço e reenvio do link.
 - Verificação de conta por token, com estados de sucesso e erro.
 - Tela de conexão com o Spotify, com opção de pular e lembrete após 7 dias.

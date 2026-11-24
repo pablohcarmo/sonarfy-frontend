@@ -122,7 +122,7 @@ node tests/browser/login-home-assets.cjs
 node tests/browser/shared-brand.cjs
 ```
 
-`tests/login.test.js` valida o contrato de `POST /api/auth/login` (`http://localhost:8080/api`, `credentials: 'include'`, cabeçalho `X-Sonarfy-CSRF: 1`, payload com `rememberMe`, leitura de `accessToken`), fallback da URL local e tratamento de erros (`401`, `403` de CSRF/origem vs conta não ativada, `429` e rede). O script `login-home-assets.cjs` verifica assets, navegação, temas e controles de login/index, e `shared-brand.cjs` verifica as marcas compartilhadas de Home, login, cadastro e Verify; ambos exercitam Firefox e Edge, desktop/mobile e claro/escuro.
+`tests/login.test.js` valida o contrato de `POST /api/auth/login` (`http://localhost:8080/api`, `credentials: 'include'`, cabeçalho `X-Sonarfy-CSRF: 1`, payload com `rememberMe`, leitura de `accessToken`), fallback da URL local, tratamento de erros (`401`, `403` de CSRF/origem vs conta não ativada, `429` e rede) e o fluxo explícito de reativação de conta (`POST /api/auth/reactivation` com `credentials: 'omit'`, `cache: 'no-store'`, `X-Sonarfy-CSRF: 1`, sem `Authorization`/`/auth/refresh`, validação de 72 bytes UTF-8, limpeza de `sonarfy_token` em `204`, erro uniforme em `401` e bloqueio de envios concorrentes). O script `login-home-assets.cjs` verifica assets, navegação, temas, controles de login/index e o fluxo de reativação de conta com rota interceptada (`204`), e `shared-brand.cjs` verifica as marcas compartilhadas de Home, login, cadastro e Verify; ambos exercitam Firefox e Edge, desktop/mobile e claro/escuro.
 
 ### Logout e ciclo de vida de sessão
 

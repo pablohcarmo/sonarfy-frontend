@@ -39,8 +39,8 @@
                     <h1 id="login-title">Bem-vindo de volta</h1>
                     <p id="login-description">Entre para continuar avaliando seus álbuns favoritos.</p>
                 </div>
-                <p id="errorMessage" class="feedback feedback-error" role="alert"></p>
-                <p id="successMessage" class="feedback feedback-success" role="status"></p>
+                <p id="errorMessage" class="feedback feedback-error" role="alert" aria-live="assertive"></p>
+                <p id="successMessage" class="feedback feedback-success" role="status" aria-live="polite"></p>
                 <div class="credentials">
                     <div class="input-group">
                         <label for="loginField">E-mail ou nome de usuário</label>
@@ -65,7 +65,36 @@
                     <a href="reset-password.html">Esqueci minha senha</a>
                 </div>
                 <button id="btnSubmitLogin" class="btn-submit" type="submit">Entrar</button>
-                <p class="auth-links">Ainda não tem uma conta? <a href="register.html">Criar conta</a></p>
+                <div class="auth-footer-links">
+                    <p class="auth-links">Ainda não tem uma conta? <a href="register.html">Criar conta</a></p>
+                    <p class="auth-links">Conta desativada? <button id="btnOpenReactivation" class="link-button" type="button">Reativar conta</button></p>
+                </div>
+            </form>
+            <form id="reactivationForm" class="login-card" method="post" aria-labelledby="reactivation-title" aria-describedby="reactivation-description" novalidate hidden>
+                <div class="form-introduction">
+                    <h1 id="reactivation-title">Reativar conta</h1>
+                    <p id="reactivation-description">Informe seu e-mail ou nome de usuário e sua senha atual para reativar a conta. Depois, faça login novamente.</p>
+                </div>
+                <p id="reactivationError" class="feedback feedback-error" role="alert" aria-live="assertive"></p>
+                <div class="credentials">
+                    <div class="input-group">
+                        <label for="reactivationLogin">E-mail ou nome de usuário</label>
+                        <input id="reactivationLogin" name="login" class="login-field" type="text" placeholder="Digite seu e-mail ou nome de usuário" required autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="reactivationLogin-error">
+                        <span id="reactivationLogin-error" class="field-error" hidden></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="reactivationPassword">Senha atual</label>
+                        <div class="password-input-wrapper">
+                            <input id="reactivationPassword" name="password" class="login-field" type="password" placeholder="Digite sua senha atual" required autocomplete="current-password" aria-describedby="reactivationPassword-error">
+                            <button type="button" id="btnToggleReactivationPassword" class="icon-button btn-toggle-password" aria-label="Mostrar senha" aria-controls="reactivationPassword" aria-pressed="false" title="Mostrar senha">
+                                <svg class="ui-icon eye-open" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-open.svg#icon"></use></svg><svg class="ui-icon eye-off" fill="none" width="16.668" height="20" viewBox="0 0 16.668 20" aria-hidden="true" focusable="false"><use href="../assets/icons/login/eye-off.svg#icon"></use></svg>
+                            </button>
+                        </div>
+                        <span id="reactivationPassword-error" class="field-error" hidden></span>
+                    </div>
+                </div>
+                <button id="btnSubmitReactivation" class="btn-submit" type="submit">Reativar conta</button>
+                <p class="auth-links"><button id="btnCancelReactivation" class="link-button" type="button">Voltar para o login</button></p>
             </form>
         </div>
     </main>
