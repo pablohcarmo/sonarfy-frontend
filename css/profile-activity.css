@@ -42,6 +42,30 @@
 .sort-options [aria-pressed="true"] { color: var(--accent-color); }
 .sort-options button:hover { background: var(--profile-active); }
 .sort-options .profile-icon { width: 14px; height: 14px; }
+.album-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+}
+
+.album-spotify-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--profile-muted);
+    font-size: 12px;
+    line-height: 21px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.album-spotify-link:hover {
+    color: var(--profile-text);
+    text-decoration: underline;
+}
+
 .skeleton { border-radius: 8px; background: var(--profile-skeleton); animation: skeleton-pulse 1.5s ease-in-out infinite alternate; }
 .skeleton-avatar { width: 48px; height: 48px; border-radius: 50%; flex: none; }
 .skeleton-content { flex: 1; min-width: 0; padding-top: 4px; }

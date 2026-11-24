@@ -79,7 +79,10 @@ function renderAlbumSummary(album) {
     }
     const metaHtml = metaParts.length ? `<p class="album-summary-meta">${e(metaParts.join(' · '))}</p>` : '';
     const artistHtml = album.artist ? `<p class="album-summary-artist">${e(album.artist)}</p>` : '';
-    return `<div class="album-summary">${coverHtml}<div class="album-summary-info"><h2 class="album-summary-name">${e(album.name)}</h2>${artistHtml}${metaHtml}</div></div>`;
+    const spotifyHtml = typeof album.spotifyId === 'string' && album.spotifyId.trim()
+        ? `<a class="album-summary-spotify" href="${e(`https://open.spotify.com/album/${encodeURIComponent(album.spotifyId.trim())}`)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${e(album.name)} no Spotify"><img src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true"><span>Abrir no Spotify</span></a>`
+        : '';
+    return `<div class="album-summary">${coverHtml}<div class="album-summary-info"><h2 class="album-summary-name">${e(album.name)}</h2>${artistHtml}${metaHtml}${spotifyHtml}</div></div>`;
 }
 
 function renderSuccessDialog(albumName, favorited, favoritePending) {
