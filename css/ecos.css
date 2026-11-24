@@ -221,6 +221,20 @@
     display: block;
 }
 
+.eco-cover-link {
+    text-decoration: none;
+    transition: transform 0.15s ease;
+}
+
+.eco-cover-link:hover {
+    transform: scale(1.03);
+}
+
+.eco-cover-link:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 .eco-info {
     flex: 1;
     min-width: 0;
@@ -385,6 +399,44 @@
     border-radius: 50%;
     background: #1ed760;
     flex: none;
+}
+
+.eco-meta-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.eco-meta-links .eco-spotify-link {
+    margin-top: 0;
+}
+
+.eco-links-sep {
+    color: var(--ecos-muted);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.eco-album-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent-color);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.eco-album-link:hover {
+    text-decoration: underline;
+}
+
+.eco-album-link:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .eco-spotify-link,

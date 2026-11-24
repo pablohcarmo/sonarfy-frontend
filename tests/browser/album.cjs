@@ -55,46 +55,160 @@ async function loadedAssets(page) {
                     const errors = [];
                     page.on('pageerror', error => errors.push(error.message));
 
-                    await page.addInitScript(t => localStorage.setItem('sonarfy_theme', t), theme);
+                    await page.addInitScript(t => {
+                        localStorage.setItem('sonarfy_theme', t);
+                        localStorage.setItem('sonarfy_token', 'test-jwt-token');
+                    }, theme);
 
-                    // 1. Rated state + sort + expanded cover modal.
-                    await page.goto(`${base}/pages/album.html?demo=true&scenario=rated`);
-                    await page.waitForSelector('.album-hero-card');
-                    assert.equal(await page.locator('.album-title').textContent(), 'Neon Horizons');
+                    // Intercept HTTP API endpoints for integrated Album Page verification.
+                    let deletedReview = false;
+                    const corsHeaders = {
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                        'Access-Control-Expose-Headers': 'Retry-After'
+                    };
+                    await page.route('**/api/**', async route => {
+                        const reqUrl = new URL(route.request().url());
+                        const method = route.request().method();
+                        const pathname = reqUrl.pathname;
+
+                        if (method === 'OPTIONS') {
+                            return route.fulfill({ status: 204, headers: corsHeaders, body: '' });
+                        }
+                        if (pathname === '/api/profile/me' && method === 'GET') {
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({ identity: { id: 1, handle: 'usuario', displayName: 'Nome Sobrenome' } })
+                            });
+                        }
+                        if (pathname === '/api/albums/4aawyAB9vmqN3uQ7FjRGTy' && method === 'GET') {
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({
+                                    spotifyId: '4aawyAB9vmqN3uQ7FjRGTy',
+                                    name: 'Album One',
+                                    coverUrl: null,
+                                    artist: { spotifyId: 'artist1', name: 'Artist One' },
+                                    releaseOn: '2024-05',
+                                    releasePrecision: 'mes',
+                                    totalTracks: 18,
+                                    averageRating: deletedReview ? null : 8.25,
+                                    reviewCount: deletedReview ? 0 : 2
+                                })
+                            });
+                        }
+                        if (pathname === '/api/albums/4aawyAB9vmqN3uQ7FjRGTy/reviews/me' && method === 'GET') {
+                            if (deletedReview) {
+                                return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
+                            }
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({
+                                    reviewId: 42,
+                                    rating: 10,
+                                    reviewText: 'Excelente disco para ouvir sem pular faixas.',
+                                    createdAt: '2026-11-24T05:00:00Z',
+                                    updatedAt: '2026-11-24T05:00:00Z'
+                                })
+                            });
+                        }
+                        if (pathname === '/api/reviews/42' && method === 'DELETE') {
+                            deletedReview = true;
+                            return route.fulfill({ status: 204, headers: corsHeaders, body: '' });
+                        }
+                        if (pathname === '/api/albums/0000000000000000000000' && method === 'GET') {
+                            return route.fulfill({
+                                status: 200,
+                                headers: corsHeaders,
+                                contentType: 'application/json',
+                                body: JSON.stringify({
+                                    spotifyId: '0000000000000000000000',
+                                    name: 'Zero Average Album',
+                                    coverUrl: null,
+                                    artist: { spotifyId: 'artist2', name: 'Artist Two' },
+                                    releaseOn: '2021',
+                                    releasePrecision: 'ano',
+                                    totalTracks: 10,
+                                    averageRating: 0,
+                                    reviewCount: 1
+                                })
+                            });
+                        }
+                        if (pathname === '/api/albums/0000000000000000000000/reviews/me' && method === 'GET') {
+                            return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
+                        }
+                        if (pathname === '/api/albums/4040000000000000000000' && method === 'GET') {
+                            return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
+                        }
+                        if (pathname === '/api/albums/5030000000000000000000' && method === 'GET') {
+                            return route.fulfill({ status: 503, headers: { ...corsHeaders, 'Retry-After': '30' }, body: '' });
+                        }
+                        return route.fulfill({ status: 404, headers: corsHeaders, body: '' });
+                    });
+
+                    // 1. Integrated HTTP mode: loaded album + own review + unavailable community list + delete refresh.
+                    await page.goto(`${base}/pages/album.html?albumId=4aawyAB9vmqN3uQ7FjRGTy`);
+                    await page.waitForSelector('.album-my-review-card');
+                    assert.equal(await page.locator('#album-demo').isHidden(), true, 'Demo banner hidden in HTTP mode');
+                    assert.equal(await page.locator('.album-title').textContent(), 'Album One');
+                    assert.equal(await page.locator('.album-submeta').textContent(), 'Mai 2024 · 18 faixas');
+                    assert.equal(await page.locator('.album-rating-average').textContent(), '4.1');
+                    assert.equal(await page.locator('[data-community-unavailable]').count(), 1);
                     const spotifyIcon = await page.locator('.album-spotify-cta img').boundingBox();
                     assert(spotifyIcon && spotifyIcon.width >= 21 && spotifyIcon.height >= 21, `Spotify icon >= 21px: ${JSON.stringify(spotifyIcon)}`);
                     assert(Math.abs(spotifyIcon.width - spotifyIcon.height) < 0.5, `Spotify icon 1:1 aspect ratio: ${JSON.stringify(spotifyIcon)}`);
                     const assets = await loadedAssets(page);
                     await noOverflow(page, width);
-                    await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-rated.png`), fullPage: true });
+                    await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-http-rated.png`), fullPage: true });
 
+                    // Expand cover modal.
                     await page.locator('[data-expand-cover]').click();
                     await page.waitForSelector('#album-cover-dialog[open]');
                     await noOverflow(page, width);
-                    await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-cover.png`), fullPage: false });
                     await page.locator('[data-close-cover]').click();
                     assert.equal(await page.locator('#album-cover-dialog[open]').count(), 0);
 
-                    // 2. Already-rated state.
-                    await page.goto(`${base}/pages/album.html?demo=true&scenario=already-rated`);
-                    await page.waitForSelector('.album-my-review-card');
-                    await loadedAssets(page);
-                    await noOverflow(page, width);
-                    await page.screenshot({ path: path.join(output, `${name}-${width}-${theme}-already-rated.png`), fullPage: true });
-
-                    // 3. Empty state.
-                    await page.goto(`${base}/pages/album.html?demo=true&scenario=empty`);
-                    await page.waitForSelector('.album-empty-card');
+                    // Delete own review and verify aggregate refreshes to null/unrated.
+                    await page.locator('[data-request-delete]').click();
+                    await page.locator('[data-confirm-delete]').click();
+                    await page.waitForSelector('.album-rating-empty-label');
+                    assert.equal(await page.locator('.album-my-review-card').count(), 0);
+                    assert.equal(await page.locator('.album-primary-cta').textContent(), 'Avaliar este álbum');
                     await noOverflow(page, width);
 
-                    // 4. Loading skeleton state.
+                    // 2. Zero average rating vs null + 404 own review does not fail album.
+                    await page.goto(`${base}/pages/album.html?albumId=0000000000000000000000`);
+                    await page.waitForSelector('.album-rating-average');
+                    assert.equal(await page.locator('.album-rating-average').textContent(), '0.0');
+                    assert.equal(await page.locator('.album-rating-count').textContent(), '(1 avaliação)');
+                    await noOverflow(page, width);
+
+                    // 3. 404 album not found and 503 Retry-After cooldown.
+                    await page.goto(`${base}/pages/album.html?albumId=4040000000000000000000`);
+                    await page.waitForSelector('.album-error-card');
+                    assert.equal(await page.locator('.album-error-card h2').textContent(), 'Álbum não encontrado');
+                    await noOverflow(page, width);
+
+                    await page.goto(`${base}/pages/album.html?albumId=5030000000000000000000`);
+                    await page.waitForSelector('[data-retry-album]');
+                    assert.equal(await page.locator('[data-retry-album]').isDisabled(), true);
+                    await noOverflow(page, width);
+
+                    // 4. Explicit demo mode visual check & loading skeleton.
                     await page.goto(`${base}/pages/album.html?demo=true&scenario=loading`);
                     await page.waitForSelector('.album-sk-cover');
                     await noOverflow(page, width);
 
                     // 5. Mobile drawer check.
                     if (width === 390) {
-                        await page.goto(`${base}/pages/album.html?demo=true&scenario=rated`);
+                        await page.goto(`${base}/pages/album.html?albumId=0000000000000000000000`);
                         await page.waitForSelector('.album-hero-card');
                         await page.locator('#open-menu').click();
                         await page.waitForSelector('#profile-drawer[open]');

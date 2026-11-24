@@ -4,7 +4,7 @@ import { createDialogs, containFocus } from './profile-dialogs.js';
 import { icon } from './profile-icons.js';
 import { sidebar, skeleton, globalHeader, globalFooter, emptyState } from './profile-shell.js';
 import { profileHeader, activityFeed, collectionView, collectionPanel, reviewsPanel } from './profile-views.js';
-import { sortOptions, collectionSortOptions } from './profile-utils.js';
+import { sortOptions, collectionSortOptions, albumURL } from './profile-utils.js';
 import { clearAccessToken, logoutSession } from './auth-http.js';
 
 const adapter = createProfileAdapter();
@@ -108,8 +108,24 @@ document.addEventListener('click', event => {
         await adapter.actions.comments(target.dataset.comments);
     });
     if (target.dataset.album) run(async () => {
-        if (!adapter.actions?.album) { notify('A página do álbum ainda não está disponível neste frontend.'); return; }
-        await adapter.actions.album(target.dataset.album);
+        const albumId = target.dataset.album.trim();
+        if (!albumId) return;
+        if (adapter.actions?.album) {
+            await adapter.actions.album(albumId);
+            return;
+        }
+        const entries = [
+            ...(state.collectionState?.items || []),
+            ...(state.reviews?.items || []),
+            ...(state.collection || []),
+            ...(state.data?.activities || [])
+        ];
+        const matched = entries.find(entry => (entry.album?.spotifyId || entry.album?.id) === albumId)?.album || null;
+        window.location.assign(albumURL(albumId, {
+            base: adapter.routes?.album || 'album.html',
+            demo: Boolean(adapter.demo),
+            album: adapter.demo ? matched : null
+        }));
     });
     if (target.dataset.loadMoreReviews !== undefined || target.dataset.retryLoadMore !== undefined) {
         run(() => store.loadReviews({ reset: false }));

@@ -34,7 +34,7 @@ Mapeamento de cada item de `items`:
 - `createdAt` → data relativa/absoluta atualizada pelo relógio real;
 - `updatedAt` → preservado sem reordenar o card.
 
-Sem destino implementado para página de álbum ou avaliação completa, o bloco do álbum no feed é renderizado sem botão de navegação falsa, mantendo o link real do Spotify e a navegação real de perfil por handle.
+O bloco do álbum na coluna direita de cada card (`[data-album]`, com `interactiveAlbum: true`) navega diretamente para `album.html?albumId=<spotifyId>` (preservando `?demo=true` em modo demonstração ou `adapter.actions.album` quando injetado por host), mantendo também o link externo `Abrir no Spotify` e a navegação de perfil por handle.
 
 ## Paginação, concorrência, estados e invalidação
 
@@ -56,14 +56,14 @@ O modo demonstração local (`js/feed-fixtures.js`) só é ativado explicitament
 ## Figma e componentes compartilhados
 
 Arquivo `kgOOkp9lzghCJtlBpSQtIj`, página [Feed Page](https://www.figma.com/design/kgOOkp9lzghCJtlBpSQtIj/Sonarfy?node-id=406-11862).
-Reutiliza `profile-shell.js` (header, footer, sidebar com Home ativo, skeleton), `profile-views.js` (`activityCard` com `socialUnavailable: true` e `interactiveAlbum: false`), `profile-dialogs.js` (`containFocus`), tokens de `login.css`/`login-theme.js` e SVGs locais.
+Reutiliza `profile-shell.js` (header, footer, sidebar com Home ativo, skeleton), `profile-views.js` (`activityCard` com `socialUnavailable: true` e `interactiveAlbum: true`), `profile-dialogs.js` (`containFocus`), tokens de `login.css`/`login-theme.js` e SVGs locais.
 
 ## Verificação
 
 Comandos executados em 24/11/2026:
 
-- `npm test`: **27 arquivos / 260 testes aprovados** (inclui `tests/feed.test.js` e `tests/feed-http.test.js`).
-- `node tests/browser/feed.cjs` (interceptando `GET /api/feed`, `GET /api/profile/me` e `POST /api/auth/logout` no HTTP real do navegador): **8/8 combinações aprovadas** (5 cenários: `populated-paginated`, `loading`, `empty-zero`, `empty-following`, `error-retry`).
+- `npm test`: **31 arquivos / 280 testes aprovados** (inclui `tests/feed.test.js` e `tests/feed-http.test.js`).
+- `node tests/browser/feed.cjs` (interceptando `GET /api/feed`, `GET /api/profile/me` e `POST /api/auth/logout` no HTTP real do navegador): **8/8 combinações aprovadas** (5 cenários: `populated-paginated`, `loading`, `empty-zero`, `empty-following`, `error-retry`, incluindo navegação para `pages/album.html?albumId=<spotifyId>` ao clicar no álbum).
 - `node tests/browser/profile.cjs` (regressão dos componentes compartilhados): **16/16 combinações aprovadas**.
 
 | Navegador | Versão | Desktop 1440 claro/escuro | Mobile 390 claro/escuro | Dados |

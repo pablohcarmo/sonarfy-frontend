@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { createHttpProfileAdapter, mapProfileCollection } from '../js/profile-http.js';
 import { createProfileState } from '../js/profile-state.js';
 import { createDialogs } from '../js/profile-dialogs.js';
-import { collectionPanel, stars } from '../js/profile-views.js';
-import { collectionSortOptions } from '../js/profile-utils.js';
+import { collectionPanel, albumDetails, stars } from '../js/profile-views.js';
+import { collectionSortOptions, albumURL } from '../js/profile-utils.js';
 
 const profileDto = (id = 1, handle = 'owner') => ({
     identity: { id, handle, displayName: handle === 'owner' ? 'Dono' : 'Terceiro', location: { city: 'SP', country: 'BR' } },
@@ -400,5 +400,20 @@ describe('coleção pública do perfil', () => {
         dialogs.review(otherDto.items[0]);
         expect(dialog.querySelector('[data-edit-review], [data-delete-review]')).toBeNull();
         expect(dialog.querySelector('[data-like], [data-comments]')).toBeNull();
+    });
+
+    // Gera rota de álbum com spotifyId para cards da coleção e preserva modo demo quando ativo.
+    it('gera rota album.html?albumId=<spotifyId> e renderiza botão de álbum apenas com ID válido', () => {
+        expect(albumURL('4aawyAB9vmqN3uQ7FjRGTy')).toBe('album.html?albumId=4aawyAB9vmqN3uQ7FjRGTy');
+        expect(albumURL('demo-1', { demo: true, album: { title: 'Disco', artist: 'Banda' } }))
+            .toBe('album.html?demo=true&albumId=demo-1&title=Disco&artist=Banda');
+
+        const interactiveHtml = albumDetails({ id: 'fallback', spotifyId: '4aawyAB9vmqN3uQ7FjRGTy', title: 'Album', artist: 'Artist' });
+        expect(interactiveHtml).toContain('data-album="4aawyAB9vmqN3uQ7FjRGTy"');
+        expect(interactiveHtml).toContain('<button class="album-details"');
+
+        const missingIdHtml = albumDetails({ id: '', spotifyId: '', title: 'Sem ID', artist: 'Artist' });
+        expect(missingIdHtml).not.toContain('data-album=');
+        expect(missingIdHtml).toContain('<div class="album-details">');
     });
 });

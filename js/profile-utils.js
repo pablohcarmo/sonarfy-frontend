@@ -50,3 +50,18 @@ export function profileURL(handle, origin = window.location.origin) {
     url.searchParams.set('handle', handle);
     return url.href;
 }
+// Build the Album Page route carrying the Spotify album identifier (and optional demo preview metadata).
+export function albumURL(albumId, { base = 'album.html', demo = false, album = null } = {}) {
+    const safeId = typeof albumId === 'string' ? albumId.trim() : '';
+    const [path, query = ''] = String(base || 'album.html').split('?');
+    const params = new URLSearchParams(query);
+    if (demo) params.set('demo', 'true');
+    if (safeId) params.set('albumId', safeId);
+    if (demo && album) {
+        if (album.title || album.name) params.set('title', album.title || album.name);
+        if (album.artist) params.set('artist', album.artist);
+        if (album.cover || album.coverUrl) params.set('cover', album.cover || album.coverUrl);
+    }
+    const qs = params.toString();
+    return qs ? `${path}?${qs}` : path;
+}

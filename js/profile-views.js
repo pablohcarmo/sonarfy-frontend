@@ -50,8 +50,11 @@ function spotifyAttribution(album) {
 }
 export function albumDetails(album, { interactive = true } = {}) {
     const inner = `${cover(album)}<strong>'${e(album.title)}'</strong><span>por ${e(album.artist)}</span>`;
-    return interactive
-        ? `<button class="album-details" data-album="${e(album.id)}">${inner}</button>`
+    const albumId = typeof album?.spotifyId === 'string' && album.spotifyId.trim()
+        ? album.spotifyId.trim()
+        : typeof album?.id === 'string' ? album.id.trim() : '';
+    return interactive && albumId
+        ? `<button class="album-details" data-album="${e(albumId)}">${inner}</button>`
         : `<div class="album-details">${inner}</div>`;
 }
 // Global activity card has one layout for ratings, written reviews and replies.

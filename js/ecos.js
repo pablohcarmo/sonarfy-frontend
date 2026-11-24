@@ -4,7 +4,7 @@ import { createEcosState, ecoTimestamp, logout } from './ecos-state.js';
 import { globalHeader, globalFooter, sidebar } from './profile-shell.js';
 import { icon } from './profile-icons.js';
 import { containFocus } from './profile-dialogs.js';
-import { escapeHTML as e, safeImage } from './profile-utils.js';
+import { escapeHTML as e, safeImage, albumURL } from './profile-utils.js';
 
 // Resolve the host adapter, explicit demo mode (?demo=true), or default HTTP adapter.
 export function resolveEcosAdapter(integration = globalThis.sonarfyEcosAdapter) {
@@ -19,10 +19,14 @@ function ecosSkeleton() {
     return `<div class="ecos-skeleton-list" aria-label="Carregando álbuns" aria-busy="true">${row.repeat(6)}</div>`;
 }
 
-function renderCover(album) {
+function renderCover(album, albumHref = '') {
     const src = safeImage(album.coverUrl || album.cover);
     const bg = /^#[0-9a-f]{3,8}$/i.test(album.color || '') ? album.color : '#6366f1';
     const mark = e(album.mark || (album.name || album.title || 'S').slice(0, 2).toUpperCase());
+    const inner = src ? `<img src="${src}" alt="" data-image-fallback>` : `<span aria-hidden="true">${mark}</span>`;
+    if (albumHref) {
+        return `<a class="eco-cover eco-cover-link" href="${e(albumHref)}" style="--eco-cover-bg:${bg}" data-mark="${mark}" aria-label="Ver página do álbum ${e(album.name || album.title || 'álbum')}">${inner}</a>`;
+    }
     if (src) {
         return `<div class="eco-cover" style="--eco-cover-bg:${bg}" data-mark="${mark}"><img src="${src}" alt="" data-image-fallback></div>`;
     }
@@ -83,7 +87,7 @@ function renderExpandedDetails(spotifyId, detail) {
     return `<div class="eco-details-panel">${listHtml}${errorHtml}${moreHtml}</div>`;
 }
 
-function renderAlbumRow(item, detail) {
+function renderAlbumRow(item, detail, adapter) {
     const { album, lastPlayedAt, listenCount, isPlaying, rated } = item;
     const isExpanded = Boolean(detail?.expanded);
     const isRated = Boolean(rated);
@@ -95,12 +99,26 @@ function renderAlbumRow(item, detail) {
     const countLabel = `${listenCount} ${listenCount === 1 ? 'reprodução' : 'reproduções'}`;
     const chevron = isExpanded ? '▾' : '▸';
     const artistHtml = album.artist ? `<span class="eco-artist">${e(album.artist)}</span>` : '';
-    const spotifyHtml = typeof album.spotifyId === 'string' && album.spotifyId.trim()
+    const hasSpotifyId = typeof album.spotifyId === 'string' && album.spotifyId.trim() !== '';
+    const albumHref = hasSpotifyId
+        ? albumURL(album.spotifyId, {
+            base: adapter?.routes?.albumPage || 'album.html',
+            demo: Boolean(adapter?.demo),
+            album: adapter?.demo ? album : null
+        })
+        : '';
+    const albumLinkHtml = albumHref
+        ? `<a class="eco-album-link" href="${e(albumHref)}" aria-label="Ver página do álbum ${e(album.name)}">Ver álbum</a>`
+        : '';
+    const spotifyHtml = hasSpotifyId
         ? `<a class="eco-spotify-link" href="${e(`https://open.spotify.com/album/${encodeURIComponent(album.spotifyId.trim())}`)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${e(album.name)} no Spotify"><img src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true"><span>Abrir no Spotify</span></a>`
         : '';
+    const linksHtml = albumLinkHtml && spotifyHtml
+        ? `<div class="eco-meta-links">${albumLinkHtml}<span class="eco-links-sep" aria-hidden="true">·</span>${spotifyHtml}</div>`
+        : (albumLinkHtml || spotifyHtml);
     const detailsHtml = renderExpandedDetails(album.spotifyId, detail);
 
-    return `<li class="eco-row${isExpanded ? ' is-expanded' : ''}" data-album-id="${e(album.spotifyId)}"><div class="eco-row-main">${renderCover(album)}<div class="eco-info"><button type="button" class="eco-toggle" data-toggle-album="${e(album.spotifyId)}" aria-expanded="${String(isExpanded)}"><span class="eco-album">${e(album.name)}</span>${artistHtml}<span class="eco-summary">${e(countLabel)}</span></button>${spotifyHtml}</div><div class="eco-actions">${timeHtml}<button type="button" class="eco-rate-btn${isRated ? ' is-rated' : ''}" data-album="${e(album.spotifyId)}" aria-label="${e(rateAriaLabel)}"><span class="eco-rate-label">${rateLabel}</span><span class="eco-rate-chevron" aria-hidden="true">›</span></button><span class="eco-group-chevron" aria-hidden="true">${chevron}</span></div></div>${detailsHtml}</li>`;
+    return `<li class="eco-row${isExpanded ? ' is-expanded' : ''}" data-album-id="${e(album.spotifyId)}"><div class="eco-row-main">${renderCover(album, albumHref)}<div class="eco-info"><button type="button" class="eco-toggle" data-toggle-album="${e(album.spotifyId)}" aria-expanded="${String(isExpanded)}"><span class="eco-album">${e(album.name)}</span>${artistHtml}<span class="eco-summary">${e(countLabel)}</span></button>${linksHtml}</div><div class="eco-actions">${timeHtml}<button type="button" class="eco-rate-btn${isRated ? ' is-rated' : ''}" data-album="${e(album.spotifyId)}" aria-label="${e(rateAriaLabel)}"><span class="eco-rate-label">${rateLabel}</span><span class="eco-rate-chevron" aria-hidden="true">›</span></button><span class="eco-group-chevron" aria-hidden="true">${chevron}</span></div></div>${detailsHtml}</li>`;
 }
 
 function renderEmpty(connection, syncUrl) {
@@ -256,7 +274,7 @@ export function mountEcos(adapter = resolveEcosAdapter()) {
             ? `<div class="ecos-load-more-wrap">${loadMoreErrorHtml}<button type="button" class="ecos-load-more-btn" data-load-more ${state.loadingMore ? 'disabled' : ''}>${state.loadingMore ? 'Carregando álbuns...' : state.loadMoreError ? 'Tentar carregar mais álbuns' : 'Carregar mais álbuns'}</button></div>`
             : '';
 
-        contentEl.innerHTML = `<ul class="ecos-list">${state.data.items.map(item => renderAlbumRow(item, state.details[item.album.spotifyId])).join('')}</ul>${loadMoreHtml}<p class="ecos-caption">${e(caption)}</p>`;
+        contentEl.innerHTML = `<ul class="ecos-list">${state.data.items.map(item => renderAlbumRow(item, state.details[item.album.spotifyId], adapter)).join('')}</ul>${loadMoreHtml}<p class="ecos-caption">${e(caption)}</p>`;
     }
 
     const unsubscribe = store.subscribe(render);
