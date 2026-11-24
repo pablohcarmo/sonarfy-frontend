@@ -4,7 +4,7 @@ const icons = {
     home: ['home-light','home-dark'], search: ['search-light','search-dark'], echoes: ['echoes-light','echoes-dark'], activeEchoes: ['ecos/active-ecos','ecos/active-ecos'],
     notifications: ['notifications-light','notifications-dark'], profile: ['profile-light','profile-dark'], activeProfile: ['active-profile-light','active-profile-light'],
     settings: ['settings-light','settings-dark'], activeSettings: ['active-settings','active-settings'], logout: ['logout-light','logout-dark'], menu: ['menu-light','menu-dark'],
-    edit: ['edit-light','edit-dark'], share: ['share-light','share-dark'], disc: ['disc-light','disc-dark'],
+    edit: ['edit-light','edit-dark'], trash: ['trash-light','trash-dark'], share: ['share-light','share-dark'], disc: ['disc-light','disc-dark'],
     people: ['people-light','people-dark'], location: ['location-light','location-dark'], calendar: ['calendar-light','calendar-dark'],
     heart: ['heart-light','heart-dark'], liked: ['liked-light','liked-light'], comment: ['comment-light','comment-dark'],
     close: ['close-light','close-dark'], camera: ['camera-light','camera-light'], copy: ['copy-light','copy-light'],

@@ -1,7 +1,7 @@
 import { icon } from './profile-icons.js';
-import { avatar, cover, stars, socialActions } from './profile-views.js';
+import { avatar, cover, stars } from './profile-views.js';
 import { waveform } from './profile-shell.js';
-import { escapeHTML as e, profileURL, count, timestamp, length, limits, validateProfile, safeImage } from './profile-utils.js';
+import { escapeHTML as e, profileURL, count, timestamp, length, limits, validateProfile, validateReview, safeImage } from './profile-utils.js';
 import { computeAvatarCrop, computePreviewTransform, validateAvatarFile } from './avatar-crop.js';
 
 export function containFocus(surface) {
@@ -282,9 +282,135 @@ export function createDialogs({ adapter, store, notify, onSaved }) {
             });
         },
         review(item) {
-            open('Avaliação do álbum', `<div class="expanded-album">${cover(item.album)}<div><strong>${e(item.album.title)}</strong><p>${e(item.album.artist)}</p></div></div><div class="expanded-rating">${stars(item.rating)}<time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></div>${item.review ? `<p class="expanded-review">${e(item.review)}</p>` : ''}<div id="expanded-social" data-review-id="${e(item.id)}">${socialActions(item, store.state.pending)}</div>`, 'review-dialog');
+            const sessionUserId = store.state.data?.session?.userId;
+            const isOwnReview = Boolean(!adapter.demo && sessionUserId != null && item.author?.id != null && String(item.author.id) === String(sessionUserId));
+            const canEditReview = isOwnReview && typeof adapter.updateReview === 'function';
+            const canDeleteReview = isOwnReview && typeof adapter.deleteReview === 'function';
+            const ownerActions = (canEditReview || canDeleteReview)
+                ? `<div class="expanded-review-actions">${canEditReview ? `<button type="button" class="profile-secondary expanded-review-icon-btn" data-edit-review="${e(item.id)}" aria-label="Editar avaliação" title="Editar avaliação">${icon('edit')}</button>` : ''}${canDeleteReview ? `<button type="button" class="profile-secondary profile-danger expanded-review-icon-btn" data-delete-review="${e(item.id)}" aria-label="Excluir avaliação" title="Excluir avaliação">${icon('trash')}</button>` : ''}</div>`
+                : '';
+            open('Avaliação do álbum', `<div class="expanded-album">${cover(item.album)}<div><strong>${e(item.album.title)}</strong><p>${e(item.album.artist)}</p></div></div><div class="expanded-rating">${stars(item.rating)}<time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></div>${item.review ? `<p class="expanded-review">${e(item.review)}</p>` : ''}${ownerActions}`, 'review-dialog');
             dialog.querySelector('#dialog-title').classList.add('visually-hidden');
             dialog.querySelector('.dialog-heading').prepend(dialog.querySelector('.expanded-album'));
+            const actionsBox = dialog.querySelector('.expanded-review-actions');
+            const bindInitialOwnerActions = () => {
+                if (!actionsBox) return;
+                const editBtn = actionsBox.querySelector('[data-edit-review]');
+                if (editBtn) {
+                    editBtn.addEventListener('click', () => {
+                        if (!saving) this.editReview(item);
+                    });
+                }
+                const deleteBtn = actionsBox.querySelector('[data-delete-review]');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', () => {
+                        if (saving) return;
+                        status('');
+                        actionsBox.innerHTML = `<button type="button" class="expanded-review-confirm-delete" data-confirm-delete-review="${e(item.id)}">Confirmar exclusão</button><button type="button" class="expanded-review-cancel-delete" data-cancel-delete-review="${e(item.id)}">Cancelar</button>`;
+                        const confirmBtn = actionsBox.querySelector('[data-confirm-delete-review]');
+                        const cancelBtn = actionsBox.querySelector('[data-cancel-delete-review]');
+                        cancelBtn.addEventListener('click', () => {
+                            if (saving) return;
+                            status('');
+                            actionsBox.innerHTML = `${canEditReview ? `<button type="button" class="profile-secondary expanded-review-icon-btn" data-edit-review="${e(item.id)}" aria-label="Editar avaliação" title="Editar avaliação">${icon('edit')}</button>` : ''}${canDeleteReview ? `<button type="button" class="profile-secondary profile-danger expanded-review-icon-btn" data-delete-review="${e(item.id)}" aria-label="Excluir avaliação" title="Excluir avaliação">${icon('trash')}</button>` : ''}`;
+                            bindInitialOwnerActions();
+                            actionsBox.querySelector('[data-delete-review]')?.focus();
+                        });
+                        confirmBtn.addEventListener('click', async () => {
+                            if (saving) return;
+                            saving = true;
+                            confirmBtn.disabled = true;
+                            cancelBtn.disabled = true;
+                            status('Excluindo avaliação…');
+                            try {
+                                await adapter.deleteReview(item.reviewId ?? item.id);
+                                saving = false;
+                                dialog.close();
+                                notify('Avaliação excluída.');
+                                await store.invalidateReviewsAndCollection();
+                            } catch (error) {
+                                saving = false;
+                                confirmBtn.disabled = false;
+                                cancelBtn.disabled = false;
+                                status(error?.message || 'Não foi possível excluir a avaliação. Tente novamente.');
+                            }
+                        });
+                        confirmBtn.focus();
+                    });
+                }
+            };
+            bindInitialOwnerActions();
+        },
+        // Abre o modo de edição inline no próprio modal (Collection / Expanded Review Box (Editando) 663:8412) e salva via PUT.
+        editReview(item) {
+            const sessionUserId = store.state.data?.session?.userId;
+            const isOwnReview = Boolean(!adapter.demo && sessionUserId != null && item.author?.id != null && String(item.author.id) === String(sessionUserId));
+            if (!isOwnReview || typeof adapter.updateReview !== 'function') {
+                notify('Sem permissão para editar esta avaliação.');
+                return;
+            }
+            const savedTrigger = trigger;
+            const draft = {
+                rating: Math.max(0, Math.min(5, Math.round((Number(item.rating) || 0) * 4) / 4)),
+                review: item.review || ''
+            };
+            open('Editar avaliação do álbum', `<div class="expanded-album">${cover(item.album)}<div><strong>${e(item.album.title)}</strong><p>${e(item.album.artist)}</p></div></div><form id="edit-review-form" class="expanded-edit-form"><div class="expanded-rating"><div id="edit-review-stars-preview">${stars(draft.rating)}</div><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time><input id="edit-review-rating" name="rating" type="hidden" value="${draft.rating}"></div><textarea id="edit-review-text" name="review" class="expanded-review-textarea" aria-label="Resenha" maxlength="${limits.review}" rows="5">${e(draft.review)}</textarea><div class="expanded-review-actions"><button type="submit" class="expanded-review-save" id="save-review">Salvar</button></div></form>`, 'review-dialog edit-review-dialog');
+            dialog.querySelector('#dialog-title').classList.add('visually-hidden');
+            dialog.querySelector('.dialog-heading').prepend(dialog.querySelector('.expanded-album'));
+            trigger = savedTrigger;
+
+            const form = dialog.querySelector('#edit-review-form');
+            const ratingInput = form.elements.rating;
+            const starsPreview = dialog.querySelector('#edit-review-stars-preview');
+            const reviewInput = form.elements.review;
+
+            ratingInput.addEventListener('input', () => {
+                draft.rating = Math.max(0, Math.min(5, Math.round(Number(ratingInput.value) * 4) / 4));
+                starsPreview.innerHTML = stars(draft.rating);
+            });
+            starsPreview.addEventListener('click', event => {
+                if (saving) return;
+                const starEls = [...starsPreview.querySelectorAll('.profile-star')];
+                const clicked = event.target.closest('.profile-star');
+                const idx = starEls.indexOf(clicked);
+                if (idx === -1) return;
+                const rect = clicked.getBoundingClientRect();
+                const isHalf = rect.width > 0 && (event.clientX - rect.left) < rect.width / 2;
+                draft.rating = idx + (isHalf ? 0.5 : 1);
+                ratingInput.value = String(draft.rating);
+                starsPreview.innerHTML = stars(draft.rating);
+            });
+            reviewInput.addEventListener('input', () => {
+                const value = Array.from(reviewInput.value).slice(0, limits.review).join('');
+                reviewInput.value = value;
+                draft.review = value;
+            });
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                if (saving) return;
+                draft.rating = Math.max(0, Math.min(5, Math.round(Number(ratingInput.value) * 4) / 4));
+                draft.review = Array.from(reviewInput.value).slice(0, limits.review).join('');
+                try { validateReview(draft.review); } catch (err) { status(err.message); return; }
+                saving = true;
+                const controls = [...form.querySelectorAll('button, input, textarea')];
+                controls.forEach(c => { c.disabled = true; });
+                status('Salvando avaliação…');
+                try {
+                    await adapter.updateReview(item.reviewId ?? item.id, {
+                        rating: draft.rating,
+                        reviewText: draft.review
+                    });
+                    saving = false;
+                    dialog.close();
+                    notify('Avaliação atualizada com sucesso.');
+                    await store.invalidateReviewsAndCollection();
+                } catch (error) {
+                    saving = false;
+                    controls.forEach(c => { c.disabled = false; });
+                    status(error?.message || 'Não foi possível atualizar a avaliação. Tente novamente.');
+                }
+            });
+            reviewInput.focus();
         }
     };
 }
