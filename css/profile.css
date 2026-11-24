@@ -54,7 +54,10 @@
 .profile-navigation { display: flex; flex-direction: column; gap: 8px; }
 .profile-navigation a, .profile-navigation button { width: 100%; height: 48px; display: flex; align-items: center; gap: 16px; padding: 12px 16px; border: 0; border-radius: 999px; background: transparent; color: var(--profile-text); font-size: 18px; text-align: left; text-decoration: none; }
 .profile-navigation [aria-current] { font-weight: 700; background: var(--profile-active); }
-.profile-navigation a:hover, .profile-navigation button:hover { background: var(--profile-active); }
+.profile-navigation a:hover, .profile-navigation button:not(:disabled):hover { background: var(--profile-active); }
+.profile-nav-disabled { position: relative; display: block; width: 100%; }
+.profile-navigation button:disabled { opacity: .48; cursor: default; }
+.profile-nav-disabled:hover::after { content: attr(data-tooltip); position: absolute; left: 16px; bottom: calc(100% + 6px); z-index: 4; padding: 6px 10px; border-radius: 8px; background: var(--profile-text); color: var(--profile-surface); font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; pointer-events: none; box-shadow: var(--profile-shadow); }
 .profile-primary, .profile-follow { background: var(--accent-color); color: var(--profile-on-accent); border: 0; border-radius: 8px; font-weight: 600; padding: 12px 16px; min-height: 48px; }
 .review-cta { width: 100%; height: 52px; margin-top: 24px; border-radius: 999px; font-size: 18px; }
 .mobile-menu { display: none; }

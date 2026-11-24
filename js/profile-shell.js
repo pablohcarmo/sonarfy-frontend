@@ -18,6 +18,14 @@ export function sidebar(own, routes = {}, activeItem = own ? 'profile' : null) {
         const content = `${icon(iconKey)}<span>${label}</span>`;
         // Only known local routes or host-configured routes become links.
         const href = routes[key] || (key === 'logout' ? logoutRoute() : route);
+        const disabledHints = {
+            search: 'A pesquisa estará disponível em breve',
+            notifications: 'Notificações estarão disponíveis em breve'
+        };
+        if (disabledHints[key] && !routes[key]) {
+            const hint = disabledHints[key];
+            return `<span class="profile-nav-disabled" title="${hint}" data-tooltip="${hint}"><button type="button" data-navigation="${key}" disabled>${content}</button></span>`;
+        }
         return href ? `<a href="${e(href)}" ${active ? 'aria-current="page"' : ''}>${content}</a>` : `<button data-navigation="${key}">${content}</button>`;
     }).join('')}</nav><button class="profile-primary review-cta" data-navigation="review">Avaliar Álbum</button>`;
 }
