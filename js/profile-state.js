@@ -8,6 +8,20 @@ const createEmptyReviewsState = (handle = null) => ({
     loaded: false
 });
 
+const createEmptyCollectionState = (handle = null, sort = 'recent', writtenOnly = false) => ({
+    handle,
+    sort,
+    writtenOnly,
+    items: [],
+    totalReviews: null,
+    matchingReviews: null,
+    nextCursor: null,
+    loading: false,
+    loadingMore: false,
+    error: null,
+    loaded: false
+});
+
 export function createProfileState(adapter) {
     const state = {
         data: null,
@@ -15,9 +29,11 @@ export function createProfileState(adapter) {
         sort: 'recent',
         collection: [],
         pending: new Set(),
-        reviews: createEmptyReviewsState()
+        reviews: createEmptyReviewsState(),
+        collectionState: createEmptyCollectionState()
     };
     let reviewsRequestSeq = 0;
+    let collectionRequestSeq = 0;
     const listeners = new Set();
     const emit = () => listeners.forEach(listener => listener(state));
     return {
@@ -25,9 +41,11 @@ export function createProfileState(adapter) {
         subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
         setData(data) {
             reviewsRequestSeq += 1;
+            collectionRequestSeq += 1;
             state.data = data;
             state.collection = data.collection;
             state.reviews = createEmptyReviewsState(data?.profile?.handle || null);
+            state.collectionState = createEmptyCollectionState(data?.profile?.handle || null, 'recent', false);
             emit();
         },
         async loadReviews({ reset = false } = {}) {
@@ -85,6 +103,96 @@ export function createProfileState(adapter) {
             } finally {
                 if (!isStale()) emit();
             }
+        },
+        // Carrega a coleção pública paginada com ordenação, filtro independente e proteção contra respostas atrasadas.
+        async loadCollection({ reset = false, sort, writtenOnly } = {}) {
+            if (typeof adapter?.loadCollection !== 'function' || !state.data?.profile?.handle) return;
+            const current = state.collectionState;
+            let nextSort = current.sort;
+            let nextWrittenOnly = current.writtenOnly;
+            if (sort === 'written') {
+                nextSort = 'recent';
+                nextWrittenOnly = true;
+            } else {
+                if (['recent', 'oldest', 'highest', 'lowest'].includes(sort)) nextSort = sort;
+                if (typeof writtenOnly === 'boolean') nextWrittenOnly = writtenOnly;
+            }
+            if (!reset && (current.loading || current.loadingMore || current.nextCursor == null)) return;
+            const requestId = ++collectionRequestSeq;
+            const activeData = state.data;
+            const targetHandle = activeData.profile.handle;
+            const sessionUserId = activeData.session?.userId ?? null;
+            const cursor = reset ? null : current.nextCursor;
+            if (reset) {
+                state.collectionState = {
+                    ...createEmptyCollectionState(targetHandle, nextSort, nextWrittenOnly),
+                    loading: true
+                };
+            } else {
+                state.collectionState = {
+                    ...current,
+                    loadingMore: true,
+                    error: null
+                };
+            }
+            emit();
+            const isStale = () => requestId !== collectionRequestSeq
+                || state.data !== activeData
+                || state.data?.profile?.handle !== targetHandle
+                || (state.data?.session?.userId ?? null) !== sessionUserId;
+            try {
+                const page = await adapter.loadCollection(targetHandle, {
+                    limit: 20,
+                    sort: nextSort,
+                    writtenOnly: nextWrittenOnly,
+                    cursor
+                });
+                if (isStale()) return;
+                if (state.data?.profile && Number.isSafeInteger(page.totalReviews)) {
+                    state.data.profile.ratedCount = page.totalReviews;
+                }
+                const existing = reset ? [] : state.collectionState.items;
+                const seen = new Set(existing.map(item => String(item.reviewId ?? item.id)));
+                const appended = page.items.filter(item => !seen.has(String(item.reviewId ?? item.id)));
+                state.collectionState = {
+                    handle: targetHandle,
+                    sort: nextSort,
+                    writtenOnly: nextWrittenOnly,
+                    items: reset ? page.items : [...existing, ...appended],
+                    totalReviews: page.totalReviews,
+                    matchingReviews: page.matchingReviews,
+                    nextCursor: page.nextCursor ?? null,
+                    loading: false,
+                    loadingMore: false,
+                    error: null,
+                    loaded: true
+                };
+            } catch (error) {
+                if (isStale()) return;
+                state.collectionState = {
+                    ...state.collectionState,
+                    loading: false,
+                    loadingMore: false,
+                    error: {
+                        message: error?.message || 'Não foi possível carregar a coleção. Tente novamente.',
+                        status: error?.status ?? null
+                    }
+                };
+                if (error?.status === 401) throw error;
+            } finally {
+                if (!isStale()) emit();
+            }
+        },
+        // Reinicia a coleção ao alterar ordenação ou filtro de resenha escrita.
+        setCollectionFilter({ sort, writtenOnly } = {}) {
+            return this.loadCollection({ reset: true, sort, writtenOnly });
+        },
+        // Invalida páginas e totais de avaliações e coleção após mutações ou restauração do histórico.
+        async invalidateReviewsAndCollection() {
+            const tasks = [];
+            if (typeof adapter?.loadReviews === 'function') tasks.push(this.loadReviews({ reset: true }));
+            if (typeof adapter?.loadCollection === 'function') tasks.push(this.loadCollection({ reset: true }));
+            if (tasks.length) await Promise.all(tasks);
         },
         async mutate(key, operation, reconcile) {
             if (state.pending.has(key)) return;

@@ -375,4 +375,17 @@ Desktop e drawer Mobile existentes; nenhum nó ou componente Figma foi alterado.
 Seções sem API exibem indisponibilidade; o contador de álbuns não é inventado.
 Fixtures e interações visuais antigas permanecem em `?demo=true`, sem fallback de rede.
 Verificação de relacionamentos em Edge/Firefox, 1440/390, claro/escuro, com HTTP
-simulado e mobile emulado: detalhes em [profile-page.md](profile-page.md).
+simulado e mobile emulado: detalhes em [profile-page.md](profile-page.md). A caixa
+expandida de avaliação na Coleção (`Collection / Expanded Review Box` `362:4160`:
+`362:4044`, `362:4073`, `362:4102`, `362:4131`) usa botões somente-ícone `40 × 40px`
+(`border-radius: 8px`) para Editar (`656:8316`/`656:8324`) e Excluir (`656:8318`/`656:8326`,
+`assets/icons/profile/trash-light.svg` e `trash-dark.svg`), sem contadores sociais no modal,
+e o modo de edição (`Collection / Expanded Review Box (Editando)` `663:8412`: `663:8316`,
+`663:8340`, `663:8364`, `663:8388`) exibe a caixa de texto editável (`#ffffff`/`#1a1a1a`,
+borda `#8c8d90`/`#65676b`, `border-radius: 8px`, `padding: 12px 14px`, `15px/24px`) e o botão
+`Salvar` (`height: 40px`, `padding: 8px 18px`, `border-radius: 8px`, `#27a9f5`, `13px/20px` SemiBold).
+O estado de confirmação de exclusão (`Collection / Expanded Review Box (Confirmar Exclusão)` `667:8980`:
+`667:8884`, `667:8908`, `667:8932`, `667:8956`) substitui os dois ícones pelos botões `Confirmar exclusão`
+(`height: 40px`, `padding: 8px 14px`, `border-radius: 8px`, `#b42318` com texto `#ffffff` no claro e `#fda29b`
+com texto `#1a1a1a` no escuro, `13px/20px` SemiBold) e `Cancelar` (`height: 40px`, `padding: 8px 14px`,
+`border-radius: 8px`, borda `1px solid #8c8d90` no claro e `#65676b` no escuro).

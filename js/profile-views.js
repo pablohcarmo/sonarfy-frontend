@@ -1,5 +1,5 @@
 import { icon } from './profile-icons.js';
-import { escapeHTML as e, safeImage, count, timestamp, joined, profileURL, sortOptions, validateReview } from './profile-utils.js';
+import { escapeHTML as e, safeImage, count, timestamp, joined, profileURL, sortOptions, collectionSortOptions, validateReview } from './profile-utils.js';
 import { waveform, emptyState, skeleton } from './profile-shell.js';
 
 export function avatar(profile, className = '') {
@@ -8,10 +8,13 @@ export function avatar(profile, className = '') {
 }
 export function profileHeader(profile, own, busy = false) {
     const metadata = (name, text) => `<p class="profile-metadata">${icon(name)}<span>${e(text)}</span></p>`;
+    const ratedMetadata = profile.ratedCount == null
+        ? ''
+        : `<p class="profile-metadata profile-rated-count" data-rated-count>${icon('disc')}<span><strong class="profile-rated-value">${e(count(profile.ratedCount))}</strong> <span class="profile-rated-label">Álbuns Avaliados</span></span></p>`;
     return `<article class="profile-card"><div class="profile-cover">${safeImage(profile.cover) ? `<img class="profile-cover-image" src="${safeImage(profile.cover)}" alt="" data-image-fallback>` : waveform()}<div class="profile-cover-actions">${own && profile.editable !== false ? `<button class="profile-icon-button" data-action="edit" aria-label="Editar perfil">${icon('edit')}</button>` : ''}<button class="profile-icon-button" data-action="share" aria-label="Compartilhar perfil">${icon('share')}</button></div></div>
         <div class="profile-identity">${avatar(profile, 'main-avatar')}${!own ? `<button class="profile-follow ${profile.isFollowing ? 'is-following' : ''}" data-action="follow" ${profile.followUncertain ? '' : `aria-pressed="${Boolean(profile.isFollowing)}"`} ${busy ? 'disabled' : ''}>${busy ? 'Aguarde…' : profile.followUncertain ? 'Atualizar estado' : profile.isFollowing ? 'Seguindo' : 'Seguir'}</button>` : ''}
             <h1>${e(profile.displayName)}</h1><p class="profile-handle">@${e(profile.handle)}</p>
-            <div class="profile-statistics">${profile.ratedCount == null ? '' : metadata('disc', `${count(profile.ratedCount)} Álbuns Avaliados`)}${metadata('people', `${count(profile.followers)} Seguidores`)}${metadata('people', `${count(profile.following)} Seguindo`)}</div>
+            <div class="profile-statistics">${ratedMetadata}${metadata('people', `${count(profile.followers)} Seguidores`)}${metadata('people', `${count(profile.following)} Seguindo`)}</div>
             ${[profile.city, profile.country].filter(Boolean).length ? metadata('location', [profile.city, profile.country].filter(Boolean).join(', ')) : ''}
             ${profile.joinedAt ? metadata('calendar', joined(profile.joinedAt)) : ''}${profile.bio ? `<p class="profile-bio">${e(profile.bio)}</p>` : ''}
         </div></article>`;
@@ -88,4 +91,38 @@ export function collectionCard(item) {
 export function collectionView(items, profile, sort, busy, total) {
     if (!total) return emptyState('Nenhuma avaliação na coleção ainda', `@${profile.handle} ainda não avaliou nenhum álbum. Assim que publicar uma avaliação ou resenha, os álbuns aparecerão organizados aqui.`);
     return `<div class="collection-sort"><span>${count(items.length)} ${items.length === 1 ? 'álbum' : 'álbuns'}</span><div class="sort-control"><button id="sort-trigger" aria-expanded="false" aria-controls="sort-options" ${busy ? 'disabled' : ''}>${icon('sort')}<span>Ordenar: <strong>${sortOptions.find(([key]) => key === sort)?.[1]}</strong></span>${icon('chevron')}</button><div id="sort-options" class="sort-options" hidden role="group" aria-label="Ordenar coleção">${sortOptions.map(([key, label]) => `<button data-sort="${key}" aria-pressed="${sort === key}">${label}${sort === key ? icon('check') : ''}</button>`).join('')}</div></div></div>${items.length ? `<div class="collection-grid" aria-busy="${busy}">${items.map(collectionCard).join('')}</div>` : emptyState('Nenhuma resenha escrita encontrada', 'Selecione outra ordenação para ver todas as avaliações.')}`;
+}
+
+// Renderiza a Coleção real paginada com totais distintos, ordenação, filtro independente e estados de erro/carregamento.
+export function collectionPanel(collectionState, profile) {
+    if (collectionState.loading && !collectionState.items.length) return skeleton('collection');
+    if (collectionState.error && !collectionState.items.length) {
+        const retryLabel = collectionState.error.status === 400 ? 'Recarregar coleção' : 'Tentar novamente';
+        return `<div class="profile-reviews-error" role="alert"><p>${e(collectionState.error.message)}</p><button type="button" class="profile-secondary" data-retry-collection>${retryLabel}</button></div>`;
+    }
+    const totalReviews = collectionState.totalReviews ?? 0;
+    if (collectionState.loaded && totalReviews === 0) {
+        return emptyState('Nenhuma avaliação na coleção ainda', `@${profile.handle} ainda não avaliou nenhum álbum. Assim que publicar uma avaliação ou resenha, os álbuns aparecerão organizados aqui.`);
+    }
+    if (!collectionState.loaded) return skeleton('collection');
+    const matchingReviews = collectionState.matchingReviews ?? 0;
+    const busy = Boolean(collectionState.loading || collectionState.loadingMore);
+    const activeSortLabel = collectionSortOptions.find(([key]) => key === collectionState.sort)?.[1] || 'Mais recentes';
+    const totalLabel = `${count(totalReviews)} ${totalReviews === 1 ? 'álbum avaliado' : 'álbuns avaliados'}`;
+    const matchingLabel = collectionState.writtenOnly
+        ? ` · <span class="collection-matching">${count(matchingReviews)} com resenha</span>`
+        : '';
+    const controls = `<div class="collection-sort"><span class="collection-counts">${totalLabel}${matchingLabel}</span><div class="collection-controls"><button type="button" class="collection-filter-toggle" data-filter-written aria-pressed="${Boolean(collectionState.writtenOnly)}" ${busy ? 'disabled' : ''}>Com resenha escrita</button><div class="sort-control"><button type="button" id="sort-trigger" aria-expanded="false" aria-controls="sort-options" ${busy ? 'disabled' : ''}>${icon('sort')}<span>Ordenar: <strong>${e(activeSortLabel)}</strong></span>${icon('chevron')}</button><div id="sort-options" class="sort-options" hidden role="group" aria-label="Ordenar coleção">${collectionSortOptions.map(([key, label]) => `<button type="button" data-sort="${key}" aria-pressed="${collectionState.sort === key}">${e(label)}${collectionState.sort === key ? icon('check') : ''}</button>`).join('')}</div></div></div></div>`;
+    if (!collectionState.items.length) {
+        return `${controls}${emptyState('Nenhuma resenha escrita encontrada', 'Desative o filtro de resenha escrita para ver todas as avaliações.')}`;
+    }
+    let footer = '';
+    if (collectionState.error) {
+        const retryAttr = collectionState.error.status === 400 ? 'data-retry-collection' : 'data-retry-load-more-collection';
+        const retryText = collectionState.error.status === 400 ? 'Reiniciar coleção' : 'Tentar novamente';
+        footer = `<div class="profile-reviews-error" role="alert"><p>${e(collectionState.error.message)}</p><button type="button" class="profile-secondary" ${retryAttr}>${retryText}</button></div>`;
+    } else if (collectionState.nextCursor != null) {
+        footer = `<div class="profile-load-more"><button type="button" class="profile-secondary" data-load-more-collection ${collectionState.loadingMore ? 'disabled' : ''}>${collectionState.loadingMore ? 'Carregando coleção…' : 'Carregar mais álbuns'}</button></div>`;
+    }
+    return `${controls}<div class="collection-grid" aria-busy="${busy}">${collectionState.items.map(collectionCard).join('')}</div>${footer}`;
 }

@@ -41,7 +41,7 @@ Uma experiência que acompanha você no computador e no celular, com temas claro
 - Configurações da conta com edição de dados pessoais e `@handle`, integração visual com Spotify, cooldowns de segurança e popups de desativação e exclusão de conta.
 - Layouts responsivos e alternância entre os temas claro e escuro.
 
-Os fluxos de conta dependem da API. Perfil e Feed já estão implementados com modo demonstração local substituível via adapter, aguardando a integração com os contratos do backend. A tela de conexão com o Spotify está implementada; a autorização e a sincronização real dependem da integração com o backend. A disponibilização pública em produção ainda está em preparação.
+Os fluxos de conta, Ecos, Avaliar Álbum e Perfil (identidade, edição, mídia, relacionamentos, Avaliações e Coleção paginada com ordenação, filtro e edição/exclusão no modal) já estão integrados aos contratos HTTP do backend, mantendo modo demonstração explícito em `?demo=true`. O Feed permanece em modo demonstração local substituível via adapter, aguardando o contrato de backend. A disponibilização pública em produção ainda está em preparação.
 
 ## Conecte suas músicas ao Sonarfy
 
@@ -55,7 +55,7 @@ A tela de conexão com o Spotify explica quais dados serão acessados para ajuda
 
 No primeiro login, a tela aparece para quem ainda não conectou o Spotify. Ao pular, a preferência fica salva neste navegador por **7 dias**; nesse período, o login segue para o perfil e a conexão continua disponível manualmente nas configurações da conta. Depois de 7 dias, a tela volta a aparecer no login se a conta continuar desconectada. Contas já sincronizadas seguem diretamente para o perfil.
 
-A conexão só é marcada como concluída após a confirmação da autorização do Spotify, que ainda precisa ser integrada ao backend. O destino `pages/profile.html` usa consultas reais de perfil e relacionamentos; publicações e edição ainda não estão integradas. Demonstração explícita em `?demo=true`. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
+A conexão só é marcada como concluída após a confirmação da autorização do Spotify no backend. O destino `pages/profile.html` usa consultas reais de perfil, relacionamentos, Avaliações e Coleção (com respostas ainda pendentes de endpoint). Demonstração explícita em `?demo=true`. As capturas mostram a interface disponível, sem representar uma sincronização real concluída.
 
 ## Por trás da experiência
 

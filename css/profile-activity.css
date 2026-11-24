@@ -40,7 +40,13 @@
 .collection-card .album-details > span:last-child { font-size: 13px; line-height: 18px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .collection-card .profile-stars { font-size: 25px; line-height: 35px; }
 .collection-preview { min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; height: 40px; padding: 0; border: 0; background: transparent; color: var(--profile-muted); text-align: left; font: inherit; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
-.collection-sort { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; margin-bottom: 12px; font-size: 12px; color: var(--profile-muted); }
+.collection-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; margin-bottom: 12px; font-size: 12px; color: var(--profile-muted); }
+.collection-counts { min-width: 0; }
+.collection-matching { color: var(--profile-text); font-weight: 500; }
+.collection-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.collection-filter-toggle { display: inline-flex; align-items: center; height: 32px; padding: 4px 12px; font-size: 12px; border: 1px solid var(--profile-border); border-radius: 8px; background: var(--profile-surface); color: var(--profile-muted); cursor: pointer; }
+.collection-filter-toggle[aria-pressed="true"] { border-color: var(--accent-color); color: var(--accent-color); background: var(--profile-active); font-weight: 500; }
+.collection-filter-toggle:disabled { opacity: .6; cursor: default; }
 .sort-control { position: relative; min-width: 0; }
 #sort-trigger { display: flex; align-items: center; gap: 6px; height: 32px; padding: 4px 12px; font-size: 12px; border: 1px solid var(--profile-border); border-radius: 8px; background: var(--profile-surface); color: var(--profile-muted); }
 #sort-trigger strong { font-weight: 500; color: var(--profile-text); }
@@ -110,7 +116,7 @@
     .collection-card .album-details > span:last-child { font-size: 11px; line-height: 15px; }
     .collection-card .profile-stars { font-size: 21px; line-height: 29px; }
     .collection-preview { height: 34px; font-size: 12px; line-height: 17px; }
-    #sort-trigger { padding-inline: 8px; font-size: 11px; }
+    #sort-trigger, .collection-filter-toggle { padding-inline: 8px; font-size: 11px; }
     .skeleton-album { width: 84px; height: 84px; }
     .skeleton-avatar { width: 44px; height: 44px; }
     .skeleton-banner { height: 220px; }

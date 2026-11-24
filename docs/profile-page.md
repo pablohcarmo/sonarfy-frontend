@@ -18,12 +18,12 @@ não de IDs fornecidos pela URL, fixtures ou decodificação do token no navegad
 
 `js/profile-http.js` mapeia somente `ProfileDto.identity`, `viewer.isFollowing`, `viewer.canEdit` e
 `statistics.followers/following`. Não exibe campos cadastrais privados nem inventa
-contagem de álbuns. A aba **Avaliações** (`#panel-activities`) consome
+contagem de álbuns no carregamento inicial do perfil; assim que a Coleção (`GET /api/profile/by-handle/{handle}/collection`) é carregada, `totalReviews` sincroniza `profile.ratedCount` no cabeçalho (`#profile-header` com ícone `disc-light.svg`/`disc-dark.svg`, número em negrito e rótulo `Álbuns Avaliados` em tom secundário conforme o Figma `383:6710` / `383:6726`) e no modal de compartilhamento. A aba **Avaliações** (`#panel-activities`) consome
 `GET /api/profile/by-handle/{handle}/reviews` (Bearer, `limit=20`, cursor `beforeId`,
 sem `@`, ordem `reviewId` decrescente), exibindo nota `rating / 2` com precisão de
 quartos de estrela, resenha escapada como texto e paginação por “Carregar mais avaliações”,
 preservando o layout `Activity Card / Global` com ícones sociais sem contadores fictícios.
-Respostas e coleção permanecem com indisponibilidade explícita nesta entrega.
+Respostas permanecem com indisponibilidade explícita nesta entrega. A aba **Coleção** (`#panel-collection`) consome `GET /api/profile/by-handle/{handle}/collection` (Bearer, `limit=20`, `sort=recent|oldest|highest|lowest`, `writtenOnly=true|false`, `cursor` opaco, `cache: 'no-store'`), preservando a ordem do servidor, exibindo `totalReviews` como “N álbuns avaliados” e `matchingReviews` separadamente quando filtrada, além de paginação com “Carregar mais álbuns”, retry em falha de rede e ações de edição/exclusão no diálogo apenas quando o ID do autor coincide com a sessão autenticada (invalidação automática após exclusão e em `pageshow`).
 A edição textual do próprio perfil (`PUT /api/profile/me` com `displayName` até 60 pontos de código e `biography` até 150), o upload/recorte circular de avatar (`POST /api/profile/me/avatar` com `multipart/form-data`, `file` JPEG/PNG estático ≤ 5 MiB / ≤ 16 MP e `cropX`/`cropY`/`cropSize` inteiros em pixels orientados por EXIF) e o upload de capa/wallpaper (`POST /api/profile/me/wallpaper` com campo único `file` JPEG/PNG estático ≤ 5 MiB / ≤ 16 MP e enquadramento responsivo `object-fit: cover`) estão integrados quando `viewer.canEdit === true`. Os estilos e a sidebar global existentes foram preservados.
 
 O token de acesso existente em `sonarfy_token` é enviado no header Authorization
@@ -75,7 +75,13 @@ o futuro editor real deve usar os limites do backend (60/150 pontos de código).
 Cada publicação contém `id`, `author` (perfil público), `album`
 (`id,title,artist,mark,cover?`), `createdAt` ISO, `rating`, `review`, `replyTo?`,
 `liked`, `likeCount`, `commentCount`. Respostas não mostram estrelas. O estado
-reconcilia a mesma publicação no feed, na coleção e na caixa expandida por ID.
+reconcilia a mesma publicação no feed e na coleção por ID. No perfil, a caixa
+expandida da avaliação (`Collection / Expanded Review Box` `362:4160`: `362:4044` Light Desktop,
+`362:4073` Light Mobile, `362:4102` Dark Desktop, `362:4131` Dark Mobile) não exibe
+curtidas nem comentários; mostra apenas os dois botões quadrados `40 × 40px` (`border-radius: 8px`)
+somente-ícone de Editar avaliação (`656:8316`/`656:8324`, ícone de lápis `edit-light.svg`/`edit-dark.svg`, que transiciona o modal para `Collection / Expanded Review Box (Editando)` `663:8412` — `663:8316` Light Desktop, `663:8340` Light Mobile, `663:8364` Dark Desktop, `663:8388` Dark Mobile — com caixa de texto editável e botão `Salvar` `40px` `#27a9f5` que envia `PUT /api/reviews/{reviewId}`)
+e Excluir avaliação (`656:8318`/`656:8326`, ícone de lixeira `trash-light.svg` `#b42318` / `trash-dark.svg` `#fda29b`, que transiciona para `Collection / Expanded Review Box (Confirmar Exclusão)` `667:8980` — `667:8884`, `667:8908`, `667:8932`, `667:8956` — com botões `Confirmar exclusão` `#b42318`/`#fda29b` e `Cancelar`, enviando `DELETE /api/reviews/{reviewId}` somente ao confirmar),
+e somente quando o ID do autor coincide com a sessão autenticada (perfis de terceiros ficam só leitura).
 Mutações aguardam resposta, impedem envio concorrente e preservam dados em falha.
 
 A demonstração carrega a coleção completa e a ordena localmente. Uma integração

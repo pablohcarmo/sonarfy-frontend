@@ -249,6 +249,7 @@ export function mountAlbumReview(options = {}) {
             });
             if (saved?.reviewId != null) state.reviewId = saved.reviewId;
             if (saved?.album) state.album = { ...state.album, ...saved.album };
+            try { localStorage.setItem('sonarfy_reviews_dirty', String(Date.now())); } catch {}
             state.submitting = false;
             renderForm();
             openSuccessModal();

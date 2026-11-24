@@ -24,9 +24,12 @@ export function joined(value) {
 }
 // Product references use K/M suffixes (32K, 1.4K) in the Portuguese interface.
 export const count = value => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.max(0, Number(value) || 0));
-export const sortOptions = [
+export const collectionSortOptions = [
     ['recent', 'Mais recentes'], ['oldest', 'Mais antigos'], ['highest', 'Maior avaliação (5 ★)'],
-    ['lowest', 'Menor avaliação (1 ★)'], ['written', 'Com resenha escrita']
+    ['lowest', 'Menor avaliação (0 ★)']
+];
+export const sortOptions = [
+    ...collectionSortOptions, ['written', 'Com resenha escrita']
 ];
 export function sortCollection(items, sort) {
     const filtered = sort === 'written' ? items.filter(item => item.review?.trim()) : [...items];

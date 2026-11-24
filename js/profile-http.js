@@ -13,48 +13,75 @@ export function mapProfile(dto) {
         isFollowing: viewer.isFollowing, followUncertain: false, editable: Boolean(viewer.canEdit) };
 }
 
-// Normaliza a resposta paginada de GET /api/profile/by-handle/{handle}/reviews preservando a ordem do servidor.
-export function mapProfileReviews(dto) {
-    const { author: rawAuthor, items: rawItems, nextBeforeId } = dto || {};
-    if (!rawAuthor?.id || !rawAuthor.handle || typeof rawAuthor.displayName !== 'string' || !Array.isArray(rawItems)
-        || (nextBeforeId !== null && nextBeforeId !== undefined && (!Number.isSafeInteger(nextBeforeId) || nextBeforeId <= 0))) {
-        throw new Error('Resposta de avaliações inválida. Tente novamente.');
+// Normaliza a identidade pública do autor em respostas paginadas de avaliações/coleção.
+function mapReviewAuthor(rawAuthor, errorMessage) {
+    if (!rawAuthor?.id || !rawAuthor.handle || typeof rawAuthor.displayName !== 'string') {
+        throw new Error(errorMessage);
     }
-    const author = {
+    return {
         id: String(rawAuthor.id),
         handle: rawAuthor.handle,
         displayName: rawAuthor.displayName,
         avatar: rawAuthor.avatarUrl || null
     };
-    const items = rawItems.map(entry => {
-        const rawRating = Number(entry?.rating);
-        if (entry?.reviewId == null || !entry?.album || !Number.isFinite(rawRating) || rawRating < 0 || rawRating > 10) {
-            throw new Error('Resposta de avaliações inválida. Tente novamente.');
-        }
-        const title = entry.album.name || '';
-        return {
-            id: String(entry.reviewId),
-            reviewId: entry.reviewId,
-            author,
-            album: {
-                id: entry.album.spotifyId || '',
-                spotifyId: entry.album.spotifyId || '',
-                title,
-                artist: entry.album.artist?.name || '',
-                cover: entry.album.coverUrl || null,
-                mark: (title || 'S').slice(0, 2).toUpperCase()
-            },
-            rating: Math.round((rawRating / 2) * 100) / 100,
-            review: typeof entry.reviewText === 'string' ? entry.reviewText : '',
-            createdAt: entry.createdAt || null,
-            updatedAt: entry.updatedAt || null,
-            liked: false,
-            likeCount: 0,
-            commentCount: 0,
-            socialAvailable: false
-        };
-    });
+}
+
+// Normaliza um item ReviewDto preservando a ordem do servidor e sem fabricar contadores sociais.
+function mapReviewItem(entry, author, errorMessage) {
+    const rawRating = Number(entry?.rating);
+    if (entry?.reviewId == null || !entry?.album || !Number.isFinite(rawRating) || rawRating < 0 || rawRating > 10) {
+        throw new Error(errorMessage);
+    }
+    const title = entry.album.name || '';
+    return {
+        id: String(entry.reviewId),
+        reviewId: entry.reviewId,
+        author,
+        album: {
+            id: entry.album.spotifyId || '',
+            spotifyId: entry.album.spotifyId || '',
+            title,
+            artist: entry.album.artist?.name || '',
+            cover: entry.album.coverUrl || null,
+            mark: (title || 'S').slice(0, 2).toUpperCase()
+        },
+        rating: Math.round((rawRating / 2) * 100) / 100,
+        review: typeof entry.reviewText === 'string' ? entry.reviewText : '',
+        createdAt: entry.createdAt || null,
+        updatedAt: entry.updatedAt || null,
+        liked: false,
+        likeCount: 0,
+        commentCount: 0,
+        socialAvailable: false
+    };
+}
+
+// Normaliza a resposta paginada de GET /api/profile/by-handle/{handle}/reviews preservando a ordem do servidor.
+export function mapProfileReviews(dto) {
+    const errorMessage = 'Resposta de avaliações inválida. Tente novamente.';
+    const { author: rawAuthor, items: rawItems, nextBeforeId } = dto || {};
+    if (!Array.isArray(rawItems)
+        || (nextBeforeId !== null && nextBeforeId !== undefined && (!Number.isSafeInteger(nextBeforeId) || nextBeforeId <= 0))) {
+        throw new Error(errorMessage);
+    }
+    const author = mapReviewAuthor(rawAuthor, errorMessage);
+    const items = rawItems.map(entry => mapReviewItem(entry, author, errorMessage));
     return { author, items, nextBeforeId: nextBeforeId ?? null };
+}
+
+// Normaliza a resposta paginada de GET /api/profile/by-handle/{handle}/collection preservando cursor opaco e totais.
+export function mapProfileCollection(dto) {
+    const errorMessage = 'Resposta da coleção inválida. Tente novamente.';
+    const { author: rawAuthor, items: rawItems, totalReviews, matchingReviews, nextCursor } = dto || {};
+    if (!Array.isArray(rawItems)
+        || !Number.isSafeInteger(totalReviews) || totalReviews < 0
+        || !Number.isSafeInteger(matchingReviews) || matchingReviews < 0
+        || (nextCursor !== null && nextCursor !== undefined && (typeof nextCursor !== 'string' || !nextCursor))) {
+        throw new Error(errorMessage);
+    }
+    const author = mapReviewAuthor(rawAuthor, errorMessage);
+    const items = rawItems.map(entry => mapReviewItem(entry, author, errorMessage));
+    return { author, items, totalReviews, matchingReviews, nextCursor: nextCursor ?? null };
 }
 
 // O token é lido a cada operação e nunca entra na URL, nas fixtures ou nas mensagens.
@@ -136,6 +163,71 @@ export function createHttpProfileAdapter({ baseUrl = typeof API_BASE_URL !== 'un
                 { expectedStatus: 200, badRequestMessage: 'Parâmetros de paginação inválidos.' }
             );
             return mapProfileReviews(dto);
+        },
+        // Carrega página da coleção pública do perfil por handle sem @, com ordenação, filtro e cursor opaco.
+        async loadCollection(handle, { limit = 20, sort = 'recent', writtenOnly = false, cursor = null } = {}) {
+            if (!sessionToken) sessionToken = getToken();
+            const cleanHandle = String(handle || '').trim().replace(/^@+/, '');
+            if (!cleanHandle) {
+                const error = new Error('Perfil indisponível.'); error.status = 404;
+                throw error;
+            }
+            const safeLimit = Number.isInteger(limit) && limit >= 1 && limit <= 50 ? limit : 20;
+            const resolvedSort = sort === 'written' ? 'recent'
+                : ['recent', 'oldest', 'highest', 'lowest'].includes(sort) ? sort : 'recent';
+            const resolvedWrittenOnly = sort === 'written' ? true : Boolean(writtenOnly);
+            const params = new URLSearchParams({
+                limit: String(safeLimit),
+                sort: resolvedSort,
+                writtenOnly: String(resolvedWrittenOnly)
+            });
+            if (cursor != null && cursor !== '') params.set('cursor', String(cursor));
+            const dto = await request(
+                `/profile/by-handle/${encodeURIComponent(cleanHandle)}/collection?${params.toString()}`,
+                'GET',
+                { expectedStatus: 200, badRequestMessage: 'Parâmetros de coleção inválidos.' }
+            );
+            return mapProfileCollection(dto);
+        },
+        // Atualiza nota (0-5 estrelas -> 0-10 API em passos de 0,5) e texto via PUT /api/reviews/{reviewId}.
+        async updateReview(reviewId, { rating, reviewText } = {}) {
+            if (reviewId == null) throw new Error('Avaliação não identificada.');
+            if (!sessionToken) sessionToken = getToken();
+            const starsNum = Number(rating);
+            const apiRating = Number.isFinite(starsNum) ? Math.round(starsNum * 4) / 2 : NaN;
+            if (!Number.isFinite(apiRating) || apiRating < 0 || apiRating > 10 || Math.abs(apiRating - starsNum * 2) > 1e-6) {
+                const error = new Error('Selecione uma nota válida entre 0 e 5 estrelas.');
+                error.status = 400;
+                throw error;
+            }
+            const trimmed = typeof reviewText === 'string' ? reviewText.trim() : '';
+            if (Array.from(trimmed).length > 255 || trimmed.includes('\0')) {
+                const error = new Error('A resenha deve ter até 255 caracteres.');
+                error.status = 400;
+                throw error;
+            }
+            const dto = await request(
+                `/reviews/${encodeURIComponent(reviewId)}`,
+                'PUT',
+                {
+                    body: { rating: apiRating, reviewText: trimmed || null },
+                    expectedStatus: 200,
+                    badRequestMessage: 'Verifique a nota e a resenha (até 255 caracteres).'
+                }
+            );
+            const fallbackAuthor = loaded?.profile || { id: '0', handle: 'user', displayName: 'Usuário' };
+            return mapReviewItem(dto, fallbackAuthor, 'Resposta de avaliação inválida. Tente novamente.');
+        },
+        // Exclui avaliação própria via DELETE /api/reviews/{reviewId}; 204 e 404 confirmam remoção.
+        async deleteReview(reviewId) {
+            if (reviewId == null) return;
+            if (!sessionToken) sessionToken = getToken();
+            try {
+                await request(`/reviews/${encodeURIComponent(reviewId)}`, 'DELETE', { expectedStatus: 204 });
+            } catch (error) {
+                if (error?.status === 404) return;
+                throw error;
+            }
         },
         // Atualiza nome de exibição e biografia via PUT /api/profile/me e reconcilia o ProfileDto retornado.
         async updateProfile({ displayName, bio }) {

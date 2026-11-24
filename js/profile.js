@@ -3,8 +3,8 @@ import { createProfileState } from './profile-state.js';
 import { createDialogs, containFocus } from './profile-dialogs.js';
 import { icon } from './profile-icons.js';
 import { sidebar, skeleton, globalHeader, globalFooter, emptyState } from './profile-shell.js';
-import { profileHeader, activityFeed, collectionView, socialActions, reviewsPanel } from './profile-views.js';
-import { sortOptions } from './profile-utils.js';
+import { profileHeader, activityFeed, collectionView, collectionPanel, reviewsPanel } from './profile-views.js';
+import { sortOptions, collectionSortOptions } from './profile-utils.js';
 import { clearAccessToken, logoutSession } from './auth-http.js';
 
 const adapter = createProfileAdapter();
@@ -32,10 +32,14 @@ function render() {
     header.innerHTML = profileHeader(profile, own(), state.pending.has('follow'));
     if (focusedAction) header.querySelector(`[data-action="${focusedAction}"]`)?.focus();
     document.title = `${profile.displayName} (@${profile.handle}) – Sonarfy`;
-    if (typeof adapter.loadReviews === 'function') {
-        document.getElementById('panel-activities').innerHTML = reviewsPanel(state.reviews, profile, state.pending);
+    if (typeof adapter.loadReviews === 'function' || typeof adapter.loadCollection === 'function') {
+        document.getElementById('panel-activities').innerHTML = typeof adapter.loadReviews === 'function'
+            ? reviewsPanel(state.reviews, profile, state.pending)
+            : emptyState('Conteúdo ainda não disponível', 'Avaliações ainda não estão integradas.');
         document.getElementById('panel-replies').innerHTML = emptyState('Em breve', 'As respostas a avaliações e comentários estarão disponíveis em breve.');
-        document.getElementById('panel-collection').innerHTML = emptyState('Em implementação', 'A coleção está em implementação e estará disponível em breve.');
+        document.getElementById('panel-collection').innerHTML = typeof adapter.loadCollection === 'function'
+            ? collectionPanel(state.collectionState, profile)
+            : emptyState('Em implementação', 'A coleção está em implementação e estará disponível em breve.');
         return;
     }
     if (state.data.contentAvailable === false) {
@@ -46,11 +50,6 @@ function render() {
         document.getElementById(`panel-${tab}`).innerHTML = activityFeed(state.data[tab], state.pending);
     }
     document.getElementById('panel-collection').innerHTML = collectionView(state.collection, profile, state.sort, state.pending.has('sort'), state.data.collectionTotal ?? state.data.collection.length);
-    const expanded = document.getElementById('expanded-social');
-    if (expanded) {
-        const item = [...state.data.activities, ...state.data.replies, ...state.collection].find(item => item.id === expanded.dataset.reviewId);
-        if (item) expanded.innerHTML = socialActions(item, state.pending);
-    }
 }
 store.subscribe(render);
 
@@ -101,9 +100,8 @@ document.addEventListener('click', event => {
     if (target.dataset.like) run(async () => {
         if (typeof adapter.like !== 'function') { notify('Curtidas ainda não estão integradas neste frontend.'); return; }
         const id = target.dataset.like;
-        const expanded = target.closest('#expanded-social');
         await store.like(id);
-        (expanded || document.getElementById(`panel-${state.tab}`)).querySelector(`[data-like="${CSS.escape(id)}"]`)?.focus();
+        document.getElementById(`panel-${state.tab}`).querySelector(`[data-like="${CSS.escape(id)}"]`)?.focus();
     });
     if (target.dataset.comments) run(async () => {
         if (!adapter.actions?.comments) { notify('Comentários ainda não estão integrados neste frontend.'); return; }
@@ -119,7 +117,23 @@ document.addEventListener('click', event => {
     if (target.dataset.retryReviews !== undefined) {
         run(() => store.loadReviews({ reset: true }));
     }
-    if (target.dataset.review && state.data) dialogs.review(state.collection.find(item => item.id === target.dataset.review));
+    if (target.dataset.loadMoreCollection !== undefined || target.dataset.retryLoadMoreCollection !== undefined) {
+        run(() => store.loadCollection({ reset: false }));
+    }
+    if (target.dataset.retryCollection !== undefined) {
+        run(() => store.loadCollection({ reset: true }));
+    }
+    if (target.dataset.filterWritten !== undefined && typeof adapter.loadCollection === 'function') {
+        run(async () => {
+            try { await store.setCollectionFilter({ writtenOnly: !state.collectionState.writtenOnly }); }
+            finally { document.querySelector('[data-filter-written]')?.focus(); }
+        });
+    }
+    if (target.dataset.review && state.data) {
+        const items = typeof adapter.loadCollection === 'function' ? state.collectionState.items : state.collection;
+        const item = items.find(entry => entry.id === target.dataset.review);
+        if (item) dialogs.review(item);
+    }
     if (target.dataset.action === 'edit') dialogs.edit();
     if (target.dataset.action === 'share') dialogs.share();
     if (target.dataset.action === 'follow') run(async () => {
@@ -130,10 +144,13 @@ document.addEventListener('click', event => {
     if (target.id === 'sort-trigger') {
         const options = document.getElementById('sort-options');
         options.hidden = !options.hidden; target.setAttribute('aria-expanded', String(!options.hidden));
-        if (!options.hidden) options.querySelector('[aria-pressed="true"]').focus();
-    } else if (target.dataset.sort && sortOptions.some(([key]) => key === target.dataset.sort)) {
+        if (!options.hidden) options.querySelector('[aria-pressed="true"]')?.focus();
+    } else if (target.dataset.sort && (typeof adapter.loadCollection === 'function' ? collectionSortOptions : sortOptions).some(([key]) => key === target.dataset.sort)) {
         run(async () => {
-            try { await store.sort(target.dataset.sort); }
+            try {
+                if (typeof adapter.loadCollection === 'function') await store.setCollectionFilter({ sort: target.dataset.sort });
+                else await store.sort(target.dataset.sort);
+            }
             finally { document.getElementById('sort-trigger')?.focus(); }
         });
     } else if (!target.closest('.sort-control')) closeSort();
@@ -187,9 +204,7 @@ async function load() {
         if (state.sort !== 'recent') await store.sort(state.sort);
         document.getElementById('profile-sidebar').innerHTML = sidebar(own(), adapter.routes);
         document.getElementById('profile-demo').hidden = !adapter.demo;
-        if (typeof adapter.loadReviews === 'function') {
-            await store.loadReviews({ reset: true });
-        }
+        await store.invalidateReviewsAndCollection();
     } catch (error) {
         header.replaceChildren(); tabs.forEach(tab => document.getElementById(`panel-${tab}`).replaceChildren());
         notify(error.message || 'Não foi possível carregar o perfil.');
@@ -197,12 +212,15 @@ async function load() {
     }
 }
 window.addEventListener('pageshow', event => {
-    if (event.persisted && !adapter.demo && typeof adapter.loadReviews === 'function' && state.data?.profile?.handle) {
-        run(() => store.loadReviews({ reset: true }));
+    if (event.persisted && !adapter.demo && state.data?.profile?.handle) {
+        run(() => store.invalidateReviewsAndCollection());
     }
 });
 window.addEventListener('storage', event => {
     if (!adapter.demo && (event.key === 'sonarfy_token' || event.key === null)) location.reload();
+    if (!adapter.demo && event.key === 'sonarfy_reviews_dirty' && state.data?.profile?.handle) {
+        run(() => store.invalidateReviewsAndCollection());
+    }
 });
 changeTab(new URL(location.href).searchParams.get('tab'), false);
 load();
