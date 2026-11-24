@@ -93,12 +93,13 @@ um protocolo de paginação enquanto esse contrato não existir.
 Login já grava `sonarfy_token`; Sair abre `pages/logout.html` e, ao confirmar (ou via
 ações diretas de logout na sidebar), chama `POST /api/auth/logout` com `credentials: 'include'`
 e `X-Sonarfy-CSRF: 1`, remove `sonarfy_token` no `finally` e navega ao login.
-O host pode substituir essa ação para revogação remota. Home e Configurações usam
-as páginas existentes. Pesquisa, Ecos, Avaliar Álbum, comentários e álbum usam
-handlers configuráveis; sem eles, mostram feedback de indisponibilidade. Ecos não
-é redirecionado ao onboarding do Spotify. Notificações permanece um placeholder.
-As páginas institucionais não existem na base atual; o footer informa essa
-indisponibilidade ao acionar seus controles, sem links para arquivos inexistentes.
+O host pode substituir essa ação para revogação remota. Home, Ecos e Configurações usam
+as páginas existentes. **Pesquisar**, **Notificações**, **curtidas/comentários/respostas**
+e as **páginas institucionais do rodapé** (`Termos de Uso`, `Privacidade`, `Diretrizes`,
+`Apoie o Sonarfy`) ficam fora desta versão do Sonarfy (implementações futuras); Pesquisar
+e Notificações permanecem desabilitadas na sidebar global e o footer informa indisponibilidade
+sem links para arquivos inexistentes. Avaliar Álbum e álbum usam handlers configuráveis
+quando não há rota direta. Ecos não é redirecionado ao onboarding do Spotify.
 
 Compartilhar usa a rota real `/pages/profile.html?handle=...` na origem configurada,
 Clipboard API, URLs das redes e Web Share com fallback de seleção manual.
