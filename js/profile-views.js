@@ -48,19 +48,25 @@ function spotifyAttribution(album) {
     if (!href) return '';
     return `<a class="album-spotify-link" href="${e(href)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${e(album?.title || 'álbum')} no Spotify"><img src="../assets/icons/account/spotify.svg" width="21" height="21" alt="" aria-hidden="true"><span>Abrir no Spotify</span></a>`;
 }
-export function albumDetails(album) {
-    return `<button class="album-details" data-album="${e(album.id)}">${cover(album)}<strong>'${e(album.title)}'</strong><span>por ${e(album.artist)}</span></button>`;
+export function albumDetails(album, { interactive = true } = {}) {
+    const inner = `${cover(album)}<strong>'${e(album.title)}'</strong><span>por ${e(album.artist)}</span>`;
+    return interactive
+        ? `<button class="album-details" data-album="${e(album.id)}">${inner}</button>`
+        : `<div class="album-details">${inner}</div>`;
 }
 // Global activity card has one layout for ratings, written reviews and replies.
-export function activityCard(item, pending) {
+export function activityCard(item, pending, { interactiveAlbum = true, socialUnavailable = false } = {}) {
     const author = item.author;
     validateReview(item.review);
     const spotifyLink = spotifyAttribution(item.album);
-    const albumBlock = spotifyLink ? `<div class="album-column">${albumDetails(item.album)}${spotifyLink}</div>` : albumDetails(item.album);
-    return `<article class="activity-card ${!item.review ? 'rating-only' : ''}" data-publication="${e(item.id)}"><div class="activity-left"><a class="activity-avatar-link" href="${e(profileURL(author.handle))}" aria-label="Ver perfil de ${e(author.displayName)}">${avatar(author, 'activity-avatar')}</a><div class="activity-content"><div class="activity-publication"><header class="activity-author"><a href="${e(profileURL(author.handle))}">${e(author.displayName)}</a><span class="activity-author-meta"><a href="${e(profileURL(author.handle))}">@${e(author.handle)}</a><span aria-hidden="true">·</span><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></span></header>${item.replyTo ? `<p class="activity-reply">Em resposta a <a href="${e(profileURL(item.replyTo))}">@${e(item.replyTo)}</a></p>` : ''}${item.review ? `<p class="activity-review">${e(item.review)}</p>` : ''}${item.replyTo ? '' : stars(item.rating)}</div>${socialActions(item, pending)}</div></div>${albumBlock}</article>`;
+    const albumBlock = spotifyLink
+        ? `<div class="album-column">${albumDetails(item.album, { interactive: interactiveAlbum })}${spotifyLink}</div>`
+        : albumDetails(item.album, { interactive: interactiveAlbum });
+    const socialItem = socialUnavailable ? { ...item, socialAvailable: false } : item;
+    return `<article class="activity-card ${!item.review ? 'rating-only' : ''}" data-publication="${e(item.id)}"><div class="activity-left"><a class="activity-avatar-link" href="${e(profileURL(author.handle))}" aria-label="Ver perfil de ${e(author.displayName)}">${avatar(author, 'activity-avatar')}</a><div class="activity-content"><div class="activity-publication"><header class="activity-author"><a href="${e(profileURL(author.handle))}">${e(author.displayName)}</a><span class="activity-author-meta"><a href="${e(profileURL(author.handle))}">@${e(author.handle)}</a><span aria-hidden="true">·</span><time datetime="${e(item.createdAt)}">${e(timestamp(item.createdAt))}</time></span></header>${item.replyTo ? `<p class="activity-reply">Em resposta a <a href="${e(profileURL(item.replyTo))}">@${e(item.replyTo)}</a></p>` : ''}${item.review ? `<p class="activity-review">${e(item.review)}</p>` : ''}${item.replyTo ? '' : stars(item.rating)}</div>${socialActions(socialItem, pending)}</div></div>${albumBlock}</article>`;
 }
-export function activityFeed(items, pending) {
-    return items.length ? `<div class="activity-feed">${items.map(item => activityCard(item, pending)).join('')}</div>` : emptyState('Nenhuma publicação ainda');
+export function activityFeed(items, pending, options) {
+    return items.length ? `<div class="activity-feed">${items.map(item => activityCard(item, pending, options)).join('')}</div>` : emptyState('Nenhuma publicação ainda');
 }
 export function reviewsPanel(reviewsState, profile, pending = new Set()) {
     if (reviewsState.loading && !reviewsState.items.length) return skeleton('activities');

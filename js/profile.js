@@ -138,7 +138,10 @@ document.addEventListener('click', event => {
     if (target.dataset.action === 'share') dialogs.share();
     if (target.dataset.action === 'follow') run(async () => {
         notify('');
-        try { await store.follow(); }
+        try {
+            await store.follow();
+            try { localStorage.setItem('sonarfy_following_dirty', String(Date.now())); } catch {}
+        }
         finally { header.querySelector('[data-action="follow"]')?.focus(); }
     });
     if (target.id === 'sort-trigger') {
